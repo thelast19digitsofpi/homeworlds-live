@@ -1,0 +1,44 @@
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+	<a class="navbar-brand">
+		<img src="/images/ship-<%=
+		// randomly pick a color
+			"bgry"[Math.floor(Math.random() * 4)]
+		%>1.svg" height="30" class="d-inline-block align-top" />
+		Homeworlds <del>live</del>
+		<small>live play coming later</small>
+	</a>
+	<button class="navbar-toggler" type="buton" data-toggle="collapse" data-target="#header-content">
+		<span class="navbar-toggler-icon"></span>
+	</button>
+	<!-- Navigation links -->
+	<div class="collapse navbar-collapse" id="header-content">
+		<ul class="navbar-nav mr-auto">
+			<li class="nav-item">
+				<a class="nav-link" href="javascript:alert('TODO')">Home</a>
+			</li>
+			<!-- more can come later -->
+		</ul>
+	</div>
+	<!-- Either your account or the Log In / Sign Up buttons -->
+	<% if (userInfo.loggedIn) { -%>
+		<!-- Account Dropdown -->
+		<div class="nav-item dropdown">
+			<a class="nav-link dropdown-toggle"
+			   href="#"
+			   id="accountDropdown"
+			   data-toggle="dropdown"
+			   aria-haspopup="true"
+			   aria-expanded="false"
+			   ><%= userInfo.username _%></a>
+			<div class="dropdown-menu dropdown-menu-right" aria-labelledby="accountDropdown">
+				<a class="dropdown-item" href="#">Do Nothing</a>
+				<div class="dropdown-divider"></div>
+				<a class="dropdown-item" href="javascript:alert('TODO')">Account</a>
+				<a class="dropdown-item bold" href="javascript:alert('TODO')">Log Out</a>
+			</div>
+		</div>
+	<% } else { -%>
+		<a class="btn btn-primary" role="button" href="/login">Log In</a>
+		<a class="btn btn-secondary ml-1" role="button" href="/createAccount">Create Account</a>
+	<% } -%>
+</nav>

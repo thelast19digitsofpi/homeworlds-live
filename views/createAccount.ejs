@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Create Account</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h2>Create Account</h2>
+			<p class="lead">Already have an account? <a href="/createAccount">Log in</a>.</p>
+			<form id="create-account-form" method="post" action="/createAccount">
+				<div class="form-group">
+					<% if (typeof error !== 'undefined' && error.type === "username") { %>
+					<h4 class="text-warning"><%= error.message %></h4>
+					<% } %>
+					<label for="create-username" class="lead">Username</label>
+					<input type="text" name="username" class="form-control" aria-describedby="login-username" value="<%= typeof username !== 'undefined' ? username : '' %>" />
+					<p class="form-text">Username must contain 3-25 characters. Letters, numbers, and <code>.,!@#$%^&*()_+-=</code> are allowed. Spaces are allowed, but not at the beginning or end.</p>
+				</div>
+				<div class="form-group">
+					<!-- Error -->
+					<% if (typeof error !== 'undefined' && error.type === "password") { %>
+					<h6 class="text-warning"><%= error.message %></h4>
+					<% } %>
+					<!-- Content -->
+					<label for="create-password" class="lead">Password</label>
+					<input type="password" name="password" class="form-control" aria-describedby="login-password" required />
+					<p class="form-text">
+						Password must be between 12 and 99 characters and please <strong class="text-danger">do NOT use anything you have used on another site</strong>. <br/>
+						No, really. I am just one college student who decided to make this as a summer project. I am not going to know all the security practices necessary so I am just going to warn you now.
+					</p>
+				</div>
+				<div class="form-group">
+					<% if (typeof error !== 'undefined' && error.type === "confirmPassword") { %>
+					<h6 class="text-warning"><%= error.message %></h4>
+					<% } %>
+					<label for="create-confirm-password" class="lead">Confirm Password</label>
+					<input type="password" name="confirmPassword" class="form-control" aria-describedby="login-password" required />
+					<p class="form-text">
+						I really mean it. DO. NOT. REUSE. PASSWORDS.
+					</p>
+				</div>
+				<input type="submit" class="btn btn-primary btn-lg" />
+			</form>
+		</div>
+		<%- include("footer") %>
+	</body>
+</html>

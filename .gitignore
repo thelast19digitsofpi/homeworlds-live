@@ -1,0 +1,6 @@
+stuff/
+*.sublime-workspace
+node_modules/
+*.pem
+.data/
+backups/

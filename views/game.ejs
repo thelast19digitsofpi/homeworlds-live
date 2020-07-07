@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Game Sandbox</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		
+		<div id="game-container"></div>
+		
+		<%- include("footer") %>
+		
+		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+  		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+  		<!-- Babel -->
+  		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  		<!-- Scripts for game components -->
+  		<script src="/scripts/game/gameState.js" type="text/javascript"></script> <!-- pure js -->
+  		<script src="/scripts/game/actionInProgress.jsx" type="text/babel"></script>
+  		<script src="/scripts/game/piece.jsx" type="text/babel"></script>
+  		<script src="/scripts/game/system.jsx" type="text/babel"></script>
+  		<script src="/scripts/game/action_popup.jsx" type="text/babel"></script>
+  		<script src="/scripts/game/stash.jsx" type="text/babel"></script>
+  		<script src="/scripts/game/starmap.jsx" type="text/babel"></script>
+  		<script src="/scripts/game/game.jsx" type="text/babel"></script>
+  		<!-- Socket -->
+  		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
+	</body>
+</html>

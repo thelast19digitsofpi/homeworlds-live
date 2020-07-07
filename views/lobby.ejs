@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Game Lobby</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			
+			<!-- hmmm... -->
+			
+			<!-- looks like we need some React -->
+			<div id="lobby-container"></div>
+			
+		</div>
+		<%- include("footer") %>
+		<!-- Socket -->
+  		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
+		<!-- React -->
+		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+  		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+  		<!-- Babel -->
+  		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  		
+  		<script>
+const socket = io("/lobby");
+socket.on("disconnect", function(args) {
+	console.error("SOCKET DISCONNECTED", arguments);
+});
+		</script>
+  		
+  		<script src="/scripts/lobby/alerts.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+  		<script src="/scripts/lobby/createGame.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+  		<script src="/scripts/lobby/gameRooms.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+  		<script src="/scripts/lobby/specificRoom.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+  		<script src="/scripts/lobby/whosOnline.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+  		<script src="/scripts/lobby/mainLobby.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+	</body>
+</html>

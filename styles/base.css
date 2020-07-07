@@ -1,0 +1,82 @@
+body {
+	/*font-family: Verdana, sans-serif;*/
+	font-size: 1rem;
+	background-image: url("/images/background.svg");
+}
+
+@include media-breakpoint-up(md) {
+	body {
+		font-size: 1.1rem;
+	}
+}
+
+/* Game styling */
+
+.star-map-wrapper {
+}
+.star-map {
+	min-height: 67vh;
+	position: relative;
+}
+
+.homeworld {
+	position: absolute;
+	width: 100%;
+	text-align: center;
+}
+.homeworld-yours {
+	bottom: 0;
+}
+.homeworld-enemy {
+	top: 0;
+}
+
+
+.system-container {
+	padding-left: 2em;
+}
+.system-container:not(.homeworld) {
+	padding-top: 1em;
+}
+
+.stash {
+}
+/* Special rendering for stash pieces */
+.stash-table td {
+	padding: 0.25em;
+	height: 1px;
+	min-width: 15px;
+}
+.stash-table td .flexxer {
+	top: 0;
+	margin: 0;
+	bottom: 0;
+	height: 100%;
+	display: flex;
+	flex-direction: column-reverse;
+	justify-content: flex-start;
+}
+.stash-table img {
+	display: block;
+}
+.stash-table img:not(:last-child) {
+	/* I have no idea why these particular numbers worked */
+	margin-top: calc(17px - 160%);
+}
+
+/* Highlight pieces by making them fade out and in */
+@keyframes fade {
+	from { opacity: 1; }
+	to { opacity: 0.33; }
+}
+.piece[highlight] {
+	animation-name: fade;
+	animation-duration: 0.5s;
+	animation-direction: alternate;
+}
+
+/* Action popup */
+.action-popup {
+	position: absolute;
+	background-color: rgba(6, 6, 6, 0.5);
+}
