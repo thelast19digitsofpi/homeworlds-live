@@ -149,6 +149,13 @@ Lobby.prototype.onSocketDisconnect = function(socket) {
 	console.warn("[Lobby#onSocketDisconnect] Username not found...");
 };
 
+// 3... 2... 1... Launch!
+Lobby.prototype.startGame = function(gameRoom) {
+	if (gameRoom.canStartForReal()) {
+		
+	}
+};
+
 const gameLobby = new Lobby();
 
 app.get("/lobby", function(req, res) {
@@ -323,10 +330,13 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		}
 	});
 	
+	// begin the launch sequence, as I call it
 	socket.on("startGame", function onStartGame(roomID) {
-		socket.emit("gameRoomError", {
-			
-		})
+		
+	});
+	
+	socket.on("confirmStart", function onConfirmStart(roomID) {
+		
 	});
 	
 	socket.on("disconnect", function onSocketDisconnect() {
