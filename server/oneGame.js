@@ -1,13 +1,12 @@
-// server-game.js
+// oneGame.js
 //
-// Maybe its presence in the "server/" directory is sufficient...
-// But in Sublime it just shows as "game.js", so...
-// I wonder if I should just use some kind of symbolic link?
+// This file does not know that the games.js file exists.
 
 const {app} = require("./https.js");
 const {io, checkSocketCookie} = require("./socket.js");
 const Player = require("./player.js");
 const GameState = require("../scripts/game/gameState.js");
+const GameClock = require("./game-clock.js");
 
 // This might work...
 function Game(id, options, players) {
@@ -42,16 +41,3 @@ Game.prototype.doMove = function(player, move) {
 	
 }
 
-
-
-
-
-
-
-
-const ioGame = io.of("/game");
-ioGame.use(checkSocketCookie);
-
-ioGame.on("connection", function() {
-	console.log("Connection to some game");
-});
