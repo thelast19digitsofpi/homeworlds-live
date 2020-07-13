@@ -64,13 +64,13 @@ GameRoom.prototype.onPlayerJoin = function(player) /* throws */ {
 			this.players.push(player);
 			return true;
 		} else {
-			throw new UserError("This room has filled up because other invited players joined before you. You need to join another room.");
+			throw new UserError("This room has filled up because other invited players joined before you. You need to join or create another room.");
 		}
 	} else {
 		// You are just randomly joining.
 		// check that there is room
 		if (this.players.length + this.invitedPlayers.length >= this.numPlayers) {
-			throw new UserError("This room has filled up. You need to join another room.");
+			throw new UserError("This room has filled up. You need to join or create another room.");
 		}
 		// no duplicates allowed
 		const index = this.players.indexOf(player);
@@ -78,8 +78,9 @@ GameRoom.prototype.onPlayerJoin = function(player) /* throws */ {
 			this.players.push(player);
 			return true;
 		} else {
-			// TODO: Send socket error message? Or not?
-			throw new UserError("You joined a game that you are already in!");
+			// Double clicks are common. Don't complain loudly.
+			console.error("You joined a game that you are already in!");
+			return false;
 		}
 	}
 }
@@ -102,6 +103,17 @@ GameRoom.prototype.removeInvitation = function(player) {
 	} else {
 		// I mean, you could double-click the leave btn by mistake or something
 		console.warn("Improper canceling of an invitation removal!");
+	}
+}
+
+// Generic function that sends all players a message.
+// Takes the io namespace as a parameter.
+// TODO: Instead maybe use socket.io rooms?
+GameRoom.prototype.sendUpdate = function(ioNamespace) {
+	for (let i = 0; i < this.players.length; i++) {
+		ioNamespace
+			.to("player-" + this.players[i].username)
+			.emit("roomUpdate", this);
 	}
 }
 

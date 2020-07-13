@@ -100,24 +100,57 @@ class SpecificRoom extends React.Component {
 		</li>
 	}
 	
+	clearError() {
+		this.setState({error: null});
+	}
+	
 	/* Button click methods */
 	
+	// all rather simple
 	startGame() {
-		alert("Not Supported");
+		socket.emit("prepareStartGame", this.props.room.id);
+		this.clearError();
 	}
 	
 	joinGame() {
 		socket.emit("joinGame", this.props.room.id);
+		this.clearError();
 	}
 	
 	leaveGame() {
 		socket.emit("leaveGame", this.props.room.id);
+		this.clearError();
 	}
 	
+	// ok this needs more information
 	removePlayer(username) {
 		socket.emit("removePlayer", this.props.room.id, username);
+		this.clearError();
 	}
 	
+	confirmStart() {
+		socket.emit("confirmStart", this.props.room.id);
+		this.clearError();
+	}
+	
+	cancelStart() {
+		socket.emit("cancelStart", this.props.room.id);
+		this.clearError();
+	}
+	
+	// Launch sequence
+	haveYouConfirmed() {
+		const room = this.props.room;
+		for (let i = 0; i < room.confirmedStart.length; i++) {
+			const player = room.confirmedStart[i];
+			if (player.username === yourUsername) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	// some event listeners, and since SpecificRoom gets unmounted, we need a socket.off()
 	componentDidMount() {
 		socket.on("gameRoomError", function(error) {
 			this.setState({
@@ -137,7 +170,7 @@ class SpecificRoom extends React.Component {
 		let yourStatus = this.getYourStatus();
 		
 		const stayConnectedWarning = (
-			<h6 className="text-warning"><strong>Note: You must keep this tab open or you will be removed from the game.</strong> When {yourStatus.owner ? "you are" : "the owner is"} ready to play, ALL players must confirm they wish to play before the game starts.</h6>
+			<h6 className="text-primary"><strong>Note: You must keep a tab open to the lobby, or you will be <u>removed from the game</u>.</strong> When {yourStatus.owner ? "you are" : "the owner is"} ready to play, ALL players must confirm they wish to play before the game starts.</h6>
 		)
 		
 		// if you are the owner
@@ -154,6 +187,27 @@ class SpecificRoom extends React.Component {
 		const joinGameButton = <button className="btn btn-lg btn-success"
 			onClick={() => this.joinGame()}>Join Game</button>
 		
+		
+		const roomControls = <React.Fragment>
+			{yourStatus.joined && stayConnectedWarning}
+			<hr/>
+			<p>
+				{yourStatus.owner && startGameButton}
+				{yourStatus.joined ? leaveGameButton : joinGameButton}
+			</p>
+		</React.Fragment>
+		
+		// UI for the launch sequence!
+		const launchSequenceUI = <p className="lead">
+			This game is starting!&#160;
+			{this.haveYouConfirmed() ? " Waiting for all players to confirm..." : (<React.Fragment>
+				You need to
+				<button onClick={() => this.confirmStart()} className="btn btn-primary">confirm you are ready!</button>
+				Or, if you want, you can
+				<button onClick={() => this.cancelStart()} className="btn btn-danger">cancel</button> the game starting.
+			</React.Fragment>)}
+		</p>
+		
 		// Render!
 		return <div className="container">
 			<h4>Game Room #{room.id}</h4>
@@ -162,12 +216,18 @@ class SpecificRoom extends React.Component {
 				&bull;
 				Time control: {this.getTimeControlString()}
 			</h5>
-			{yourStatus.joined && stayConnectedWarning}
-			<hr/>
-			<p>
-				{yourStatus.owner && startGameButton}
-				{yourStatus.joined ? leaveGameButton : joinGameButton}
-			</p>
+			
+			{ /* Rendering the Error Message */
+				this.state.error && 
+				<p className="text-danger">
+					{this.state.error}
+					<button class="btn btn-secondary btn-small" onClick={() => this.clearError()}>OK</button>
+				</p>
+			}
+			
+			{room.isStarting ? launchSequenceUI : roomControls}
+			
+			{/* Player Lists */}
 			<div className="row">
 				<div className="col">
 					<h5>Players Joined</h5>
@@ -178,7 +238,11 @@ class SpecificRoom extends React.Component {
 				<div className="col">
 					<h5>Players Invited</h5>
 					<ul className="list-group">
-						{room.invitedPlayers.map(this.playerToLi)}
+						{ /* Show the list of invited players, or the word "none" */
+							room.invitedPlayers.length > 0 ?
+							room.invitedPlayers.map(this.playerToLi) :
+							<li className="list-group-item">(none)</li>
+						}
 					</ul>
 				</div>
 			</div>

@@ -7,6 +7,8 @@
 	<body>
 		<%- include("header") %>
 		
+		<h3 class="title">Homeworlds Sandbox</h3>
+		<h5 class="subtitle">Play all sides of a game of Homeworlds with this sandbox.</h5>
 		<div id="game-container"></div>
 		
 		<%- include("footer") %>
@@ -15,17 +17,6 @@
 		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
 		<!-- Babel -->
 		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-		
-		<!-- Socket -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
-		
-		<script>
-const socket = io("/game");
-socket.on("disconnect", function(args) {
-	console.error("SOCKET DISCONNECTED", arguments);
-});
-		</script>
-		
 		<!-- Scripts for game components -->
 		<script src="/scripts/game/gameState.js" type="text/javascript"></script> <!-- pure js -->
 		<script src="/scripts/game/actionInProgress.jsx" type="text/babel"></script>
@@ -36,7 +27,9 @@ socket.on("disconnect", function(args) {
 		<script src="/scripts/game/starmap.jsx" type="text/babel"></script>
 		<script src="/scripts/game/game.jsx" type="text/babel"></script>
 		
-		<!-- Live game script (includes sockets and timers and so on) -->
-		<script src="/scripts/game/liveGame.jsx" type="text/babel"></script>
+		<script>
+const gameElement = React.createElement(Game);
+ReactDOM.render(gameElement, document.getElementById('game-container'));
+		</script>
 	</body>
 </html>

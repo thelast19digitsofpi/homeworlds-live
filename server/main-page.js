@@ -9,6 +9,10 @@ app.get("/", function(req, res) {
  	res.render("index", res.locals.render);
 });
 
+// The sandbox is a simple way to play around with Homeworlds positions
+app.get("/sandbox", function(req, res) {
+	res.render("sandbox", res.locals.render);
+})
 
 // Opening specific games like /game/5
 app.get("/game/:gameid", function(req, res) {

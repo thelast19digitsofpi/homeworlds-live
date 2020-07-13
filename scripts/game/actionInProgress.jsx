@@ -25,8 +25,18 @@ function ActionInProgress(props) {
 			aip.type === "discover" ? "add_location" :
 			aip.type === "homeworld" ? "add_box" : "info" // info is the fallback
 		);
+		
+		// Visually display the homeworld progress
+		let stars = null;
+		if (aip.type === "homeworld") {
+			stars = <span className="mr-2">
+				{aip.star1 && <Piece type="star" serial={aip.star1} scaleFactor={0.25} />}
+				{aip.star2 && <Piece type="star" serial={aip.star2} scaleFactor={0.25} />}
+			</span>
+		}
+		
 		return <p className="alert alert-secondary">
-			<i className="material-icons mr-1">{icon}</i>
+			{stars || <i className="material-icons mr-1">{icon}</i>}
 			{message}
 		</p>;
 	} else {

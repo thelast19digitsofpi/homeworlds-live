@@ -121,7 +121,7 @@ class MainLobby extends React.Component {
 		socket.emit("updatePlease");
 		const intervalID = setInterval(function() {
 			socket.emit("updatePlease");
-		}, 3500);
+		}, 2000);
 		this.setState({
 			updateIntervalID: intervalID,
 		});
@@ -141,6 +141,14 @@ class MainLobby extends React.Component {
 		
 		socket.on("createGameSuccess", () => {
 			this.showGameList();
+		});
+		
+		
+		
+		// The final event handler
+		// Seems so anti-climactic
+		socket.on("gameStart", function(data) {
+			location = "/game/" + data.roomID;
 		});
 	}
 	

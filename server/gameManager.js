@@ -9,6 +9,7 @@
 const Player = require("./player.js");
 const Game = require("./oneGame.js");
 const db = require("./database.js");
+const {io, checkSocketCookie} = require("./socket.js");
 
 const ioGame = io.of("/game");
 ioGame.use(checkSocketCookie);
@@ -46,29 +47,26 @@ GameManager.prototype.getGameByUsername = function(givenUsername) {
 // Note that this does not require lobbyGameRoom.js...
 GameManager.prototype.startGameByRoom = function(gameRoom) {
 	// This can NOT POSSIBLY be all there is...
-	const newGame = new Game(gameRoom.id, gameRoom.options, gameRoom.players);
+	// .slice() to copy the array
+	const newGame = new Game(gameRoom.id, gameRoom.options, gameRoom.players.slice());
 	this.games.push(newGame);
 	// Add the new players to the list of players in our game collection
 	// But is this really needed?
 	for (let i = 0; i < gameRoom.players.length; i++) {
-		this.players.push(gameRoom.players[i]);
+		const player = gameRoom.players[i];
+		if (this.players.indexOf(player) === -1) {
+			this.players.push(player);
+		}
 	}
 }
 
-
+// I am not sure what I want the procedure to be for this
+// After all, this could easily blast thru my file limits
 GameManager.prototype.backupToDatabase = function() {
-	
+	console.warn("Nope");
 }
 
-
-const gameManager = new GameManager();
-
-ioGame.on("connection", function(socket) {
-	console.log("Connection to some game");
-	
-	// So you have just connected to the game world
-	// Find your seat...
-	const thisUsername = socket._username;
+GameManager.prototype.onSocketConnect = function() {
 	const yourGame = gameManager.getGameByUsername(thisUsername);
 	if (!yourGame) {
 		console.error("ERROR: No game found for user!", thisUsername);
@@ -78,8 +76,28 @@ ioGame.on("connection", function(socket) {
 		});
 		return;
 	}
+
+	socket.emit("gameLoaded", {
+		game: yourGame,
+	});
+}
+
+const gameManager = new GameManager();
+
+ioGame.on("connection", function(socket) {
+	console.log("Connection to some game");
+	
+	// So you have just connected to the game world
+	// Find your seat...
+	const thisUsername = socket._username;
+	gameManager.onSocketConnect(socket);
+	
+	// Event listeners
+	socket.on("doAction", function(data) {
+		
+	});
 });
 
 module.exports = {
-	
+	gameManager: gameManager,
 }

@@ -19,25 +19,46 @@ function Game(id, options, players) {
 	this.history = [[]]; // a lot like the client's...
 }
 
-Game.prototype.doMove = function(player, move) {
-	console.log("Game move", player, move);
-	/*
-	roughly:
-	let valid = false;
-	if (move is a build) {
-		check build
-		do build
-	} else if (...) {
-		...
-	} else {
-		error(invalid move type)
-	}
+Game.prototype.doAction = function(player, action) {
+	console.log("Game move", player, action);
 	
-	if (valid) {
-		update game state
-		send info to all players
+	let newState;
+	// Each doThing() function throws if the move is illegal.
+	try {
+		switch (action.type) {
+			case "homeworld":
+				newState = current.doHomeworld(player, action.star1, action.star2, action.ship);
+				break;
+			case "build":
+				newState = current.doBuild(player, action.newPiece, action.system);
+				break;
+			case "trade":
+				newState = current.doTrade(player, action.oldPiece, action.newPiece);
+				break;
+			case "move":
+				newState = current.doMove(player, action.oldPiece, action.system);
+				break;
+			case "discover":
+				// the "newPiece" is the new star you discover
+				newState = current.doDiscovery(player, action.oldPiece, action.newPiece);
+				break;
+			case "steal":
+				newState = current.doSteal(player, action.oldPiece);
+				break;
+			case "sacrifice":
+				newState = current.doSacrifice(player, action.oldPiece);
+				break;
+			case "catastrophe":
+				newState = current.doCatastrophe(action.color, action.system);
+				break;
+			default:
+				throw new Error("Invalid action type " + action.type + ". Could be a bug!");
+		}
+	} catch (error) {
+		if (error.constructor === Error) {
+			newState = 
+		}
 	}
-	*/
-	
 }
 
+module.exports = Game;

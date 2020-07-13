@@ -7,7 +7,9 @@ const {io, checkSocketCookie} = require("./socket.js");
 const {promiseTimeout} = require("./my-util.js");
 const Player = require("./player.js");
 const GameRoom = require("./lobbyGameRoom.js");
+const {gameManager} = require("./gameManager.js");
 
+const ioLobby = io.of("/lobby");
 
 // Lobby.
 function Lobby() {
@@ -123,10 +125,13 @@ Lobby.prototype.cleanup = function() {
 };
 // When you connect, either make a new player or reconnect an existing one
 Lobby.prototype.onSocketConnect = function(socket) {
+	// Check if you are already in the lobby (temporary disconnect)
 	for (let i = 0; i < this.players.length; i++) {
-		if (this.players[i].username === socket._username) {
+		const existingPlayer = this.players[i];
+		if (existingPlayer.username === socket._username) {
 			// match!
-			this.players[i].onReconnect();
+			existingPlayer.onReconnect();
+			socket.join("player-" + existingPlayer.username);
 			return;
 		}
 	}
@@ -145,14 +150,29 @@ Lobby.prototype.onSocketDisconnect = function(socket) {
 			return;
 		}
 	}
-	// There is nothing else to do. Altho this situation is quite weird.
+	// Else there is nothing else to do. Altho this situation is quite weird.
 	console.warn("[Lobby#onSocketDisconnect] Username not found...");
 };
 
 // 3... 2... 1... Launch!
 Lobby.prototype.startGame = function(gameRoom) {
 	if (gameRoom.canStartForReal()) {
+		gameManager.startGameByRoom(gameRoom);
+		for (let i = 0; i < gameRoom.players.length; i++) {
+			const player = gameRoom.players[i];
+			// Signal that the game is starting
+			ioLobby.to(`player-${player.username}`).emit("gameStart", {
+				roomID: gameRoom.id,
+			});
+		}
+		console.log("Game is starting, FOR REAL!!", gameRoom.id);
 		
+		// Remove these players from the lobby.
+		for (let i = gameRoom.players.length - 1; i >= 0; i--) {
+			this.onPlayerLeave(gameRoom.players[i]);
+		}
+	} else {
+		console.log(".startGame() called, but game cannot start!", gameRoom.id);
 	}
 };
 
@@ -170,7 +190,6 @@ app.get("/lobby", function(req, res) {
 
 
 
-const ioLobby = io.of("/lobby");
 ioLobby.use(checkSocketCookie);
 
 
@@ -271,7 +290,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		if (you && room) {
 			try {
 				room.onPlayerJoin(you);
-				sendUpdate(socket);
+				room.sendUpdate(ioLobby);
 			} catch (error) {
 				if (error.isUserError) {
 					// Send it
@@ -290,7 +309,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		if (you && room) {
 			room.onPlayerLeave(you);
 			gameLobby.cleanup();
-			sendUpdate(socket);
+			room.sendUpdate(ioLobby);
 		} else {
 			socket.emit("gameRoomError", {
 				message: "You have attempted to leave a room that does not exist!",
@@ -316,7 +335,8 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 				} else {
 					console.warn("Player " + theirUsername + " was kicked from a room they were not in or invited to!");
 				}
-				sendUpdate(socket);
+				gameLobby.cleanup();
+				room.sendUpdate(ioLobby);
 			} else {
 				socket.emit("gameRoomError", {
 					message: "You do not have permission to remove players. You are not the room's owner.",
@@ -331,12 +351,93 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 	});
 	
 	// begin the launch sequence, as I call it
-	socket.on("startGame", function onStartGame(roomID) {
-		
+	socket.on("prepareStartGame", function onStartGame(roomID) {
+		const room = gameLobby.getRoomById(roomID);
+		const you = gameLobby.getPlayerByUsername(thisUsername);
+		if (room && you) {
+			try {
+				room.prepareToStart(you);
+				room.sendUpdate(ioLobby);
+			} catch (error) {
+				if (error.isUserError) {
+					socket.emit("gameRoomError", error);
+				} else {
+					console.error("Bad Thing Happened");
+				}
+				console.log(error);
+			}
+		} else {
+			// no room, that's odd...
+			if (!room) {
+				socket.emit("gameRoomError", {
+					message: "Uh, that room does not exist. This is most likely a bug...",
+				});
+			} else {
+				socket.emit("gameRoomError", {
+					message: "You seem to have been signed out. Please reload the page!",
+				});
+			}
+		}
 	});
 	
 	socket.on("confirmStart", function onConfirmStart(roomID) {
-		
+		const room = gameLobby.getRoomById(roomID);
+		const you = gameLobby.getPlayerByUsername(thisUsername);
+		if (room && you) {
+			let confirmed = false;
+			try {
+				room.onPlayerConfirmStart(you);
+				// if we got to here...
+				confirmed = true;
+			} catch (error) {
+				if (error.isUserError) {
+					socket.emit("gameRoomError", error);
+				} else {
+					console.error("Bad Thing Happened");
+				}
+				console.log(error);
+			}
+			
+			// OK, so NOW, if we did indeed confirm, see if we can start
+			// I'm getting excited...
+			if (confirmed) {
+				room.sendUpdate(ioLobby);
+				if (room.canStartForReal()) {
+					// Launch sequence complete!
+					gameLobby.startGame(room);
+				}
+			}
+		} else {
+			// no room, that's odd...
+			if (!room) {
+				socket.emit("gameRoomError", {
+					message: "Uh, that room does not exist. This is most likely a bug...",
+				});
+			} else {
+				socket.emit("gameRoomError", {
+					message: "You seem to have been signed out. Please reload the page!",
+				});
+			}
+		}
+	});
+	
+	socket.on("cancelStart", function onCancelStart(roomID) {
+		const room = gameLobby.getRoomById(roomID);
+		const you = gameLobby.getPlayerByUsername(thisUsername);
+		if (room && you) {
+			room.onPlayerCancelStart(you);
+		} else {
+			// no room, that's odd...
+			if (!room) {
+				socket.emit("gameRoomError", {
+					message: "Uh, that room does not exist. This is most likely a bug...",
+				});
+			} else {
+				socket.emit("gameRoomError", {
+					message: "You seem to have been signed out. Please reload the page!",
+				});
+			}
+		}
 	});
 	
 	socket.on("disconnect", function onSocketDisconnect() {
