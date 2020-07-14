@@ -8,11 +8,13 @@
 /*
 PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
 - [+] current (or gameState): GameState to start with.
-- [+] players: The players that are playing the game. I think only strings work.
+- [+] players: The array of players that are playing the game. I think only strings work.
 
 EVENTS:
 - [?] onBeforeAction(action, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* counts as *true*, but console.log()s a warning.
 - [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
+- [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
+- [ ] onAfterEndTurn(player, newState): 
 - [?] onMount(): Called inside componentDidMount.
 - [?] onUnmount(): Called inside componentWillUnmount.
 */
@@ -41,10 +43,12 @@ function withGame(WrappedComponent, events, additionalState) {
 				actionInProgress: {
 					type: "homeworld",
 				},
-				
-				// Everything else comes from additionalState
-				...additionalState,
 			};
+			
+			// extend or alter that state
+			for (let key in additionalState) {
+				this.state[key] = additionalState[key];
+			}
 			
 			// for my debugging!
 			window._g = this;
@@ -251,6 +255,7 @@ function withGame(WrappedComponent, events, additionalState) {
 					// I explicitly stated that "undefined" return is considered a true
 					// I think undefined -> block causes more pain than good
 					// but false/null/0/"" do block
+					console.log("Validity:", valid);
 					if (!valid && valid !== undefined) {
 						doUpdate = false;
 					}
@@ -480,7 +485,8 @@ function withGame(WrappedComponent, events, additionalState) {
 				}
 			</p>
 			
-			return <WrappedComponent>
+			// I am not sure if sending the entire state object is "correct"
+			return <WrappedComponent data={this.state}>
 				<div className="game row">
 					<div className="star-map-wrapper col">
 						<div className="star-map">

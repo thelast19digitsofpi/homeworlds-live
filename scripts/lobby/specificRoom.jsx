@@ -60,7 +60,7 @@ class SpecificRoom extends React.Component {
 			owner: false,
 		};
 		for (let i = 0; i < room.players.length; i++) {
-			if (room.players[i].username === yourUsername) {
+			if (room.players[i].username === YOUR_USERNAME) {
 				status.joined = true;
 				if (i === 0) { // owner is always first on the list
 					status.owner = true;
@@ -68,7 +68,7 @@ class SpecificRoom extends React.Component {
 			}
 		}
 		for (let i = 0; i < room.invitedPlayers.length; i++) {
-			if (room.invitedPlayers[i].username === yourUsername) {
+			if (room.invitedPlayers[i].username === YOUR_USERNAME) {
 				status.invited = true;
 			}
 		}
@@ -143,7 +143,7 @@ class SpecificRoom extends React.Component {
 		const room = this.props.room;
 		for (let i = 0; i < room.confirmedStart.length; i++) {
 			const player = room.confirmedStart[i];
-			if (player.username === yourUsername) {
+			if (player.username === YOUR_USERNAME) {
 				return true;
 			}
 		}

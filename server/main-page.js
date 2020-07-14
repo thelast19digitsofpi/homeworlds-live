@@ -14,7 +14,3 @@ app.get("/sandbox", function(req, res) {
 	res.render("sandbox", res.locals.render);
 })
 
-// Opening specific games like /game/5
-app.get("/game/:gameid", function(req, res) {
-	res.render("game", res.locals.render);
-});

@@ -5,7 +5,7 @@
 // This is to oneGame.js as lobby.js is to lobbyGameRoom.js,
 // but this does not know that lobby.js exists.
 
-
+const {app} = require("./https.js");
 const Player = require("./player.js");
 const Game = require("./oneGame.js");
 const db = require("./database.js");
@@ -13,7 +13,6 @@ const {io, checkSocketCookie} = require("./socket.js");
 
 const ioGame = io.of("/game");
 ioGame.use(checkSocketCookie);
-
 
 
 function GameManager() {
@@ -26,19 +25,6 @@ GameManager.prototype.getGameById = function(givenID) {
 		const game = this.games[i];
 		if (game.id === givenID) {
 			return game;
-		}
-	}
-	return null;
-}
-
-// When a player connects, we check if they have a game active.
-GameManager.prototype.getGameByUsername = function(givenUsername) {
-	for (let i = 0; i < this.games.length; i++) {
-		const game = this.games[i];
-		for (let j = 0; j < game.players.length; j++) {
-			if (game.players[j].username === givenUsername) {
-				return game;
-			}
 		}
 	}
 	return null;
@@ -66,23 +52,21 @@ GameManager.prototype.backupToDatabase = function() {
 	console.warn("Nope");
 }
 
-GameManager.prototype.onSocketConnect = function() {
-	const yourGame = gameManager.getGameByUsername(thisUsername);
-	if (!yourGame) {
-		console.error("ERROR: No game found for user!", thisUsername);
-		socket.emit("userNotFound", null, function() {
-			// When we confirm they received userNotFound, disconnect them.
-			socket.disconnect(true);
-		});
-		return;
-	}
-
-	socket.emit("gameLoaded", {
-		game: yourGame,
-	});
-}
 
 const gameManager = new GameManager();
+
+// Opening specific games like /game/5.
+// Unfortunately socket.io has different req/res from Express...
+app.get("/game/:gameID", function(req, res) {
+	const requestedID = req.params.gameID;
+	const game = gameManager.getGameById(requestedID);
+	if (game) {
+		res.locals.render.gameID = req.params.gameID;
+		res.render("game", res.locals.render);
+	} else {
+		//res.render("error", res.locals.render);
+	}
+});
 
 ioGame.on("connection", function(socket) {
 	console.log("Connection to some game");
@@ -92,9 +76,33 @@ ioGame.on("connection", function(socket) {
 	const thisUsername = socket._username;
 	gameManager.onSocketConnect(socket);
 	
+	// Listen for an ask of what game it is
+	socket.on("getGame", function(id) {
+		const game = gameManager.getGameById(id);
+		if (game) {
+			// You are allowed to watch games in progress. I think.
+			if (game.getPlayerByUsername(thisUsername) !== null) {
+				// let them know they are playing?
+			}
+			// maybe this could be more refined? hmmm...
+			socket.emit("gamePosition", game);
+		} else {
+			// Game does not exist
+			// ...but why?
+		}
+	});
+	
+	
 	// Event listeners
 	socket.on("doAction", function(data) {
-		
+		const game = gameManager.getGameById(data.gameID);
+		if (game) {
+			
+		} else {
+			socket.emit("actionError", {
+				message: "You are not playing in this game. You cannot "
+			})
+		}
 	});
 });
 

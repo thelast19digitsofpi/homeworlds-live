@@ -8,9 +8,12 @@ const Player = require("./player.js");
 const GameState = require("../scripts/game/gameState.js");
 const GameClock = require("./game-clock.js");
 
+const ioGame = io.of("/game");
+
 // This might work...
 function Game(id, options, players) {
 	this.id = id;
+	this.socketRoom = "game-" + this.id.toString();
 	this.options = options;
 	this.players = players;
 	this.clocks = [];
@@ -19,8 +22,21 @@ function Game(id, options, players) {
 	this.history = [[]]; // a lot like the client's...
 }
 
-Game.prototype.doAction = function(player, action) {
-	console.log("Game move", player, action);
+// standard
+Game.prototype.getPlayerByUsername = function(username) {
+	for (let i = 0; i < this.players.length; i++) {
+		if (this.players[i].username === username) {
+			return this.players[i];
+		}
+	}
+	return null;
+};
+
+// TODO: I am not sure what to do about race conditions
+// e.g. Alice has a lagged connection and sends "sacrifice ..." then 2 moves
+// but the move is received before the sacrifice
+Game.prototype.doAction = function(action, player) {
+	console.log("Game move", action, player);
 	
 	let newState;
 	// Each doThing() function throws if the move is illegal.
@@ -54,9 +70,20 @@ Game.prototype.doAction = function(player, action) {
 			default:
 				throw new Error("Invalid action type " + action.type + ". Could be a bug!");
 		}
+		
+		this.history[this.history.length - 1].push(newState);
+		this.currentState = newState;
+		ioGame.to(this.socketRoom).emit("action", {
+			player: player,
+			action: action,
+		});
 	} catch (error) {
 		if (error.constructor === Error) {
-			newState = 
+			ioGame.to("player-" + player.username).emit("actionError", {
+				message: "Your move was considered illegal. You may be out of sync. The message was:\n" + error,
+			});
+		} else {
+			console.error("[Game#doAction] Problem:", error);
 		}
 	}
 }

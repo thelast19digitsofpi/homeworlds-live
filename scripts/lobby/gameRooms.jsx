@@ -28,7 +28,7 @@ function GameRooms(props) {
 		// If you are in the room...
 		for (let j = 0; j < room.players.length; j++) {
 			const player = room.players[j];
-			if (player.username === yourUsername) {
+			if (player.username === YOUR_USERNAME) {
 				// Use blue for rooms you own
 				rowClassName = (j === 0 ? "table-primary" : "table-secondary");
 				break;
@@ -37,7 +37,7 @@ function GameRooms(props) {
 		// Or if you are invited...
 		for (let j = 0; j < room.invitedPlayers.length; j++) {
 			const player = room.invitedPlayers[j];
-			if (player.username === yourUsername) {
+			if (player.username === YOUR_USERNAME) {
 				rowClassName = "table-warning";
 			}
 		}
