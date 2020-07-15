@@ -81,7 +81,7 @@ Game.prototype.doEndTurn = function(player) {
 	console.log("End turn", player);
 	
 	const name = player.username;
-	const newState = current.doEndTurn(player);
+	const newState = this.currentState.doEndTurn();
 	
 	// hmmm... should I instead make the history a private variable?
 	this.history.push([newState]);

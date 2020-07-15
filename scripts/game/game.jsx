@@ -280,12 +280,6 @@ function withGame(WrappedComponent, events, additionalState) {
 		
 		doEndTurn(player) {
 			const current = this.getCurrentState();
-			// check that you are authorized to do this
-			if (events.canInteract && !events.canInteract.call(this, current)) {
-				// meant as a silent failure, but I want to know about it
-				console.warn("Player cannot interact with the board at this time.");
-				return;
-			}
 			const newState = current.doEndTurn();
 			// whoa there... check that you actually can end the turn
 			if (events.onBeforeEndTurn && 
@@ -587,7 +581,7 @@ function withGame(WrappedComponent, events, additionalState) {
 						{/* todo: clicking "end turn" should check for warnings like overpopulations */}
 						<button className="btn btn-lg btn-info"
 						        disabled={!canInteract}
-						        onClick={() => this.doEndTurn()}>End Turn</button>
+						        onClick={() => this.doEndTurn(current.turn)}>End Turn</button>
 					</div>
 				</div>
 			</WrappedComponent>;

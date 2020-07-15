@@ -197,7 +197,7 @@ class GameState {
 	
 	// Pass in 2 parameters, each either a piece or an array of pieces.
 	// Returns true if all sizes in star1 are different from every size in star2.
-	areStarsConnected(stars1, stars2) {
+	static areStarsConnected(stars1, stars2) {
 		// Convert them both into arrays.
 		if (!(stars1 instanceof Array)) {
 			stars1 = [stars1];
@@ -402,7 +402,7 @@ class GameState {
 		// get the ship's system
 		const fromStars = this.getStarsAtSystem(data.at);
 		const toStars = this.getStarsAtSystem(destination);
-		return this.areStarsConnected(fromStars, toStars);
+		return GameState.areStarsConnected(fromStars, toStars);
 	}
 	
 	// Checks if the player can use one piece to discover another as a system.
@@ -432,7 +432,7 @@ class GameState {
 		const fromStars = this.getStarsAtSystem( shipData.at);
 		console.log("From", fromStars, "to", starSerial);
 		// It needs to be connected to the new star!
-		return this.areStarsConnected(fromStars, starSerial);
+		return GameState.areStarsConnected(fromStars, starSerial);
 	}
 	
 	// Checks if the player can attack (steal) the given ship.

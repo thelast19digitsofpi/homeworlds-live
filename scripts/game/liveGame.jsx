@@ -65,6 +65,7 @@ const LiveGame = withGame(LiveGameDisplay, {
 	onAfterAction: function(action, player, newState) {
 		console.warn("onAfterAction", player);
 		if (player === YOUR_USERNAME) {
+			console.log("emitting");
 			socket.emit("doAction", {
 				action: action,
 				gameID: GAME_ID,
@@ -72,8 +73,9 @@ const LiveGame = withGame(LiveGameDisplay, {
 		}
 	},
 	onAfterEndTurn: function(player, newState) {
-		console.warn("onAfterEndTurn");
+		console.warn("onAfterEndTurn", arguments);
 		if (player === YOUR_USERNAME) {
+			console.log("emitting");
 			socket.emit("doEndTurn", {
 				gameID: GAME_ID
 			});

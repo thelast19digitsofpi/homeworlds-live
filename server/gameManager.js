@@ -87,6 +87,7 @@ ioGame.on("connection", function(socket) {
 			}
 			// maybe this could be more refined? hmmm...
 			socket.emit("gamePosition", game);
+			socket.join(game.socketRoom);
 		} else {
 			// Game does not exist
 			// ...but why? This should have been caught...
@@ -140,7 +141,7 @@ ioGame.on("connection", function(socket) {
 			if (you) {
 				try {
 					// attempt to do the action
-					game.doAction(action, you);
+					game.doEndTurn(you);
 					// sends the action to everyone except the sender!
 					socket.to(game.socketRoom).emit("endTurn", {
 						player: you.username,
