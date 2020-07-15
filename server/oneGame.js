@@ -8,8 +8,6 @@ const Player = require("./player.js");
 const GameState = require("../scripts/game/gameState.js");
 const GameClock = require("./game-clock.js");
 
-const ioGame = io.of("/game");
-
 // This might work...
 function Game(id, options, players) {
 	this.id = id;
@@ -40,52 +38,54 @@ Game.prototype.doAction = function(action, player) {
 	
 	let newState;
 	// Each doThing() function throws if the move is illegal.
-	try {
-		switch (action.type) {
-			case "homeworld":
-				newState = current.doHomeworld(player, action.star1, action.star2, action.ship);
-				break;
-			case "build":
-				newState = current.doBuild(player, action.newPiece, action.system);
-				break;
-			case "trade":
-				newState = current.doTrade(player, action.oldPiece, action.newPiece);
-				break;
-			case "move":
-				newState = current.doMove(player, action.oldPiece, action.system);
-				break;
-			case "discover":
-				// the "newPiece" is the new star you discover
-				newState = current.doDiscovery(player, action.oldPiece, action.newPiece);
-				break;
-			case "steal":
-				newState = current.doSteal(player, action.oldPiece);
-				break;
-			case "sacrifice":
-				newState = current.doSacrifice(player, action.oldPiece);
-				break;
-			case "catastrophe":
-				newState = current.doCatastrophe(action.color, action.system);
-				break;
-			default:
-				throw new Error("Invalid action type " + action.type + ". Could be a bug!");
-		}
-		
-		this.history[this.history.length - 1].push(newState);
-		this.currentState = newState;
-		ioGame.to(this.socketRoom).emit("action", {
-			player: player,
-			action: action,
-		});
-	} catch (error) {
-		if (error.constructor === Error) {
-			ioGame.to("player-" + player.username).emit("actionError", {
-				message: "Your move was considered illegal. You may be out of sync. The message was:\n" + error,
-			});
-		} else {
-			console.error("[Game#doAction] Problem:", error);
-		}
+	const name = player.username;
+	const current = this.currentState;
+	switch (action.type) {
+		case "homeworld":
+			newState = current.doHomeworld(name, action.star1, action.star2, action.ship);
+			break;
+		case "build":
+			newState = current.doBuild(name, action.newPiece, action.system);
+			break;
+		case "trade":
+			newState = current.doTrade(name, action.oldPiece, action.newPiece);
+			break;
+		case "move":
+			newState = current.doMove(name, action.oldPiece, action.system);
+			break;
+		case "discover":
+			// the "newPiece" is the new star you discover
+			newState = current.doDiscovery(name, action.oldPiece, action.newPiece);
+			break;
+		case "steal":
+			newState = current.doSteal(name, action.oldPiece);
+			break;
+		case "sacrifice":
+			newState = current.doSacrifice(name, action.oldPiece);
+			break;
+		case "catastrophe":
+			newState = current.doCatastrophe(action.color, action.system);
+			break;
+		default:
+			throw new Error("Invalid action type " + action.type + ". Could be a bug!");
 	}
+	
+	// If we did NOT throw...
+	this.history[this.history.length - 1].push(newState);
+	this.currentState = newState;
+	
+	// Do not update the clocks or anything because we have not called endTurn()
+}
+
+Game.prototype.doEndTurn = function(player) {
+	console.log("End turn", player);
+	
+	const name = player.username;
+	const newState = current.doEndTurn(player);
+	
+	// hmmm... should I instead make the history a private variable?
+	this.history.push([newState]);
+	this.currentState = newState;
 }
 
 module.exports = Game;

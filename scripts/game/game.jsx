@@ -11,7 +11,8 @@ PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
 - [+] players: The array of players that are playing the game. I think only strings work.
 
 EVENTS:
-- [?] onBeforeAction(action, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* counts as *true*, but console.log()s a warning.
+- [ ] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
+- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* counts as *true*, but console.log()s a warning.
 - [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
 - [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
 - [ ] onAfterEndTurn(player, newState): 
@@ -40,9 +41,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				// Popup data for clicking on a ship.
 				popup: null,
 				// For actions in progress. E.g. you click the "trade" button THEN a stash piece.
-				actionInProgress: {
-					type: "homeworld",
-				},
+				actionInProgress: null,
 			};
 			
 			// extend or alter that state
@@ -60,7 +59,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 			// I will probably forget...
 			if (events.componentDidMount) {
-				console.log("events.componentDidMount -> onMount, please");
+				events.componentDidMount.call(this);
 			}
 		}
 		
@@ -71,7 +70,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			// again, I will probably forget
 			if (events.componentWillUnmount) {
 				console.log("events.componentWillUnmount -> onUnmount, please");
-				// but do it anyway
+				// but do it anyway (this would be a very difficult bug to trace)
 				events.componentWillUnmount.call(this);
 			}
 		}
@@ -214,6 +213,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			if (current.turn !== player) {
 				throw new Error("It is not your turn!");
 			}
+			
 			let newState;
 			try {
 				switch (action.type) {
@@ -251,7 +251,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				// Call any middleware (is that the right word?)
 				if (events.onBeforeAction) {
 					// return false to cancel the action
-					const valid = events.onBeforeAction.call(this, action, current, newState);
+					const valid = events.onBeforeAction.call(this, action, player, current, newState);
 					// I explicitly stated that "undefined" return is considered a true
 					// I think undefined -> block causes more pain than good
 					// but false/null/0/"" do block
@@ -262,9 +262,10 @@ function withGame(WrappedComponent, events, additionalState) {
 				}
 				
 				if (doUpdate) {
+					console.log("Updating!");
 					this.updateGameState(newState);
 					if (events.onAfterAction) {
-						events.onAfterAction.call(this, action, newState);
+						events.onAfterAction.call(this, action, player, newState);
 					}
 				}
 			} catch (error) {
@@ -277,13 +278,29 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 		}
 		
-		doEndTurn() {
+		doEndTurn(player) {
 			const current = this.getCurrentState();
+			// check that you are authorized to do this
+			if (events.canInteract && !events.canInteract.call(this, current)) {
+				// meant as a silent failure, but I want to know about it
+				console.warn("Player cannot interact with the board at this time.");
+				return;
+			}
 			const newState = current.doEndTurn();
+			// whoa there... check that you actually can end the turn
+			if (events.onBeforeEndTurn && 
+					!events.onBeforeEndTurn.call(this, player, oldState, newState)) {
+				console.log("Blocked");
+				return;
+			}
+			
 			this.updateGameState(newState, true);
-			// Clear any actions in progress
-			// but in homeworld setup we should start them off with something
-			if (newState.phase === "setup") {
+			if (events.onAfterEndTurn) {
+				events.onAfterEndTurn.call(this, player, newState);
+			}
+			// Clear any actions in progress.
+			// In homeworld setup phase, start the homeworld actionInProgress if it is your turn.
+			if (newState.phase === "setup" && events.canInteract.call(this, newState)) {
 				this.setState({
 					actionInProgress: {
 						type: "homeworld",
@@ -295,8 +312,8 @@ function withGame(WrappedComponent, events, additionalState) {
 				this.actionInProgress = null;
 			}
 			
-			// delay logging until after render
-			setTimeout(() => console.log(this.state.history), 100);
+			// // delay logging until after render
+			// setTimeout(() => console.log(this.state.history), 100);
 		}
 		
 		
@@ -329,6 +346,19 @@ function withGame(WrappedComponent, events, additionalState) {
 			window.___lastE = event.nativeEvent;
 			const aip = this.state.actionInProgress;
 			const current = this.getCurrentState();
+			
+			// are you authorized?
+			if (!events.canInteract.call(this, current)) {
+				// meant as a silent failure, but I want to know about it
+				console.warn("Player cannot do actions.");
+				// additionally, clear the AIP window so it is not stuck
+				this.setState({
+					actionInProgress: null,
+					popup: null,
+				});
+				return;
+			}
+			
 			if (aip) {
 				// If an action is in progress:
 				try {
@@ -369,6 +399,19 @@ function withGame(WrappedComponent, events, additionalState) {
 		
 		// Handles clicking on the action button.
 		handleButtonClick(actionData) {
+			const current = this.getCurrentState();
+			// are you authorized?
+			if (!events.canInteract.call(this, current)) {
+				// meant as a silent failure, but I want to know about it
+				console.warn("Player cannot do actions.");
+				// additionally, clear the UI so they are not stuck
+				this.setState({
+					actionInProgress: null,
+					popup: null,
+				});
+				return;
+			}
+			
 			let success = true;
 			try {
 				switch (actionData.type) {
@@ -376,7 +419,7 @@ function withGame(WrappedComponent, events, additionalState) {
 					case "steal":
 					case "sacrifice":
 					case "catastrophe":
-						this.doAction(actionData, this.getCurrentState().turn);
+						this.doAction(actionData, current.turn);
 						break;
 					case "trade":
 					case "move":
@@ -407,6 +450,18 @@ function withGame(WrappedComponent, events, additionalState) {
 		handleStashClick(serial) {
 			const aip = this.state.actionInProgress;
 			const current = this.getCurrentState();
+			
+			// are you authorized?
+			if (!events.canInteract.call(this, current)) {
+				// meant as a silent failure, but I want to know about it
+				console.warn("Player cannot do actions.");
+				// additionally, clear the AIP window so it is not stuck
+				this.setState({
+					actionInProgress: null,
+				});
+				return;
+			}
+			
 			if (aip) {
 				let success = true;
 				try {
@@ -485,6 +540,15 @@ function withGame(WrappedComponent, events, additionalState) {
 				}
 			</p>
 			
+			
+			// Modify the look based on if you can currently interact...
+			const canInteract = (events.canInteract ? events.canInteract.call(this, current) : true);
+			if (canInteract) {
+				
+			} else {
+				
+			}
+			
 			// I am not sure if sending the entire state object is "correct"
 			return <WrappedComponent data={this.state}>
 				<div className="game row">
@@ -520,8 +584,10 @@ function withGame(WrappedComponent, events, additionalState) {
 						/>
 						<button onClick={() => this.testButton()}>Test</button>
 						<br/>
-						{/* todo: click "end turn" should check for warnings like overpopulations */}
-						<button className="btn btn-lg btn-info" onClick={() => this.doEndTurn()}>End Turn</button>
+						{/* todo: clicking "end turn" should check for warnings like overpopulations */}
+						<button className="btn btn-lg btn-info"
+						        disabled={!canInteract}
+						        onClick={() => this.doEndTurn()}>End Turn</button>
 					</div>
 				</div>
 			</WrappedComponent>;

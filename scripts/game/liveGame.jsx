@@ -32,28 +32,53 @@ function LiveGameDisplay(props) {
 const LiveGame = withGame(LiveGameDisplay, {
 	// These methods will be run on the wrapped component
 	onMount: function() {
+		socket.on("gamePosition", function(game) {
+			const isYourTurn = (game.currentState.turn === YOUR_USERNAME);
+			const isHomeworldSetup = (game.currentState.phase === "setup");
+			this.setState({
+				// we want a GameState object, not a vanilla object
+				current: GameState.recoverFromJSON(game.currentState),
+				// Start homeworld setup if and only if it is your turn
+				actionInProgress: (isYourTurn && isHomeworldSetup) ? {type: "homeworld"} : null,
+			});
+		}.bind(this));
+		
+		// race conditions are going to seriously mess this up...
 		socket.on("action", function(data) {
 			this.doAction(data.action, data.player);
-		});
+		}.bind(this));
+		socket.on("endTurn", function(data) {
+			this.doEndTurn(data.player);
+		}.bind(this));
 	},
 	
 	// this one just generically asks if you can do anything at all
-	canDoActions: function(state) {
+	canInteract: function(state) {
 		return state.turn === YOUR_USERNAME;
 	},
-	onBeforeAction: function(action, oldState, newState) {
-		if (oldState.turn !== YOUR_USERNAME) {
-			return false;
-		}
-		
+	// I have to be a little bit careful here
+	// we call doAction when the other player moves, too
+	onBeforeAction: function(action, player, oldState, newState) {
+		// hmmm... do we even need anything else?
 		return true;
 	},
-	onAfterAction: function(action) {
-		socket.emit("doAction", {
-			action: action,
-			gameID: GAME_ID,
-		});
-	}
+	onAfterAction: function(action, player, newState) {
+		console.warn("onAfterAction", player);
+		if (player === YOUR_USERNAME) {
+			socket.emit("doAction", {
+				action: action,
+				gameID: GAME_ID,
+			});
+		}
+	},
+	onAfterEndTurn: function(player, newState) {
+		console.warn("onAfterEndTurn");
+		if (player === YOUR_USERNAME) {
+			socket.emit("doEndTurn", {
+				gameID: GAME_ID
+			});
+		}
+	},
 }, {
 	viewer: YOUR_USERNAME,
 });

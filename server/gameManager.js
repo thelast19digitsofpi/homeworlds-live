@@ -58,13 +58,15 @@ const gameManager = new GameManager();
 // Opening specific games like /game/5.
 // Unfortunately socket.io has different req/res from Express...
 app.get("/game/:gameID", function(req, res) {
-	const requestedID = req.params.gameID;
+	const requestedID = Number(req.params.gameID);
+	console.log(requestedID);
 	const game = gameManager.getGameById(requestedID);
 	if (game) {
 		res.locals.render.gameID = req.params.gameID;
 		res.render("game", res.locals.render);
 	} else {
 		//res.render("error", res.locals.render);
+		res.status(404).send("That game was not found.")
 	}
 });
 
@@ -74,7 +76,6 @@ ioGame.on("connection", function(socket) {
 	// So you have just connected to the game world
 	// Find your seat...
 	const thisUsername = socket._username;
-	gameManager.onSocketConnect(socket);
 	
 	// Listen for an ask of what game it is
 	socket.on("getGame", function(id) {
@@ -88,20 +89,85 @@ ioGame.on("connection", function(socket) {
 			socket.emit("gamePosition", game);
 		} else {
 			// Game does not exist
-			// ...but why?
+			// ...but why? This should have been caught...
 		}
 	});
 	
 	
 	// Event listeners
-	socket.on("doAction", function(data) {
+	socket.on("doAction", function onDoAction(data) {
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
-			
+			const you = game.getPlayerByUsername(thisUsername);
+			if (you) {
+				// attempt to do the action
+				try {
+					game.doAction(data.action, you);
+					// sends the action to everyone except the sender!
+					socket.to(game.socketRoom).emit("action", {
+						player: you.username,
+						action: data.action,
+					});
+				} catch (error) {
+					if (error.constructor === Error) {
+						socket.emit("actionError", {
+							message: "Your move was considered illegal. You may be out of sync (try refreshing). The message was:\n" + error,
+							// gameState and history are used to help re-sync the client
+							gameState: game.gameState,
+							history: game.history,
+						});
+					} else {
+						console.error("[socket/doAction] Problem:", error);
+					}
+				}
+			} else {
+				socket.emit("actionError", {
+					message: "You are not playing this game. (Or maybe there is a bug.)",
+				});
+			}
 		} else {
 			socket.emit("actionError", {
-				message: "You are not playing in this game. You cannot "
-			})
+				message: "Weird. I could not find that game. This is almost certainly a bug.",
+			});
+			console.error(`BUG! Game ${data.gameID} was not found in doAction ${action.type}`);
+		}
+	});
+	
+	socket.on("doEndTurn", function onDoEndTurn(data) {
+		const game = gameManager.getGameById(data.gameID);
+		if (game) {
+			const you = game.getPlayerByUsername(thisUsername);
+			if (you) {
+				try {
+					// attempt to do the action
+					game.doAction(action, you);
+					// sends the action to everyone except the sender!
+					socket.to(game.socketRoom).emit("endTurn", {
+						player: you.username,
+					});
+				} catch (error) {
+					if (error.constructor === Error) {
+						socket.emit("actionError", {
+							message: "Your move was considered illegal. You may be out of sync (try refreshing). The message was:\n" + error,
+							// gameState and history are used to help re-sync the client
+							gameState: game.gameState,
+							history: game.history,
+						});
+					} else {
+						console.error("[socket/doEndTurn] Problem:", error);
+					}
+				}
+			} else {
+				// could not find your player
+				socket.emit("actionError", {
+					message: "You are not playing this game (or maybe there is a bug?).",
+				});
+			}
+		} else {
+			socket.emit("actionError", {
+				message: "Weird. I could not find that game. This is almost certainly a bug.",
+			});
+			console.error(`BUG! Game ${data.gameID} was not found in doEndTurn ${action.type}`);
 		}
 	});
 });
