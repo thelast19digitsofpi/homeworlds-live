@@ -32,7 +32,9 @@ function LiveGameDisplay(props) {
 const LiveGame = withGame(LiveGameDisplay, {
 	// These methods will be run on the wrapped component
 	onMount: function() {
-		socket.on("gamePosition", function(game) {
+		socket.on("gamePosition", function(data) {
+			// data contains the game and the viewer
+			const game = data.game;
 			const isYourTurn = (game.currentState.turn === YOUR_USERNAME);
 			const isHomeworldSetup = (game.currentState.phase === "setup");
 			this.setState({
@@ -40,6 +42,7 @@ const LiveGame = withGame(LiveGameDisplay, {
 				current: GameState.recoverFromJSON(game.currentState),
 				// Start homeworld setup if and only if it is your turn
 				actionInProgress: (isYourTurn && isHomeworldSetup) ? {type: "homeworld"} : null,
+				viewer: data.viewer,
 			});
 		}.bind(this));
 		

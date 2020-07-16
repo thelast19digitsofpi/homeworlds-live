@@ -82,11 +82,16 @@ ioGame.on("connection", function(socket) {
 		const game = gameManager.getGameById(id);
 		if (game) {
 			// You are allowed to watch games in progress. I think.
+			let viewer = game.players[0].username;
 			if (game.getPlayerByUsername(thisUsername) !== null) {
-				// let them know they are playing?
+				// They see it from their own perspective.
+				viewer = thisUsername;
 			}
 			// maybe this could be more refined? hmmm...
-			socket.emit("gamePosition", game);
+			socket.emit("gamePosition", {
+				game: game,
+				viewer: viewer,
+			});
 			socket.join(game.socketRoom);
 		} else {
 			// Game does not exist
@@ -97,6 +102,9 @@ ioGame.on("connection", function(socket) {
 	
 	// Event listeners
 	socket.on("doAction", function onDoAction(data) {
+		// you are still connected
+		renewCookie(thisUsername);
+		// ok now actually find the requested game
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
 			const you = game.getPlayerByUsername(thisUsername);

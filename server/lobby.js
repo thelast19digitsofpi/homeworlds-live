@@ -8,6 +8,8 @@ const {promiseTimeout} = require("./my-util.js");
 const Player = require("./player.js");
 const GameRoom = require("./lobbyGameRoom.js");
 const {gameManager} = require("./gameManager.js");
+// so we can refresh the cookie
+const {renewCookie} = require("./accounts.js");
 
 const ioLobby = io.of("/lobby");
 
@@ -212,6 +214,9 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 	
 	socket.on("updatePlease", function() {
 		sendUpdate(socket);
+		
+		// also recharge their cookie
+		renewCookie(thisUsername);
 	});
 	
 	socket.on("createGame", function onCreateGame(data) {
