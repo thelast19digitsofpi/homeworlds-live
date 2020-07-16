@@ -134,7 +134,7 @@ function StarMap(props) {
 					containers.adjNone.push(reactElement);
 				}
 			} else {
-				const adjNorth = 
+				
 			}
 		}
 		
