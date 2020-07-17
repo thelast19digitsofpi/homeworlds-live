@@ -49,6 +49,9 @@ function withGame(WrappedComponent, events, additionalState) {
 				this.state[key] = additionalState[key];
 			}
 			
+			// we need the coordinates of the star map
+			this.starMapRef = React.createRef();
+			
 			// for my debugging!
 			window._g = this;
 		}
@@ -294,7 +297,9 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 			// Clear any actions in progress.
 			// In homeworld setup phase, start the homeworld actionInProgress if it is your turn.
-			if (newState.phase === "setup" && events.canInteract.call(this, newState)) {
+			const dontShow = (events.canInteract && !events.canInteract.call(this, newState));
+			// the double negative is a little weird
+			if (newState.phase === "setup" && !dontShow) {
 				this.setState({
 					actionInProgress: {
 						type: "homeworld",
@@ -342,7 +347,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			const current = this.getCurrentState();
 			
 			// are you authorized?
-			if (!events.canInteract.call(this, current)) {
+			if (events.canInteract && !events.canInteract.call(this, current)) {
 				// meant as a silent failure, but I want to know about it
 				console.warn("Player cannot do actions.");
 				// additionally, clear the AIP window so it is not stuck
@@ -381,11 +386,17 @@ function withGame(WrappedComponent, events, additionalState) {
 				// For now, console.log the actions
 				const actions = this.getActionsAvailableForPiece(current.turn, piece);
 				console.log(actions);
+				
+				// Where to position the popup?
+				const rect = this.starMapRef.current.getBoundingClientRect();
+				const offsetX = rect.left + window.scrollX;
+				const offsetY = rect.top + window.scrollY;
+				
 				this.setState({
 					popup: {
 						actions: actions,
-						x: event.nativeEvent.clientX,
-						y: event.nativeEvent.clientY - 50,
+						x: event.nativeEvent.pageX - offsetX + 30,
+						y: event.nativeEvent.pageY - offsetY - 15,
 					},
 				});
 			}
@@ -395,7 +406,7 @@ function withGame(WrappedComponent, events, additionalState) {
 		handleButtonClick(actionData) {
 			const current = this.getCurrentState();
 			// are you authorized?
-			if (!events.canInteract.call(this, current)) {
+			if (events.canInteract && !events.canInteract.call(this, current)) {
 				// meant as a silent failure, but I want to know about it
 				console.warn("Player cannot do actions.");
 				// additionally, clear the UI so they are not stuck
@@ -446,7 +457,8 @@ function withGame(WrappedComponent, events, additionalState) {
 			const current = this.getCurrentState();
 			
 			// are you authorized?
-			if (!events.canInteract.call(this, current)) {
+			// (if the method exists but returns a false...)
+			if (events.canInteract && !events.canInteract.call(this, current)) {
 				// meant as a silent failure, but I want to know about it
 				console.warn("Player cannot do actions.");
 				// additionally, clear the AIP window so it is not stuck
@@ -547,7 +559,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			return <WrappedComponent data={this.state}>
 				<div className="game row">
 					<div className="star-map-wrapper col">
-						<div className="star-map">
+						<div className="star-map" ref={this.starMapRef}>
 							<StarMap
 								map={current.map}
 								homeworldData={current.homeworldData}

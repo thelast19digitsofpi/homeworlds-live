@@ -36,7 +36,33 @@ class StarMap extends React.Component {
 				sizesFound[size] = true;
 			}
 		}
-		return Object.keys(sizesFound);
+		// i.e. map(x => Number(x))
+		return Object.keys(sizesFound).map(Number);
+	}
+	
+	// Helper function for renderHTMLContainers().
+	// Renders a 3-column layout. The center array is rendered as is while the sides array is split based on star size for a slightly easier map.
+	renderHTMLThreeColumns(smallerSize, center, sides) {
+		let leftSide = [];
+		let rightSide = [];
+		for (let i = 0; i < sides.length; i++) {
+			const reactElement = sides[i];
+			// Read the "size" prop on the System element.
+			// If it is the smaller size it goes on the left, otherwise on the right.
+			if (reactElement.props.stars[0].size === smallerSize) {
+				leftSide.push(reactElement);
+			} else {
+				rightSide.push(reactElement);
+			}
+		}
+		
+		return (
+			<div className="row">
+				<div className="col">{leftSide}</div>
+				<div className="col">{center}</div>
+				<div className="col">{rightSide}</div>
+			</div>
+		);
 	}
 	
 	// Given the containers and the 2 homeworlds, return a React element
@@ -45,7 +71,7 @@ class StarMap extends React.Component {
 		Possibilities:
 		(a) Homeworlds are both one size and connected (e.g. 1 vs 2).
 		(b) Homeworlds are connected but one has two sizes (e.g. 1-3 vs 2).
-		(c) Homeworlds are 2 steps apart and both one size (e.g. 1 vs 1 or 3 vs 3-3).
+		(c) Homeworlds are 2 steps apart and both one size (e.g. 1 vs 1, or 3 vs 3-3).
 		(d) Homeworlds are 2 steps apart and one has two sizes (e.g. 1-3 vs 1).
 		(e) Homeworlds are 2 steps apart and both are two sizes (e.g. 1-2 vs 1-2).
 		(f) Homeworlds are 3 steps apart (e.g. 1-2 vs 2-3).
@@ -69,16 +95,109 @@ class StarMap extends React.Component {
 		- If h... then who really cares? (This might be an argument for a stateful component?)
 		*/
 		
-		const sizes1 = getUniqueSizes(hw1);
-		const sizes2 = getUniqueSizes(hw2);
+		const sizes1 = this.getUniqueSizes(hw1);
+		const sizes2 = this.getUniqueSizes(hw2);
+		console.warn("[renderHTMLContainers]", sizes1, sizes2);
+		
+		// we will need this often
+		const rowDisplay = (<React.Fragment>
+			<div className="adj-north">{containers.adjNorth}</div>
+			{/* hopefully one of these is empty */}
+			<div className="adj-both adj-neither">{containers.adjBoth}{containers.adjNeither}</div>
+			<div className="adj-south">{containers.adjSouth}</div>
+		</React.Fragment>);
+		
 		if (sizes1.length === 1 && sizes2.length === 1) {
+			console.log("[Starmap] cases C or A");
 			// both homeworlds are single stars or geminis
-			containers[i]
+			if (sizes1[0] === sizes2[0]) {
+				console.log("case c");
+				// identical sizes, type (c)
+				// put smaller sizes on the left
+				const smallerSize = (sizes1[0] === 1) ? 2 : 1;
+				return this.renderHTMLThreeColumns(smallerSize, containers.adjNeither, containers.adjBoth);
+			} else {
+				console.log("case a");
+				// identical sizes, type (a)
+				// row format
+				return rowDisplay;
+			}
+		} else if (sizes1.length === 2 && sizes2.length === 2) {
+			console.log("[Starmap] cases E or F");
+			// both homeworlds have 2 distinct sizes
+			let missingSize = 0;
+			// Check if the same size is absent in both homeworlds.
+			for (let i = 1; i <= 3; i++) {
+				if (sizes1.indexOf(i) === -1 && sizes2.indexOf(i) === -1) {
+					missingSize = i;
+					break;
+				}
+			}
+			if (missingSize !== 0) {
+				console.log("case e", missingSize);
+				// so they were 2 moves away, type (e)
+				const smallerSize = (missingSize === 1) ? 2 : 1;
+				return this.renderHTMLThreeColumns(smallerSize, containers.adjBoth, containers.adjNeither);
+			} else {
+				console.log("case f");
+				// standard 3 moves away, type (f)
+				return rowDisplay;
+			}
+		} else if (sizes1.length === 0 || sizes2.length === 0) {
+			console.log("[Starmap] cases g/h");
+			// one of the homeworlds is gone
+			// there is really no hope for order here
+			return rowDisplay;
+		} else {
+			console.log("[Starmap] cases B or D")
+			/*
+			There are 9 possibilitiesfor the number of different sizes at each homeworld:
+			0,0; 0,1; 0,2; 1,0; 1,1; 1,2; 2,0; 2,1; 2,2.
+			
+			The first and second if's knocked out 1,1 and 2,2.
+			The third knocked out all those with 0.
+			  0 1 2
+			0 X X X
+			1 X X
+			2 X   X
+			
+			This leaves us with only (1,2) or (2,1).
+			*/
+			// Are they connected?
+			let connected = true;
+			for (let i = 0; i < sizes1.length; i++) {
+				if (sizes2.indexOf(sizes1[i]) >= 0) {
+					// size match!
+					connected = false;
+				}
+			}
+			
+			
+			if (connected) {
+				console.log("case b");
+				// ok this is actually quite easy, type (b)
+				return rowDisplay;
+			} else {
+				console.log("case d");
+				// case (d)
+				// return a mixed view, because we have Both *and* Neither *and* a north or south
+				return (
+					<div className="row">
+						<div className="col">{containers.adjNeither}</div>
+						<div className="col">
+							{/* again, we expect one to be empty */}
+							<div>{containers.adjNorth}</div>
+							<div>{containers.adjBoth}</div>
+							<div>{containers.adjSouth}</div>
+						</div>
+					</div>
+				)
+			}
 		}
 	}
 	
 	moveSVGSystems() {
-		// react state is immutable
+		// react state is de jure immutable
 		const newPositions = [];
 		
 		// Loop over each pair of systems
@@ -165,7 +284,7 @@ class StarMap extends React.Component {
 		}
 		
 		if (true) {
-			
+			const dataToSerial = data => data.serial;
 			
 			// Work out the connections between systems
 			let hws = [];
@@ -184,10 +303,10 @@ class StarMap extends React.Component {
 			};
 			
 			// we need to convert the system object into an array of elements
-			let actualMapDisplay = null;
+			let innerDisplay = null;
 			for (let id in systems) {
 				const system = systems[id];
-				const myStars = system.stars;
+				const myStars = system.stars.map(dataToSerial);
 				const reactElement = (
 					<System
 						key={id}
@@ -212,19 +331,20 @@ class StarMap extends React.Component {
 				} else {
 					if (hws.length === 1) {
 						// Only 1 homeworld!
-						if (GameState.areStarsConnected(myStars, hws[0])) {
+						if (GameState.areStarsConnected(myStars, hws[0].map(dataToSerial))) {
 							// this.viewer would be considered south
-							const which = (players[0] === this.viewer) ? "adjSouth" : "adjNorth";
+							const which = (players[0] === props.viewer) ? "adjSouth" : "adjNorth";
 							containers[which].push(reactElement);
 						} else {
 							containers.adjNeither.push(reactElement);
 						}
 					} else if (hws.length === 2) {
 						// 2 homeworlds.
-						const adj0 = GameState.areStarsConnected(myStars, hws[0]);
-						const adj1 = GameState.areStarsConnected(myStars, hws[1]);
+						const adj0 = GameState.areStarsConnected(myStars, hws[0].map(dataToSerial));
+						const adj1 = GameState.areStarsConnected(myStars, hws[1].map(dataToSerial));
 						let adjNorth, adjSouth;
-						if (players[0] === this.viewer) {
+						console.error(players, props.viewer);
+						if (players[0] === props.viewer) {
 							// players[0] is south
 							adjSouth = adj0;
 							adjNorth = adj1;
@@ -242,21 +362,29 @@ class StarMap extends React.Component {
 					} else {
 						// no homeworlds?!?
 						console.log("No homeworlds exist!");
+						containers.adjNeither.push(reactElement);
 					}
 				}
 			} // end for loop
 			
 			if (hws.length === 2) {
-				if ()
+				innerDisplay = this.renderHTMLContainers(hws[0], hws[1], containers);
 			} else if (hws.length === 1) {
-				
+				innerDisplay = this.renderHTMLContainers(hws[0], [], containers);
 			} else {
-				
+				innerDisplay = <div>{containers.adjNeither}</div>
 			}
 			
-			return <div className="systems">{systemArray}</div>;
+			return (
+				<div className="systems">
+					{containers.hwNorth}
+					{innerDisplay}
+					{containers.hwSouth}
+				</div>
+			);
 		} else {
 			// Some sort of SVG render...? Does this even work for SVG images in all browsers?
+			console.log("other render method is not supported, please change that boolean back");
 		}
 	}
 }

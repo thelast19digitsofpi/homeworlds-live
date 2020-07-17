@@ -14,14 +14,27 @@ body {
 
 .star-map-wrapper {
 }
-.star-map {
-	min-height: 67vh;
-	position: relative;
+.systems {
+	min-height: 60vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	text-align: center;
+}
+
+.system-container {
+	display: inline-block;
+	padding-left: 1em;
+	padding-right: 1em;
+}
+/* some extra breathing room */
+.system-container + .system-container {
+	margin-left: 2em;
 }
 
 .homeworld {
-	position: absolute;
 	width: 100%;
+	/* text-align makes it centered */
 	text-align: center;
 }
 .homeworld-yours {
@@ -31,10 +44,6 @@ body {
 	top: 0;
 }
 
-
-.system-container {
-	padding-left: 2em;
-}
 .system-container:not(.homeworld) {
 	padding-top: 1em;
 }
