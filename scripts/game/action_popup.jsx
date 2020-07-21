@@ -4,10 +4,11 @@ function ActionsPopup(props) {
 	let popupElement = null;
 	let popup = props.popup;
 	if (popup) {
-		const styleData = {
-			left: popup.x,
-			top: popup.y
-		};
+		const styleData = {};
+		// decide whether to use left or right
+		styleData[popup.xSide] = popup.x;
+		styleData[popup.ySide] = popup.y;
+		
 		let buttons = [];
 		for (let i = 0; i < popup.actions.length; i++) {
 			let ac = popup.actions[i];

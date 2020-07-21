@@ -58,9 +58,9 @@ class StarMap extends React.Component {
 		
 		return (
 			<div className="row">
-				<div className="col">{leftSide}</div>
-				<div className="col">{center}</div>
-				<div className="col">{rightSide}</div>
+				<div className="col-auto" align="center">{leftSide}</div>
+				<div className="col-auto" align="center">{center}</div>
+				<div className="col-auto" align="center">{rightSide}</div>
 			</div>
 		);
 	}
@@ -179,16 +179,44 @@ class StarMap extends React.Component {
 				return rowDisplay;
 			} else {
 				console.log("case d");
+				// we do not want the left thing to take up half the space for 0-2 systems
+				const numLeft = containers.adjNeither.length;
+				const numRight = Math.max(containers.adjNorth.length,
+				                          containers.adjBoth.length,
+				                          containers.adjSouth.length);
+				let classLeft;
+				// determine how big to make the left side
+				if (numLeft === 0) {
+					// nothing there
+					classLeft = "d-none";
+				} else if (numLeft === 1) {
+					// just one system, make it only wide enough to fit the system
+					classLeft = "col-auto px-1";
+				} else if (numLeft <= numRight*2/3) {
+					// left is small
+					classLeft = "col-4 col-md-3 col-lg-2";
+				} else if (numLeft >= numRight*3/2) {
+					// left is big
+					classLeft = "col-8 col-sm-7";
+				} else {
+					// roughly same size, make them equal
+					classLeft = "col-6";
+				}
+				
+				if (numLeft > 0) {
+					classLeft += " d-flex flex-column justify-content-center";
+				}
 				// case (d)
 				// return a mixed view, because we have Both *and* Neither *and* a north or south
 				return (
-					<div className="row">
-						<div className="col">{containers.adjNeither}</div>
-						<div className="col">
-							{/* again, we expect one to be empty */}
-							<div>{containers.adjNorth}</div>
+					<div className="row flex-grow">
+						<div className={classLeft}>{containers.adjNeither}</div>
+						{/* flex-ception */}
+						<div className="col d-flex flex-column justify-content-around">
+							{/* if the north or south containers are empty that messes up the flexing */}
+							{containers.adjNorth && <div>{containers.adjNorth}</div>}
 							<div>{containers.adjBoth}</div>
-							<div>{containers.adjSouth}</div>
+							{containers.adjSouth && <div>{containers.adjSouth}</div>}
 						</div>
 					</div>
 				)
@@ -343,7 +371,6 @@ class StarMap extends React.Component {
 						const adj0 = GameState.areStarsConnected(myStars, hws[0].map(dataToSerial));
 						const adj1 = GameState.areStarsConnected(myStars, hws[1].map(dataToSerial));
 						let adjNorth, adjSouth;
-						console.error(players, props.viewer);
 						if (players[0] === props.viewer) {
 							// players[0] is south
 							adjSouth = adj0;

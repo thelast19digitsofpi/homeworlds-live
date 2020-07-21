@@ -34,6 +34,28 @@ async function isUsernameTaken(username) {
 	}
 }
 
+function isUsernameValid(username) {
+	// 3-16 characters
+	if (username.length < 3 || username.length > 16) {
+		console.log("Bad username: bad length", username, username.length);
+		return false;
+	}
+	
+	// only letters and numbers are allowed
+	if (/[^A-Za-z0-9\.,!@#$%^&*\(\)_\-+= ]/.test(username)) {
+		console.log("Bad username: contains weird characters", username);
+		return false;
+	}
+	
+	// spaces may not be at the beginning or end
+	if (/^\s/.test(username) || /\s$/.test(username)) {
+		console.log("Bad username: spaces on the end", username);
+		return false;
+	}
+	
+	return true;
+}
+
 // Returns either a username (string) or null.
 async function authenticateCookie(cookie) {
 	try {
@@ -196,6 +218,15 @@ app.post("/createAccount", async function(req, res) {
 		res.locals.render.error = {
 			type: "password",
 			message: "That username is already taken. Pick another.",
+		};
+		return res.render("createAccount", res.locals.render);
+	}
+	
+	if (!isUsernameValid(username)) {
+		res.locals.render.username = username;
+		res.locals.render.error = {
+			type: "username",
+			message: "This username is not valid. Please pick another.",
 		};
 		return res.render("createAccount", res.locals.render);
 	}

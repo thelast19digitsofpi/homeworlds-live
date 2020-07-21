@@ -186,7 +186,6 @@ GameRoom.prototype.canStartForReal = function() {
 	}
 	
 	// It is actually legitimately time to begin!
-	console.error("Actually *starting* a game is not supported yet.");
 	return true;
 }
 

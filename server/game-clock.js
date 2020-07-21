@@ -2,7 +2,8 @@
 //
 // One player's game clock.
 
-function GameClock(start, bonus, type) {
+function GameClock(username, start, bonus, type) {
+	this.username = username;
 	this.turnStartValue = start; // how much time you had when your turn started
 	this.bonus = bonus;
 	this.type = type;
@@ -80,9 +81,9 @@ GameClock.prototype.getDelay = function() {
 	}
 }
 // Sends information in a format the client wants
-// JSO = JSON minus the "N", i.e. returns an object, not a string.
-GameClock.prototype.toJSO = function() {
+GameClock.prototype.getClientData = function() {
 	return {
+		username: this.username,
 		running: this.running,
 		timeLeft: this.getTimeLeft(),
 		delayLeft: this.getDelay(),

@@ -12,6 +12,7 @@ function Piece(props) {
 	// Use to rotate 0, 90, 180, or 270 degrees for ships
 	const css = {
 		transform: "rotate(" + (props.rotation || 0) + "deg)",
+		...props.style
 	};
 	// Size is always the second character e.g. 2 in b2C
 	const size = Number(props.serial[1]);
@@ -27,9 +28,11 @@ function Piece(props) {
 	
 	// Return the image element.
 	return <img className="piece"
-				src={imageSrc}
-				height={props.scaleFactor * baseHeight}
-				style={css}
-				title={props.serial}
-				onClick={(evt) => props.handleClick(props.serial, evt)} />
+	            piecetype={props.type}
+	            src={imageSrc}
+	            height={props.scaleFactor * baseHeight}
+	            style={css}
+	            title={props.serial}
+	            highlight={props.highlight}
+	            onClick={(evt) => props.handleClick(props.serial, evt)} />
 }

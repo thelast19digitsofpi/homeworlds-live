@@ -16,7 +16,7 @@
 					<% } %>
 					<label for="create-username" class="lead">Username</label>
 					<input type="text" name="username" class="form-control" aria-describedby="login-username" value="<%= typeof username !== 'undefined' ? username : '' %>" />
-					<p class="form-text">Username must contain 3-25 characters. Letters, numbers, and <code>.,!@#$%^&*()_+-=</code> are allowed. Spaces are allowed, but not at the beginning or end.</p>
+					<p class="form-text">Username must contain 3-16 characters. Letters, numbers, and <code>.,!@#$%^&*()_+-=</code> are allowed. Spaces are allowed, but not at the beginning or end.</p>
 				</div>
 				<div class="form-group">
 					<!-- Error -->
@@ -28,7 +28,7 @@
 					<input type="password" name="password" class="form-control" aria-describedby="login-password" required />
 					<p class="form-text">
 						Password must be between 12 and 99 characters and please <strong class="text-danger">do NOT use anything you have used on another site</strong>. <br/>
-						No, really. I am just one college student who decided to make this as a summer project. I am not going to know all the security practices necessary so I am just going to warn you now.
+						No, really. I am just a college student who made this as a summer project. I probably have a security hole somewhere. Use a unique password, so if it is hacked all you lose is this.
 					</p>
 				</div>
 				<div class="form-group">

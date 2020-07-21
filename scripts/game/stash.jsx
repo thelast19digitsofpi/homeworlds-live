@@ -23,20 +23,31 @@ function Stash(props) {
 				const serial = color + size + specifiers[which];
 				if (props.data[serial] === null) {
 					// put that data into a <Piece>
-					cell.push(
-						<Piece
-							key={serial}
-							serial={serial}
-							type="ship"
-							color={color}
-							size={size}
-							scaleFactor={scaleFactor}
-							
-							handleClick={props.handleClick}
-						/>
-					)
+					const css = {
+						// height of a ship is 40 + 32*size
+						marginTop: scaleFactor * (0 - 32 * size),
+					};
+					
+					// This is a neat trick: put the props in, them map them to React elements
+					cell.push({
+						key: serial,
+						serial: serial,
+						type: "ship",
+						color: color,
+						size: size,
+						scaleFactor: scaleFactor,
+						style: css,
+						handleClick: props.handleClick,
+					});
 				}
 			}
+			// The last one loses its special marginTop
+			if (cell.length > 0) {
+				delete cell[cell.length - 1].style.marginTop;
+			}
+			
+			// Turn the props into a React Piece
+			cell = cell.map(subProps => React.createElement(Piece, subProps));
 			// put that cell into a <td>
 			cols.push(
 				<td key={color + size.toString()}>

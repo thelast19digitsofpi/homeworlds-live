@@ -10,6 +10,7 @@ const Player = require("./player.js");
 const Game = require("./oneGame.js");
 const db = require("./database.js");
 const {io, checkSocketCookie} = require("./socket.js");
+const {renewCookie} = require("./accounts.js");
 
 const ioGame = io.of("/game");
 ioGame.use(checkSocketCookie);
@@ -76,6 +77,7 @@ ioGame.on("connection", function(socket) {
 	// So you have just connected to the game world
 	// Find your seat...
 	const thisUsername = socket._username;
+	renewCookie(thisUsername);
 	
 	// Listen for an ask of what game it is
 	socket.on("getGame", function(id) {
@@ -89,7 +91,7 @@ ioGame.on("connection", function(socket) {
 			}
 			// maybe this could be more refined? hmmm...
 			socket.emit("gamePosition", {
-				game: game,
+				game: game.getClientData(),
 				viewer: viewer,
 			});
 			socket.join(game.socketRoom);
@@ -98,7 +100,6 @@ ioGame.on("connection", function(socket) {
 			// ...but why? This should have been caught...
 		}
 	});
-	
 	
 	// Event listeners
 	socket.on("doAction", function onDoAction(data) {
@@ -120,7 +121,7 @@ ioGame.on("connection", function(socket) {
 				} catch (error) {
 					if (error.constructor === Error) {
 						socket.emit("actionError", {
-							message: "Your move was considered illegal. You may be out of sync (try refreshing). The message was:\n" + error,
+							message: "Your action was considered illegal. You may be out of sync (try refreshing). The message was:\n" + error,
 							// gameState and history are used to help re-sync the client
 							gameState: game.gameState,
 							history: game.history,
@@ -142,6 +143,12 @@ ioGame.on("connection", function(socket) {
 		}
 	});
 	
+	// Resets the board to the position at the start of your turn.
+	// Like an "undo" option, in a sense.
+	socket.on("doResetTurn", function onDoReset(data) {
+		console.error("resetTurn is not supported!");
+	});
+	
 	socket.on("doEndTurn", function onDoEndTurn(data) {
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
@@ -154,17 +161,14 @@ ioGame.on("connection", function(socket) {
 					socket.to(game.socketRoom).emit("endTurn", {
 						player: you.username,
 					});
+					// using ioGame sends it to everyone
+					ioGame.to(game.socketRoom).emit("clockUpdate", {
+						clocks: game.getClientClockArray(),
+					});
 				} catch (error) {
-					if (error.constructor === Error) {
-						socket.emit("actionError", {
-							message: "Your move was considered illegal. You may be out of sync (try refreshing). The message was:\n" + error,
-							// gameState and history are used to help re-sync the client
-							gameState: game.gameState,
-							history: game.history,
-						});
-					} else {
-						console.error("[socket/doEndTurn] Problem:", error);
-					}
+					// no use sending the player an error message
+					// they probably just double-clicked
+					console.error("[socket/doEndTurn] Problem:", error);
 				}
 			} else {
 				// could not find your player
@@ -174,7 +178,7 @@ ioGame.on("connection", function(socket) {
 			}
 		} else {
 			socket.emit("actionError", {
-				message: "Weird. I could not find that game. This is almost certainly a bug.",
+				message: "Weird. I could not find that game. This is almost certainly a bug, but try refreshing.",
 			});
 			console.error(`BUG! Game ${data.gameID} was not found in doEndTurn ${action.type}`);
 		}

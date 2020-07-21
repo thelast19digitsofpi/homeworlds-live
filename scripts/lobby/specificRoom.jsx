@@ -199,53 +199,66 @@ class SpecificRoom extends React.Component {
 		
 		// UI for the launch sequence!
 		const launchSequenceUI = <p className="lead">
-			This game is starting!&#160;
 			{this.haveYouConfirmed() ? " Waiting for all players to confirm..." : (<React.Fragment>
-				You need to
-				<button onClick={() => this.confirmStart()} className="btn btn-primary">confirm you are ready!</button>
-				Or, if you want, you can
+				You need to &#160;
+				<button onClick={() => this.confirmStart()} className="btn btn-primary">confirm you are ready!</button> <br/>
+				Or, if you want, you can &#160;
 				<button onClick={() => this.cancelStart()} className="btn btn-danger">cancel</button> the game starting.
 			</React.Fragment>)}
 		</p>
 		
 		// Render!
-		return <div className="container">
-			<h4>Game Room #{room.id}</h4>
-			<h5 className="text-muted">
-				This table fits {room.numPlayers} players
-				&bull;
-				Time control: {this.getTimeControlString()}
-			</h5>
-			
-			{ /* Rendering the Error Message */
-				this.state.error && 
-				<p className="text-danger">
-					{this.state.error}
-					<button class="btn btn-secondary btn-small" onClick={() => this.clearError()}>OK</button>
+		if (room.isStarting) {
+			return <div className="jumbotron">
+				<h2>Game Is Starting!</h2>
+				<p className="lead">
+					Game #{room.id}
+					&bull;
+					Time control: {this.getTimeControlString()}
+					&bull;
+					Players: {room.players.map(player => player.username).join(", ")}
 				</p>
-			}
-			
-			{room.isStarting ? launchSequenceUI : roomControls}
-			
-			{/* Player Lists */}
-			<div className="row">
-				<div className="col">
-					<h5>Players Joined</h5>
-					<ul className="list-group">
-						{room.players.map(this.playerToLi)}
-					</ul>
+				{launchSequenceUI}
+			</div>;
+		} else {
+			return <div className="container">
+				<h4>Game Room #{room.id}</h4>
+				<h5 className="text-muted">
+					This table fits {room.numPlayers} players
+					&bull;
+					Time control: {this.getTimeControlString()}
+				</h5>
+				
+				{ /* Rendering the Error Message */
+					this.state.error && 
+					<p className="text-danger">
+						{this.state.error}
+						<button class="btn btn-secondary btn-small" onClick={() => this.clearError()}>OK</button>
+					</p>
+				}
+				
+				{roomControls}
+				
+				{/* Player Lists */}
+				<div className="row">
+					<div className="col">
+						<h5>Players Joined</h5>
+						<ul className="list-group">
+							{room.players.map(this.playerToLi)}
+						</ul>
+					</div>
+					<div className="col">
+						<h5>Players Invited</h5>
+						<ul className="list-group">
+							{ /* Show the list of invited players, or the word "none" */
+								room.invitedPlayers.length > 0 ?
+								room.invitedPlayers.map(this.playerToLi) :
+								<li className="list-group-item">(none)</li>
+							}
+						</ul>
+					</div>
 				</div>
-				<div className="col">
-					<h5>Players Invited</h5>
-					<ul className="list-group">
-						{ /* Show the list of invited players, or the word "none" */
-							room.invitedPlayers.length > 0 ?
-							room.invitedPlayers.map(this.playerToLi) :
-							<li className="list-group-item">(none)</li>
-						}
-					</ul>
-				</div>
-			</div>
-		</div>;
+			</div>;
+		}
 	}
 }

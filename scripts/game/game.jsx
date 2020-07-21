@@ -64,6 +64,14 @@ function withGame(WrappedComponent, events, additionalState) {
 			if (events.componentDidMount) {
 				events.componentDidMount.call(this);
 			}
+			
+			// we always need this one
+			let resizeTimer = null;
+			window.addEventListener("resize", function() {
+				// Delay resizing until 250ms after there have been no resize events
+				clearTimeout(resizeTimer);
+				resizeTimer = setTimeout(() => this.forceUpdate(), 250);
+			}.bind(this));
 		}
 		
 		componentWillUnmount() {
@@ -392,11 +400,31 @@ function withGame(WrappedComponent, events, additionalState) {
 				const offsetX = rect.left + window.scrollX;
 				const offsetY = rect.top + window.scrollY;
 				
+				// position the popup
+				let x = event.nativeEvent.pageX - offsetX;
+				let y = event.nativeEvent.pageY - offsetY;
+				let xSide = "left";
+				let ySide = "top";
+				
+				// make the popup display on the left if you click on the right side of the screen
+				if (x > rect.width/2) {
+					x = rect.width - x;
+					xSide = "right";
+				}
+				// same thing vertically
+				if (y > rect.height/2) {
+					y = rect.height - y;
+					ySide = "bottom";
+				}
+				
 				this.setState({
 					popup: {
 						actions: actions,
-						x: event.nativeEvent.pageX - offsetX + 30,
-						y: event.nativeEvent.pageY - offsetY - 15,
+						x: x + 10,
+						y: y + 10,
+						// which CSS position property to use
+						xSide: xSide,
+						ySide: ySide,
 					},
 				});
 			}
@@ -547,23 +575,42 @@ function withGame(WrappedComponent, events, additionalState) {
 			</p>
 			
 			
+			let starMapStyle = {
+				// make there be a border, but it is invisible
+				borderColor: "rgba(0,0,0,0)",
+				borderStyle: "solid",
+				borderWidth: "2px",
+				borderRadius: "4px",
+			};
 			// Modify the look based on if you can currently interact...
 			const canInteract = (events.canInteract ? events.canInteract.call(this, current) : true);
 			if (canInteract) {
-				
+				starMapStyle.borderColor = "#ccc";
 			} else {
-				
+				// nothing
 			}
 			
+			
+			// very very simple heuristic that scales the board down based on the number of pieces that are on the board
+			let numPiecesOnBoard = 0;
+			for (let serial in current.map) {
+				if (current.map[serial] !== null) {
+					numPiecesOnBoard++;
+				}
+			}
+			
+			const boardScale = this.state.scaleFactor * Math.min(1, 1.15 - numPiecesOnBoard/60);
+			const stashScale = (window.innerHeight / 1800) * Math.min(1, 0.75 + numPiecesOnBoard/60);
+			
 			// I am not sure if sending the entire state object is "correct"
-			return <WrappedComponent data={this.state}>
-				<div className="game row">
+			return <WrappedComponent reactState={this.state} gameState={current}>
+				<div className="game row no-gutters">
 					<div className="star-map-wrapper col">
-						<div className="star-map" ref={this.starMapRef}>
+						<div className="star-map" style={starMapStyle} ref={this.starMapRef}>
 							<StarMap
 								map={current.map}
 								homeworldData={current.homeworldData}
-								scaleFactor={this.state.scaleFactor}
+								scaleFactor={ boardScale }
 								viewer={this.state.viewer}
 								
 								handleBoardClick={(piece, event) => this.handleBoardClick(piece, event)}
@@ -584,11 +631,13 @@ function withGame(WrappedComponent, events, additionalState) {
 					<div className="stash col-auto" align="right">
 						<h4 align="center">Stash</h4>
 						<Stash
-							scaleFactor={ window.innerHeight / 1800 }
+							scaleFactor={ stashScale }
 							data={current.map}
 							handleClick={(serial) => this.handleStashClick(serial)}
 						/>
-						<button onClick={() => this.testButton()}>Test</button>
+						<button onClick={() => this.resetTurn()}
+						        disabled={!canInteract}
+						        className="btn btn-danger">Reset Turn</button>
 						<br/>
 						{/* todo: clicking "end turn" should check for warnings like overpopulations */}
 						<button className="btn btn-lg btn-info"
@@ -598,7 +647,6 @@ function withGame(WrappedComponent, events, additionalState) {
 				</div>
 			</WrappedComponent>;
 		}
-		
 	}
 }
 

@@ -29,7 +29,8 @@ body {
 }
 /* some extra breathing room */
 .system-container + .system-container {
-	margin-left: 2em;
+	margin-left: 0.5em;
+	margin-right: 0.5em;
 }
 
 .homeworld {
@@ -45,7 +46,17 @@ body {
 }
 
 .system-container:not(.homeworld) {
-	padding-top: 1em;
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
+}
+
+.piece[piecetype="star"] {
+	margin-left: 0.25em;
+	margin-right: 0.25em;
+}
+/* 2 stars in the same system go together */
+.piece[piecetype="star"] + .piece[piecetype="star"] {
+	margin-left: none;
 }
 
 .stash {
@@ -54,7 +65,7 @@ body {
 .stash-table td {
 	padding: 0.25em;
 	height: 1px;
-	min-width: 15px;
+	min-width: 5px;
 }
 .stash-table td .flexxer {
 	top: 0;
@@ -67,10 +78,6 @@ body {
 }
 .stash-table img {
 	display: block;
-}
-.stash-table img:not(:last-child) {
-	/* I have no idea why these particular numbers worked */
-	margin-top: calc(17px - 160%);
 }
 
 /* Highlight pieces by making them fade out and in */
@@ -88,4 +95,9 @@ body {
 .action-popup {
 	position: absolute;
 	background-color: rgba(6, 6, 6, 0.5);
+}
+
+/* Clocks */
+.clock-value {
+	font-family: monospace;
 }

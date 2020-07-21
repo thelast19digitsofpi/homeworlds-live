@@ -7,9 +7,14 @@
 	<body>
 		<%- include("header") %>
 		<div class="container">
-			<h1>Website Name</h1>
-			<p class="lead">This is eventually going to be a real-time web implementation of the board game (Binary) Homeworlds.</p>
-			<p>For now, you can play around in the <a href="/game/unstable-sandbox">sandbox</a>.</p>
+			<div class="jumbotron">
+				<h1>Website Name</h1>
+				<p class="lead">This is (eventually going to be) a real-time web implementation of the board game <a href="https://www.looneylabs.com/games/homeworlds">(Binary) Homeworlds</a>.</p>
+				<p>For now, you can play around in the <a href="/sandbox">sandbox</a>. If you have played Homeworlds before, <a href="/login">log In</a> or <a href="/createAccount">create an account</a> to start playing! Otherwise <del>go to the <a href="/tutorials">tutorials page</a> to learn.</del> (Nope, not quite yet.)</p>
+				
+				<a class="btn btn-primary btn-lg" href="/lobby" role="button">Start Playing</a>
+				<a class="btn btn-info btn-lg" href="/tutorials" role="button" disabled>Learn How to Play</a>
+			</div>
 		</div>
 		<%- include("footer") %>
 	</body>

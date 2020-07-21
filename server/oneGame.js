@@ -14,10 +14,26 @@ function Game(id, options, players) {
 	this.socketRoom = "game-" + this.id.toString();
 	this.options = options;
 	this.players = players;
-	this.clocks = [];
 	// GameState player objects need to be strings
 	this.currentState = new GameState(players.map(player => player.username));
 	this.history = [[]]; // a lot like the client's...
+	
+	// Clocks!
+	const tc = options.timeControl;
+	if (tc) {
+		this.clocks = {};
+		for (let i = 0; i < players.length; i++) {
+			const player = players[i];
+			const clock = new GameClock(player.username, tc.start, tc.bonus, tc.type);
+			clock.addListener(function() {
+				console.log(`\n\n\n---\n${player.username} RAN OUT OF TIME\n---\n\n\n`);
+			}.bind(this));
+			this.clocks[player.username] = clock;
+		}
+	} else {
+		this.clocks = null;
+	}
+	console.log("Game Starting. Clocks:", this.clocks);
 }
 
 // standard
@@ -30,9 +46,8 @@ Game.prototype.getPlayerByUsername = function(username) {
 	return null;
 };
 
-// TODO: I am not sure what to do about race conditions
-// e.g. Alice has a lagged connection and sends "sacrifice ..." then 2 moves
-// but the move is received before the sacrifice
+// TODO: better support for race conditions
+// basically we at endTurn send the server an array of all actions we take on the turn
 Game.prototype.doAction = function(action, player) {
 	console.log("Game move", action, player);
 	
@@ -79,13 +94,56 @@ Game.prototype.doAction = function(action, player) {
 
 Game.prototype.doEndTurn = function(player) {
 	console.log("End turn", player);
+	console.log("Current turn is ", this.currentState.turn);
 	
-	const name = player.username;
-	const newState = this.currentState.doEndTurn();
-	
-	// hmmm... should I instead make the history a private variable?
-	this.history.push([newState]);
-	this.currentState = newState;
+	if (this.currentState.turn === player.username) {
+		const name = player.username;
+		const newState = this.currentState.doEndTurn();
+		
+		// hmmm... should I instead make the history a private variable?
+		this.history.push([newState]);
+		this.currentState = newState;
+		
+		if (this.clocks) {
+			// press their clock
+			this.clocks[player.username].endTurn();
+			// start the next player's clock running
+			this.clocks[newState.turn].beginTurn();
+		}
+	} else {
+		console.warn("[Game#doEndTurn] Wrong player's turn!");
+	}
 }
+
+// Prepares a list of clocks in a format for sending to the client.
+Game.prototype.getClientClockArray = function() {
+	if (this.clocks) {
+		var clockArray = [];
+		// this is more consistent than doing for-in
+		for (let i = 0; i < this.players.length; i++) {
+			const player = this.players[i];
+			const clock = this.clocks[player.username];
+			clockArray.push(clock.getClientData());
+		}
+		return clockArray;
+	} else {
+		return null;
+	}
+}
+// Don't send the entire game object...
+Game.prototype.getClientData = function() {
+	return {
+		id: this.id,
+		options: this.options,
+		players: this.players.map(player => player.username),
+		clocks: this.getClientClockArray(),
+		currentState: this.currentState,
+		// we don't need the full history list
+	};
+};
+
+Game.prototype.declareGameEnd = function() {
+	
+};
 
 module.exports = Game;

@@ -2,7 +2,7 @@
 
 This is a real-time web implementation of the two-player strategy board game (Binary) [Homeworlds](https://www.looneylabs.com/games/homeworlds).
 
-Currently, you can create games and 
+Currently, you can play against others but the user interface is not great. The game does not ask you to confirm upon doing certain Bad Things. 
 
 ## Running
 

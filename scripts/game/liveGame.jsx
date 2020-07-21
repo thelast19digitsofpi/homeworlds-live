@@ -5,27 +5,98 @@
 
 function LiveGameDisplay(props) {
 	// get the state object of the game
-	const state = props.data;
+	const state = props.reactState;
 	
-	const clocks = []; // somehow get these
+	const clocks = state.clocks; // somehow get these
 	let clockElements = [];
-	for (let i = 0; i < clocks.length; i++) {
-		let className = "clock";
-		if (clocks[i].running) {
-			className += " active";
+	if (clocks) {
+		for (let i = 0; i < clocks.length; i++) {
+			const clock = clocks[i];
+			let className = "clock text-md-right card";
+			if (clock.running) {
+				className += " bg-primary text-light";
+			}
+			
+			// Work out how much time is really left.
+			/*
+			Clock is {
+				username: username,
+				running: Boolean,
+				timeLeft: seconds,
+				delayLeft: seconds,
+				type: "delay" or "increment",
+				bonus: seconds,
+			};
+			These values all reflect what was on the clock WHEN IT WAS SENT.
+			*/
+			
+			// How much time has passed since you started?
+			const timeElapsed = (Date.now() - state.clocksReceived) / 1000;
+			if (timeElapsed < 0) {
+				console.warn("Oh no! There has been a temporal distortion!", state.clocksReceived, timeElapsed);
+			}
+			let timeLeft = clock.timeLeft;
+			if (clock.running) {
+				// so here some time has passed...
+				if (timeElapsed > clock.delayLeft) {
+					// delay time is expired
+					// remove however much time has passed exceeding the delay
+					timeLeft -= (timeElapsed - clock.delayLeft);
+				}
+			}
+			
+			// Absolute value, to avoid weird renders like -1:0-2
+			const min = Math.floor(Math.abs(timeLeft) / 60);
+			// floor both, so it is an integer
+			const sec = Math.floor(Math.abs(timeLeft) % 60);
+			
+			const timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
+			
+			let usernameClassName = "card-title clock-name";
+			if (clock.username.length > 15) {
+				usernameClassName += " h6"; // make it small to fit
+			} else if (clock.username.length > 6) {
+				usernameClassName += " h5";
+			} else {
+				usernameClassName += " h4"; // more room = bigger
+			}
+			
+			clockElements.push(
+				<div key={clock.username} className={className}>
+					<div className="card-body">
+						<h5 className="card-title clock-name">{clock.username}</h5>
+						<h4 className="clock-value">{timeDisplay}</h4>
+					</div>
+				</div>
+			);
 		}
-		clockElements.push(<div className={className}>
-			<p className="title clock-name">Player Name</p>
-			<p className="clock-value">03:44</p>
-		</div>)
+	} else {
+		// still show the player turn order
+		const current = props.gameState;
+		const players = current.turnOrder;
+		for (let i = 0; i < players.length; i++) {
+			let className = "clock";
+			if (players[i] === current.turn) {
+				className += " active";
+			}
+			clockElements.push(<div key={players[i]} className={className}>
+				<div className="card-body">
+					<h5 className="card-title clock-name">{players[i]}</h5>
+				</div>
+			</div>)
+		}
+		clockElements.push()
 	}
 	
-	return <React.Fragment>
-		{props.children}
-		<div className="lower-display">
-			{clockElements}
-		</div>
-	</React.Fragment>
+	return <div className="row">
+		<div className="col-12 col-lg-10">{props.children}</div>
+		{/*
+		basically:
+		on small screens, clocks are positioned below the board and flex horizontally
+		on large screens, clocks are positioned to the right and flex vertically
+		*/}
+		<div className="col-12 col-lg-2 d-flex flex-row flex-lg-column justify-content-around justify-content-lg-start">{clockElements}</div>
+	</div>
 }
 
 // wrapper component, events, additional state
@@ -43,6 +114,10 @@ const LiveGame = withGame(LiveGameDisplay, {
 				// Start homeworld setup if and only if it is your turn
 				actionInProgress: (isYourTurn && isHomeworldSetup) ? {type: "homeworld"} : null,
 				viewer: data.viewer,
+				
+				// clock functionality requires knowing when the clocks were received
+				clocks: game.clocks,
+				clocksReceived: Date.now(),
 			});
 		}.bind(this));
 		
@@ -53,6 +128,20 @@ const LiveGame = withGame(LiveGameDisplay, {
 		socket.on("endTurn", function(data) {
 			this.doEndTurn(data.player);
 		}.bind(this));
+		
+		// whenever you receive clock data
+		socket.on("clockUpdate", function(data) {
+			// data.clocks is currently the only thing it sends
+			if (data.clocks) {
+				this.setState({
+					clocks: data.clocks,
+					clocksReceived: Date.now(),
+				});
+			}
+		}.bind(this));
+		
+		// TODO: Better way to handle the timers
+		setInterval(this.forceUpdate.bind(this), 250);
 	},
 	
 	// this one just generically asks if you can do anything at all
@@ -86,6 +175,9 @@ const LiveGame = withGame(LiveGameDisplay, {
 	},
 }, {
 	viewer: YOUR_USERNAME,
+	clocks: [],
+	clocksReceived: Date.now(),
+	pingMS: 0,
 });
 
 ReactDOM.render(<LiveGame />, document.getElementById("game-container"));
