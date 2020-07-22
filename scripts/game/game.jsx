@@ -43,6 +43,8 @@ function withGame(WrappedComponent, events, additionalState) {
 				// For actions in progress. E.g. you click the "trade" button THEN a stash piece.
 				actionInProgress: null,
 			};
+			// start with a state in the history list!
+			this.state.history[0].push(this.state.current);
 			
 			// extend or alter that state
 			for (let key in additionalState) {
@@ -323,6 +325,33 @@ function withGame(WrappedComponent, events, additionalState) {
 			// setTimeout(() => console.log(this.state.history), 100);
 		}
 		
+		// Undoes the actions you took this turn.
+		doResetTurn(player) {
+			const newHistory = this.state.history.slice();
+			console.log(newHistory);
+			// clear the most recent turn
+			const startOfTurn = newHistory[newHistory.length - 1][0];
+			// set the most recent turn to only contain that state
+			newHistory[newHistory.length - 1] = [startOfTurn];
+			// change the history
+			this.setState({
+				history: newHistory,
+				current: startOfTurn,
+				// also clear the action popup and action in progress
+				actionInProgress: (startOfTurn.phase === "setup" ? {
+					type: "homeworld",
+					player: player,
+				} : null),
+				popup: null,
+			});
+			
+			// also call any events
+			if (events.afterResetTurn) {
+				events.afterResetTurn.call(this, player, startOfTurn);
+			}
+		}
+		
+		
 		
 		/*
 		Clicking on a ship.
@@ -560,10 +589,13 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 		}
 		
-		// for my own testing, since React components seem to be inaccessible from window
-		// note: probably going obsolete...
-		testButton() {
+		handleResetClick() {
+			if (events.canInteract && !events.canInteract.call(this, this.getCurrentState())) {
+				console.warn("Cannot Interact with the Board");
+				return false;
+			}
 			
+			this.doResetTurn(this.getCurrentState().turn);
 		}
 		
 		render() {
@@ -635,14 +667,16 @@ function withGame(WrappedComponent, events, additionalState) {
 							data={current.map}
 							handleClick={(serial) => this.handleStashClick(serial)}
 						/>
-						<button onClick={() => this.resetTurn()}
-						        disabled={!canInteract}
-						        className="btn btn-danger">Reset Turn</button>
+						{canInteract && <button
+							onClick={() => this.handleResetClick()}
+							className="btn btn-danger">Reset Turn</button>
+						}
 						<br/>
-						{/* todo: clicking "end turn" should check for warnings like overpopulations */}
+						{canInteract &&
+							/* todo: clicking "end turn" should check for warnings like overpopulations */
 						<button className="btn btn-lg btn-info"
-						        disabled={!canInteract}
 						        onClick={() => this.doEndTurn(current.turn)}>End Turn</button>
+						}
 					</div>
 				</div>
 			</WrappedComponent>;

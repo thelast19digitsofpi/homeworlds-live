@@ -484,7 +484,15 @@ class GameState {
 	copyMap(oldMap) {
 		let newMap = {};
 		for (let serial in oldMap) {
-			newMap[serial] = oldMap[serial];
+			if (oldMap[serial] === null) {
+				newMap[serial] = null;
+			} else {
+				// deep copy
+				newMap[serial] = {
+					at: oldMap[serial].at,
+					owner: oldMap[serial].owner,
+				};
+			}
 		}
 		return newMap;
 	}

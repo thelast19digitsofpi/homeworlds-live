@@ -1,15 +1,18 @@
 # homeworlds-live
 
-This is a real-time web implementation of the two-player strategy board game (Binary) [Homeworlds](https://www.looneylabs.com/games/homeworlds).
+This is going to be a real-time web implementation of the two-player strategy board game (Binary) [Homeworlds](https://www.looneylabs.com/games/homeworlds), published by Looney Labs. I am not affiliated with them.
 
-Currently, you can play against others but the user interface is not great. The game does not ask you to confirm upon doing certain Bad Things. 
-
-## Running
-
-After downloading the repository, `cd` into the main directory. You will need to create a self-signed SSL certificate and save the files as `key.pem` and `cert.pem`.
-
-You might have to do some other stuff to get it to work. Right now I use Babel 
-
-You can then use `make run` to start the server. If you do not have `make` installed, then just run `node main.js`.
+It is still in progress. Actually, assuming I did not break anything, you can start and play games and it declares a winner, but it does not store anything or have a tutorial. I just resisted putting it on GitHub because I wanted to provide proper attribution for the game (and because I was unsure about licensing).
 
 
+
+This **implementation** of the game of Homeworlds is licensed under GPL 3.0.
+
+### Coding style quirks
+I used tabs for indentation and (almost) always end objects with a comma, like
+```javascript
+{
+	prop1: "value1",
+	prop2: 2, // <-- comma here
+}
+```

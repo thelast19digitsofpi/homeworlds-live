@@ -115,6 +115,24 @@ Game.prototype.doEndTurn = function(player) {
 	}
 }
 
+Game.prototype.doResetTurn = function(player) {
+	console.log("Reset turn", player);
+	console.log("Current turn is ", this.currentState.turn);
+	
+	if (this.currentState.turn === player.username) {
+		const name = player.username;
+		// beginning of turn = the first part of the most recent turn
+		const newState = this.history[this.history.length - 1][0];
+		
+		// the most recent turn loses all but the first state recorded
+		this.history[this.history.length - 1].splice(1);
+		// and we return to that state
+		this.currentState = newState;
+	} else {
+		console.warn("[Game#doResetTurn] Wrong player's turn!");
+	} 
+}
+
 // Prepares a list of clocks in a format for sending to the client.
 Game.prototype.getClientClockArray = function() {
 	if (this.clocks) {

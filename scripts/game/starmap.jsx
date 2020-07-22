@@ -97,7 +97,6 @@ class StarMap extends React.Component {
 		
 		const sizes1 = this.getUniqueSizes(hw1);
 		const sizes2 = this.getUniqueSizes(hw2);
-		console.warn("[renderHTMLContainers]", sizes1, sizes2);
 		
 		// we will need this often
 		const rowDisplay = (<React.Fragment>

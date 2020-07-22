@@ -2,6 +2,7 @@
 	"name": "homeworlds-live",
 	"version": "0.0.1",
 	"description": "Real-time implementation of Homeworlds board game",
+	"license": "GPL-3.0-or-later",
 	"dependencies": {
 		"argon2-ffi": "^1.2.0",
 		"babel-cli": "^6.26.0",

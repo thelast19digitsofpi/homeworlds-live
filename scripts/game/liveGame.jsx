@@ -111,6 +111,7 @@ const LiveGame = withGame(LiveGameDisplay, {
 			this.setState({
 				// we want a GameState object, not a vanilla object
 				current: GameState.recoverFromJSON(game.currentState),
+				history: data.history,
 				// Start homeworld setup if and only if it is your turn
 				actionInProgress: (isYourTurn && isHomeworldSetup) ? {type: "homeworld"} : null,
 				viewer: data.viewer,
@@ -127,6 +128,9 @@ const LiveGame = withGame(LiveGameDisplay, {
 		}.bind(this));
 		socket.on("endTurn", function(data) {
 			this.doEndTurn(data.player);
+		}.bind(this));
+		socket.on("resetTurn", function(data) {
+			this.doResetTurn(data.player);
 		}.bind(this));
 		
 		// whenever you receive clock data
@@ -169,7 +173,16 @@ const LiveGame = withGame(LiveGameDisplay, {
 		if (player === YOUR_USERNAME) {
 			console.log("emitting");
 			socket.emit("doEndTurn", {
-				gameID: GAME_ID
+				gameID: GAME_ID,
+			});
+		}
+	},
+	onAfterResetTurn: function(player, newState) {
+		console.warn("onAfterResetTurn", arguments);
+		if (player === YOUR_USERNAME) {
+			console.log("emitting");
+			socket.emit("doResetTurn", {
+				gameID: GAME_ID,
 			});
 		}
 	},

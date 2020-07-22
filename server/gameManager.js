@@ -92,6 +92,7 @@ ioGame.on("connection", function(socket) {
 			// maybe this could be more refined? hmmm...
 			socket.emit("gamePosition", {
 				game: game.getClientData(),
+				history: game.history,
 				viewer: viewer,
 			});
 			socket.join(game.socketRoom);
@@ -146,7 +147,35 @@ ioGame.on("connection", function(socket) {
 	// Resets the board to the position at the start of your turn.
 	// Like an "undo" option, in a sense.
 	socket.on("doResetTurn", function onDoReset(data) {
-		console.error("resetTurn is not supported!");
+		// standard
+		const game = gameManager.getGameById(data.gameID);
+		if (game) {
+			const you = game.getPlayerByUsername(thisUsername);
+			if (you) {
+				try {
+					// attempt to do the action
+					game.doResetTurn(you);
+					// sends the action to everyone except the sender!
+					socket.to(game.socketRoom).emit("resetTurn", {
+						player: you.username,
+					});
+				} catch (error) {
+					// no use sending the player an error message
+					// they probably just double-clicked
+					console.error("[socket/doResetTurn] Problem:", error);
+				}
+			} else {
+				// could not find your player
+				socket.emit("actionError", {
+					message: "You are not playing this game (or maybe there is a bug?).",
+				});
+			}
+		} else {
+			socket.emit("actionError", {
+				message: "Weird. I could not find that game. This is almost certainly a bug, but try refreshing.",
+			});
+			console.error(`BUG! Game ${data.gameID} was not found in doResetTurn ${action.type}`);
+		}
 	});
 	
 	socket.on("doEndTurn", function onDoEndTurn(data) {

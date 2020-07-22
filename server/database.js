@@ -11,10 +11,10 @@ const db = new sqlite3.Database(".data/database.db", function(error) {
 		console.log(arguments);
 		db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users';", [], function(error, stuff) {
 			if (!stuff) {
-				// table exists
+				// table does not exist
 				db.run(`CREATE TABLE users(
 					id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-					username TEXT NOT NULL,
+					username TEXT UNIQUE NOT NULL,
 					hashedPassword TEXT NOT NULL,
 					cookie TEXT,
 					cookieExpires INTEGER
