@@ -25,7 +25,7 @@ function Stash(props) {
 					// put that data into a <Piece>
 					const css = {
 						// height of a ship is 40 + 32*size
-						marginTop: scaleFactor * (0 - 32 * size),
+						marginTop: scaleFactor * -(4 + 32 * size),
 					};
 					
 					// This is a neat trick: put the props in, them map them to React elements

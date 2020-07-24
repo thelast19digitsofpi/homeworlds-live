@@ -16,12 +16,12 @@
 		</div>
 		<%- include("footer") %>
 		<!-- Socket -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js" nonce="<%- nonce %>"></script>
 		<!-- React -->
-		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
-		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin nonce="<%- nonce %>"></script>
+		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin nonce="<%- nonce %>"></script>
 		<!-- Babel -->
-		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+		<script src="https://unpkg.com/babel-standalone@6/babel.min.js" nonce="<%- nonce %>"></script>
 		
 		<script>
 const socket = io("/lobby");

@@ -11,15 +11,15 @@
 		
 		<%- include("footer") %>
 		
-		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
-		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin nonce="<%- nonce %>"></script>
+		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin nonce="<%- nonce %>"></script>
 		<!-- Babel -->
-		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+		<script src="https://unpkg.com/babel-standalone@6/babel.min.js" nonce="<%- nonce %>"></script>
 		
 		<!-- Socket -->
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js" nonce="<%- nonce %>"></script>
 		
-		<script>
+		<script nonce="<%- nonce %>">
 const socket = io("/game", {
 	// If it fails to reconnect after 10 attempts then something is wrong
 	// we should probably just reload the page
@@ -36,16 +36,16 @@ socket.on("disconnect", function(args) {
 		</script>
 		
 		<!-- Scripts for game components -->
-		<script src="/scripts/game/gameState.js" type="text/javascript"></script> <!-- pure js -->
-		<script src="/scripts/game/actionInProgress.jsx" type="text/babel"></script>
-		<script src="/scripts/game/piece.jsx" type="text/babel"></script>
-		<script src="/scripts/game/system.jsx" type="text/babel"></script>
-		<script src="/scripts/game/action_popup.jsx" type="text/babel"></script>
-		<script src="/scripts/game/stash.jsx" type="text/babel"></script>
-		<script src="/scripts/game/starmap.jsx" type="text/babel"></script>
-		<script src="/scripts/game/game.jsx" type="text/babel"></script>
+		<script src="/scripts/game/gameState.js" type="text/javascript" nonce="<%- nonce %>"></script> <!-- pure js -->
+		<script src="/scripts/game/actionInProgress.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		<script src="/scripts/game/piece.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		<script src="/scripts/game/system.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		<script src="/scripts/game/action_popup.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		<script src="/scripts/game/stash.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		<script src="/scripts/game/starmap.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		<script src="/scripts/game/game.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 		
 		<!-- Live game script (includes sockets and timers and so on) -->
-		<script src="/scripts/game/liveGame.jsx" type="text/babel"></script>
+		<script src="/scripts/game/liveGame.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 	</body>
 </html>

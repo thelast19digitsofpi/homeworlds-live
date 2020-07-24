@@ -13,10 +13,17 @@ function Game(id, options, players) {
 	this.id = id;
 	this.socketRoom = "game-" + this.id.toString();
 	this.options = options;
-	this.players = players;
+	this.players = players.slice();
 	// GameState player objects need to be strings
 	this.currentState = new GameState(players.map(player => player.username));
 	this.history = [[]]; // a lot like the client's...
+	
+	// Race Condition Defenses, Inc.
+	this.turnResets = 0;
+	this.actionsThisTurn = [];
+	
+	// slightly different from history which records gameState objects
+	this.allActions = [];
 	
 	// Clocks!
 	const tc = options.timeControl;
@@ -36,6 +43,19 @@ function Game(id, options, players) {
 	console.log("Game Starting. Clocks:", this.clocks);
 }
 
+// for debug
+Game.prototype.debugLogMap = function() {
+	const map = this.currentState.map;
+	console.log("---begin map");
+	for (let serial in map) {
+		const data = map[serial];
+		if (data !== null) {
+			console.log("\t", serial + "/" + data.at + " " + (data.owner || "star"))
+		}
+	}
+	console.log("---end map");
+}
+
 // standard
 Game.prototype.getPlayerByUsername = function(username) {
 	for (let i = 0; i < this.players.length; i++) {
@@ -49,7 +69,7 @@ Game.prototype.getPlayerByUsername = function(username) {
 // TODO: better support for race conditions
 // basically we at endTurn send the server an array of all actions we take on the turn
 Game.prototype.doAction = function(action, player) {
-	console.log("Game move", action, player);
+	console.log("Game move", action, player.username);
 	
 	let newState;
 	// Each doThing() function throws if the move is illegal.
@@ -92,9 +112,9 @@ Game.prototype.doAction = function(action, player) {
 	// Do not update the clocks or anything because we have not called endTurn()
 }
 
-Game.prototype.doEndTurn = function(player) {
-	console.log("End turn", player);
-	console.log("Current turn is ", this.currentState.turn);
+Game.prototype.doEndTurn = function(player, actionList) {
+	console.log("End turn", player.username);
+	console.log("Current turn is", this.currentState.turn);
 	
 	if (this.currentState.turn === player.username) {
 		const name = player.username;
@@ -104,19 +124,26 @@ Game.prototype.doEndTurn = function(player) {
 		this.history.push([newState]);
 		this.currentState = newState;
 		
+		// push the array, so we get an array of arrays
+		this.allActions.push(actionList);
+		
 		if (this.clocks) {
 			// press their clock
 			this.clocks[player.username].endTurn();
-			// start the next player's clock running
-			this.clocks[newState.turn].beginTurn();
+			if (newState.phase !== "end") {
+				// start the next player's clock running
+				this.clocks[newState.turn].beginTurn();
+			}
 		}
 	} else {
 		console.warn("[Game#doEndTurn] Wrong player's turn!");
 	}
+	
+	this.debugLogMap();
 }
 
 Game.prototype.doResetTurn = function(player) {
-	console.log("Reset turn", player);
+	console.log("Reset turn", player.username);
 	console.log("Current turn is ", this.currentState.turn);
 	
 	if (this.currentState.turn === player.username) {
@@ -133,6 +160,84 @@ Game.prototype.doResetTurn = function(player) {
 	} 
 }
 
+// Methods called when the client sends information.
+// Returns true if it worked.
+Game.prototype.onReceiveAction = function(data, isEndingTurn, player) {
+	// I'm finding the server is sharing a LOT of the same logic as the client...
+	console.log("onReceiveAction", player.username, this.currentState.turn);
+	if (player.username === this.currentState.turn) {
+		// Which turn attempt is this?
+		const theirResets = data.turnResets;
+		const ourResets = this.turnResets;
+		const theirActions = data.actionsThisTurn;
+		// First resolve any missed or new actions.
+		if (theirResets > ourResets) {
+			// this is on a new iteration of the turn
+			// reset and try again
+			this.doResetTurn(data.player);
+			// then do all their actions
+			this.turnResets = theirResets;
+			for (var i = 0; i < theirActions.length; i++) {
+				this.doAction(theirActions[i], data.player);
+			}
+			this.actionsThisTurn = theirActions.slice();
+		} else if (theirResets === ourResets) {
+			// this is on the same turn
+			// do any actions above and beyond what we recorded
+			const ourActions = this.actionsThisTurn;
+			// NOTE: Possible bug here if theirActions and ourActions do not line up
+			// but that shouldn't happen!
+			
+			// e.g. we have 2 actions and they send 5: loop from [2] to [4]
+			for (let i = ourActions.length; i < theirActions.length; i++) {
+				this.doAction(theirActions[i], player);
+				// also add it to our action list
+				ourActions.push(theirActions[i]);
+			}
+		} else {
+			// else, this message came from an outdated turn
+			// do nothing
+			return false;
+		}
+		
+		// End the turn if appropriate.
+		if (isEndingTurn) {
+			this.doEndTurn(player, theirActions);
+			this.actionsThisTurn = [];
+			this.turnResets = 0;
+		}
+		return true;
+	} else {
+		// wrong turn
+		console.warn("[Game#onReceiveAction] Wrong Player's Turn");
+		return false;
+	}
+}
+
+Game.prototype.onReceiveReset = function(data, player) {
+	// They just asked to reset their turn.
+	// Only comply if this is not an old request!
+	if (player.username === this.currentState.turn) {
+		if (data.turnResets > this.turnResets) {
+			this.doResetTurn(player);
+			this.turnResets = data.turnResets;
+			this.actionsThisTurn = [];
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		// wrong turn
+		console.warn("[Game@onReceiveReset] Wrong Player's Turn");
+		return false;
+	}
+}
+
+// for clocks, mostly
+Game.prototype.manuallyEliminate = function(player) {
+	
+}
+
 // Prepares a list of clocks in a format for sending to the client.
 Game.prototype.getClientClockArray = function() {
 	if (this.clocks) {
@@ -141,7 +246,9 @@ Game.prototype.getClientClockArray = function() {
 		for (let i = 0; i < this.players.length; i++) {
 			const player = this.players[i];
 			const clock = this.clocks[player.username];
-			clockArray.push(clock.getClientData());
+			if (clock) {
+				clockArray.push(clock.getClientData());
+			}
 		}
 		return clockArray;
 	} else {
@@ -160,8 +267,5 @@ Game.prototype.getClientData = function() {
 	};
 };
 
-Game.prototype.declareGameEnd = function() {
-	
-};
 
 module.exports = Game;

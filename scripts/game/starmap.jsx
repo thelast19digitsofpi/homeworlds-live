@@ -122,7 +122,7 @@ class StarMap extends React.Component {
 				return rowDisplay;
 			}
 		} else if (sizes1.length === 2 && sizes2.length === 2) {
-			console.log("[Starmap] cases E or F");
+			//console.log("[Starmap] cases E or F");
 			// both homeworlds have 2 distinct sizes
 			let missingSize = 0;
 			// Check if the same size is absent in both homeworlds.
@@ -133,12 +133,12 @@ class StarMap extends React.Component {
 				}
 			}
 			if (missingSize !== 0) {
-				console.log("case e", missingSize);
+				//console.log("case e", missingSize);
 				// so they were 2 moves away, type (e)
 				const smallerSize = (missingSize === 1) ? 2 : 1;
 				return this.renderHTMLThreeColumns(smallerSize, containers.adjBoth, containers.adjNeither);
 			} else {
-				console.log("case f");
+				//console.log("case f");
 				// standard 3 moves away, type (f)
 				return rowDisplay;
 			}
@@ -148,7 +148,6 @@ class StarMap extends React.Component {
 			// there is really no hope for order here
 			return rowDisplay;
 		} else {
-			console.log("[Starmap] cases B or D")
 			/*
 			There are 9 possibilitiesfor the number of different sizes at each homeworld:
 			0,0; 0,1; 0,2; 1,0; 1,1; 1,2; 2,0; 2,1; 2,2.

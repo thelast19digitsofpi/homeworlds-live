@@ -71,6 +71,21 @@ app.get("/game/:gameID", function(req, res) {
 	}
 });
 
+
+// For debugging lag.
+function pretendLag(ms) {
+	// just for comparison
+	const randomID = Math.random();
+	console.log("begin fake lag", Math.round(ms), "id", randomID);
+	return new Promise(function(resolve, reject) {
+		setTimeout(function() {
+			console.log("end fake lag", Math.round(ms), "id", randomID);
+			resolve();
+		}, ms);
+	});
+};
+
+
 ioGame.on("connection", function(socket) {
 	console.log("Connection to some game");
 	
@@ -94,6 +109,9 @@ ioGame.on("connection", function(socket) {
 				game: game.getClientData(),
 				history: game.history,
 				viewer: viewer,
+				
+				actionsThisTurn: game.actionsThisTurn,
+				turnResets: game.turnResets,
 			});
 			socket.join(game.socketRoom);
 		} else {
@@ -103,7 +121,10 @@ ioGame.on("connection", function(socket) {
 	});
 	
 	// Event listeners
-	socket.on("doAction", function onDoAction(data) {
+	socket.on("doAction", async function onDoAction(data) {
+		console.log("doAction");
+		// TODO: Obviously, delete this!!
+		await pretendLag(Math.random() * 3000);
 		// you are still connected
 		renewCookie(thisUsername);
 		// ok now actually find the requested game
@@ -113,12 +134,18 @@ ioGame.on("connection", function(socket) {
 			if (you) {
 				// attempt to do the action
 				try {
-					game.doAction(data.action, you);
+					const success = game.onReceiveAction(data, false, you);
 					// sends the action to everyone except the sender!
-					socket.to(game.socketRoom).emit("action", {
-						player: you.username,
-						action: data.action,
-					});
+					if (success) {
+						socket.to(game.socketRoom).emit("action", {
+							player: you.username,
+							action: data.action,
+							turnResets: data.turnResets,
+							actionsThisTurn: data.actionsThisTurn,
+						});
+					} else {
+						console.log("Action failed. Perhaps tell client?");
+					}
 				} catch (error) {
 					if (error.constructor === Error) {
 						socket.emit("actionError", {
@@ -146,7 +173,10 @@ ioGame.on("connection", function(socket) {
 	
 	// Resets the board to the position at the start of your turn.
 	// Like an "undo" option, in a sense.
-	socket.on("doResetTurn", function onDoReset(data) {
+	socket.on("doResetTurn", async function onDoReset(data) {
+		console.log("doResetTurn");
+		// TODO: Obviously, delete this!!
+		await pretendLag(Math.random() * 3000);
 		// standard
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
@@ -154,11 +184,17 @@ ioGame.on("connection", function(socket) {
 			if (you) {
 				try {
 					// attempt to do the action
-					game.doResetTurn(you);
-					// sends the action to everyone except the sender!
-					socket.to(game.socketRoom).emit("resetTurn", {
-						player: you.username,
-					});
+					const success = game.onReceiveReset(data, you);
+					if (success) {
+						// sends the action to everyone except the sender!
+						socket.to(game.socketRoom).emit("resetTurn", {
+							player: you.username,
+							actionsThisTurn: data.actionsThisTurn,
+							turnResets: data.turnResets,
+						});
+					} else {
+						console.log("Reset turn failed. Perhaps tell client?")
+					}
 				} catch (error) {
 					// no use sending the player an error message
 					// they probably just double-clicked
@@ -178,22 +214,28 @@ ioGame.on("connection", function(socket) {
 		}
 	});
 	
-	socket.on("doEndTurn", function onDoEndTurn(data) {
+	socket.on("doEndTurn", async function onDoEndTurn(data) {
+		// TODO: Obviously, delete this!!
+		await pretendLag(Math.random() * 3000);
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
 			const you = game.getPlayerByUsername(thisUsername);
 			if (you) {
 				try {
 					// attempt to do the action
-					game.doEndTurn(you);
-					// sends the action to everyone except the sender!
-					socket.to(game.socketRoom).emit("endTurn", {
-						player: you.username,
-					});
-					// using ioGame sends it to everyone
-					ioGame.to(game.socketRoom).emit("clockUpdate", {
-						clocks: game.getClientClockArray(),
-					});
+					const success = game.onReceiveAction(data, true, you);
+					if (success) {
+						// sends the action to everyone except the sender!
+						socket.to(game.socketRoom).emit("endTurn", {
+							player: you.username,
+							turnResets: data.turnResets,
+							actionsThisTurn: data.actionsThisTurn,
+						});
+						// using ioGame sends the clocks to everyone
+						ioGame.to(game.socketRoom).emit("clockUpdate", {
+							clocks: game.getClientClockArray(),
+						});
+					}
 				} catch (error) {
 					// no use sending the player an error message
 					// they probably just double-clicked

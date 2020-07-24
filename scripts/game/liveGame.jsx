@@ -116,6 +116,9 @@ const LiveGame = withGame(LiveGameDisplay, {
 				actionInProgress: (isYourTurn && isHomeworldSetup) ? {type: "homeworld"} : null,
 				viewer: data.viewer,
 				
+				actionsThisTurn: data.actionsThisTurn,
+				turnResets: data.turnResets,
+				
 				// clock functionality requires knowing when the clocks were received
 				clocks: game.clocks,
 				clocksReceived: Date.now(),
@@ -123,14 +126,87 @@ const LiveGame = withGame(LiveGameDisplay, {
 		}.bind(this));
 		
 		// race conditions are going to seriously mess this up...
-		socket.on("action", function(data) {
-			this.doAction(data.action, data.player);
-		}.bind(this));
+		
+		// Largely the same logic is used for action and endTurn.
+		// The only difference is that endTurn also calls doEndTurn.
+		const resolveActions = function(data) {
+			try {
+				// Which turn attempt is this?
+				const theirResets = data.turnResets;
+				const ourResets = this.state.turnResets;
+				const theirActions = data.actionsThisTurn;
+				if (theirResets > ourResets) {
+					console.log("Oops, we need to reset!");
+					// this is on a new iteration of the turn
+					// reset and try again
+					this.doResetTurn(data.player);
+					// then do all their actions
+					for (var i = 0; i < theirActions.length; i++) {
+						this.doAction(theirActions[i], data.player);
+					}
+				} else if (theirResets === ourResets) {
+					// this is on the same turn
+					// do any actions above and beyond what we recorded
+					const ourActions = this.state.actionsThisTurn;
+					// NOTE: Possible bug here if theirActions and ourActions do not line up
+					// but that shouldn't happen!
+					
+					console.log("They have done", theirActions.length, "actions and we have registered", ourActions.length);
+					// e.g. we have 2 actions and they send 5: loop from [2] to [4]
+					for (let i = ourActions.length; i < theirActions.length; i++) {
+						console.log("Doing action", theirActions[i]);
+						this.doAction(theirActions[i], data.player);
+					}
+					
+					// Update our action list to match theirs.
+					if (ourActions.length < theirActions.length) {
+						this.setState({
+							actionsThisTurn: theirActions,
+						});
+					}
+				}
+				// else, this message came from an outdated turn
+				// do nothing
+			} catch (error) {
+				// Uh oh, this is really bad. We are out of sync.
+				// Ask for the game state again.
+				console.error("\n\n\n\n[resolveActions] SYNC ERROR!!\n\n");
+				console.error(error);
+				console.log("\n\n\n");
+				socket.emit("getGame", GAME_ID);
+			}
+		}.bind(this);
+		// Actions are easy
+		socket.on("action", resolveActions);
+		// Turn ending is more involved
 		socket.on("endTurn", function(data) {
-			this.doEndTurn(data.player);
+			resolveActions(data);
+			try {
+				this.doEndTurn(data.player);
+				this.setState({
+					turnResets: 0,
+					actionsThisTurn: [],
+				})
+			} catch (error) {
+				console.error("\n\n\n\n[endTurn] SYNC ERROR!!\n\n");
+				console.error(error);
+				console.log("\n\n\n");
+				socket.emit("getGame", GAME_ID);
+			}
 		}.bind(this));
+		// Turn resetting is less involved
 		socket.on("resetTurn", function(data) {
-			this.doResetTurn(data.player);
+			// this is very simple
+			console.warn("They Reset the Turn");
+			console.log(data);
+			console.log(this.state.turnResets);
+			if (data.turnResets > this.state.turnResets) {
+				this.doResetTurn(data.player);
+				this.setState({
+					turnResets: data.turnResets,
+					actionsThisTurn: [],
+				});
+			}
 		}.bind(this));
 		
 		// whenever you receive clock data
@@ -161,10 +237,19 @@ const LiveGame = withGame(LiveGameDisplay, {
 	onAfterAction: function(action, player, newState) {
 		console.warn("onAfterAction", player);
 		if (player === YOUR_USERNAME) {
+			// the action is yours
 			console.log("emitting");
+			// Append the newest action to your actions taken this turn
+			const actionsThisTurn = this.state.actionsThisTurn.concat([action]);
 			socket.emit("doAction", {
 				action: action,
 				gameID: GAME_ID,
+				// Race Condition Defenses, Inc.
+				actionsThisTurn: actionsThisTurn,
+				turnResets: this.state.turnResets,
+			});
+			this.setState({
+				actionsThisTurn: actionsThisTurn,
 			});
 		}
 	},
@@ -174,15 +259,32 @@ const LiveGame = withGame(LiveGameDisplay, {
 			console.log("emitting");
 			socket.emit("doEndTurn", {
 				gameID: GAME_ID,
+				// make sure we end the correct version of your turn
+				actionsThisTurn: this.state.actionsThisTurn,
+				turnResets: this.state.turnResets,
 			});
 		}
+		
+		// All end turns reset the action counters
+		this.setState({
+			actionsThisTurn: [],
+			turnResets: 0,
+		});
 	},
 	onAfterResetTurn: function(player, newState) {
 		console.warn("onAfterResetTurn", arguments);
 		if (player === YOUR_USERNAME) {
 			console.log("emitting");
+			// Simple countermeasure to ensure an old turn reset does not surface later
+			const turnResets = this.state.turnResets + 1;
 			socket.emit("doResetTurn", {
 				gameID: GAME_ID,
+				turnResets: turnResets,
+			});
+			// update the state
+			this.setState({
+				turnResets: turnResets,
+				actionsThisTurn: [],
 			});
 		}
 	},
@@ -191,6 +293,10 @@ const LiveGame = withGame(LiveGameDisplay, {
 	clocks: [],
 	clocksReceived: Date.now(),
 	pingMS: 0,
+	
+	// for race condition avoidance
+	actionsThisTurn: [],
+	turnResets: 0,
 });
 
 ReactDOM.render(<LiveGame />, document.getElementById("game-container"));

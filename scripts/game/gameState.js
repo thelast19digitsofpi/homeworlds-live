@@ -77,10 +77,62 @@ class GameState {
 		);
 	}
 	
+	static copyObject(obj) {
+		const newObject = {};
+		for (let prop in obj) {
+			if (obj.hasOwnProperty(prop)) {
+				newObject[prop] = obj[prop];
+			}
+		}
+		return newObject;
+	}
+	
 	/*
 	I now divide the methods into categories.
 	The methods below are basic queries.
 	*/
+	
+	// Checks if otherState is equal to this state.
+	// Note that "equal" here means they match exactly.
+	// Switching the positions of b2A and b2C returns false, for example.
+	// (This is because otherwise "move b2A to system 3" would act differently.)
+	equals(other) {
+		// the biggest checks are the map, actions left, HW data, and turn
+		// turn is easy
+		if (this.turn !== other.turn) {
+			return false;
+		}
+		
+		// actions is also easy
+		if (this.actions.number    !== other.actions.number ||
+		    this.actions.sacrifice !== other.actions.sacrifice) {
+			return false;
+		}
+		
+		// check the map next
+		for (let serial in this.map) {
+			// Does that piece exist in the other map?
+			if (!(serial in other.map)) {
+				return false;
+			}
+			// Is one null, but the other not?
+			const ourData = this.map[serial];
+			const theirData = other.map[serial];
+			if (ourData === null && theirData !== null) {
+				return false;
+			}
+			if (theirData === null && ourData === null) {
+				return false;
+			}
+			// Do they match?
+			if (ourData.at !== theirData.at || ourData.owner !== theirData.owner) {
+				return false;
+			}
+			// this piece is good, repeat for the others
+		}
+		
+		
+	}
 	
 	// Basic method to get all pieces at a particular system.
 	// Returns array of {serial: "", owner: ""}. As usual, owner=null means star.
@@ -772,7 +824,7 @@ class GameState {
 		return this.actions.number > 0 && (this.actions.sacrifice === null || this.actions.sacrifice === color);
 	}
 	
-	// These all start with "do" because they actually update the state!
+	// These all start with "do" because they return a new state!
 	// You can pass null for star2 to create a handicap homeworld
 	doHomeworld(player, star1, star2, ship) {
 		console.log("[GameState.doHomeworld]", player, star1, star2, ship);
@@ -1158,26 +1210,26 @@ class GameState {
 	getEndTurnWarnings() {
 		let warnings = [];
 		const you = this.turn;
+		const allHWs = this.getPiecesAtHomeworlds();
+		const yourData = allHWs[you];
+		const yourShips = yourData.ships;
+		const yourStars = yourData.stars;
+		const allPieces = yourShips.concat(yourStars);
 		// If we are setting up the game...
 		if (this.phase === "setup") {
 			// Check for your homeworld setup.
-			const allHWs = this.getPiecesAtHomeworlds();
 			
 			// Warnings to check:
 			// (1) Ship is not large
-			// (2) Only 1 star
+			// (2) Only 1 star (actually, this is currently impossible)
 			// (3) Stars are same size
 			// (4) Stars are same color
 			// (4) No Green
 			// (5) No Blue
-			const yourData = allHWs[you];
-			const yourShips = yourData.ships;
-			const yourStars = yourData.stars;
-			const allPieces = yourShips.concat(yourStars);
 			
 			// OK...
-			// So yourShips[0] is your only ship's serial; [1] is always the size. Is it 3?
-			if (yourShips[0][1] !== "3") {
+			// So yourShips[0] is your starting ship's serial; [1] is the size. Is it 3?
+			if (!yourShips[0] || yourShips[0][1] !== "3") {
 				warnings.push({
 					// levels are "note", caution", "warning", "danger"
 					level: "warning",
@@ -1195,7 +1247,7 @@ class GameState {
 				if (yourStars[0][1] === yourStars[1][1]) {
 					warnings.push({
 						level: "caution",
-						message: "You seem to have picked 2 stars of the same size. This could make it easier for your opponent to invade your homeworld, though it also may make it easier for you to grow...",
+						message: "You seem to have picked 2 stars of the same size. Your homeworld will be connected to more systems, which can make it easier to be invaded.",
 					});
 				}
 				// Are they the same color?!
@@ -1228,7 +1280,7 @@ class GameState {
 			if (!hasBlue) {
 				warnings.push({
 					level: "warning",
-					message: "You do not have trading (blue) technology in your homeworld! This can make it more difficult to get into all four colors.",
+					message: "You do not have trading (blue) technology in your homeworld! This can make it more difficult to diversify your fleet.",
 				});
 			}
 			
@@ -1236,6 +1288,46 @@ class GameState {
 			if (this.turnOrder.length === 2) {
 				// Do your sizes match the opponent's?
 				console.warn("todo... I want to get something else working first");
+			}
+		} else {
+			// not setup
+			if (yourShips.length === 0) {
+				this.warnings.push({
+					level: "danger",
+					message: "You can't abandon your homeworld, or else you lose! You need to make sure you have a ship at home when your turn ends. (Reset Turn if you need to.)",
+				});
+			}
+			
+			// check bluebird and large defense
+			let colorFrequencies = {};
+			let hasLarge = false;
+			for (let i = 0; i < yourShips.length; i++) {
+				const color = yourShips[i][0];
+				if (!colorFrequencies[color]) {
+					colorFrequencies[color] = 1;
+				} else {
+					colorFrequencies[color]++;
+				}
+				// also check size while we are at it
+				if (yourShips[i][1] === '3') {
+					hasLarge = true;
+				}
+			}
+			
+			const colors = Object.keys(colorFrequencies)
+			if (colors.length === 1) {
+				// you only have 1 color
+				if (yourShips.length === 3) {
+					this.warnings.push({
+						level: "warning",
+						message: "You have 3 ships in your homeworld, and they are all the same color. If your opponent can move just one more in, you will lose!",
+					});
+				} else if (yourShips.length === 2) {
+					this.warnings.push({
+						level: "note",
+						message: "You have 2 ships in your homeworld, and they are the same color. Be careful if your opponent can move 2 more and catastrophe you."
+					})
+				}
 			}
 		}
 	}
@@ -1253,7 +1345,7 @@ class GameState {
 		};
 		
 		// OK, so in order to do this properly, we have to update the state twice.
-		// First we update map and actions
+		// First we update map and actions...
 		const tempState = this.updateState({
 			map: cleanMap,
 			actions: newActions
@@ -1302,6 +1394,19 @@ class GameState {
 				actions: newActions,
 				homeworldData: newHWData,
 			});
+		}
+	}
+	
+	// OK, not last.
+	// Note: Players are automatically eliminated in doEndTurn() if their homeworld is destroyed. This only needs called if a player loses on time or resigns.
+	// This also advances the turn if it was the given player's turn.
+	manuallyEliminatePlayer(player) {
+		const newHWData = GameState.copyObject(this.homeworldData);
+		delete newHWData[player];
+		if (this.turn === player) {
+			// advance to the next turn
+			const index = 0;
+			
 		}
 	}
 	

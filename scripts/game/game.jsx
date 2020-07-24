@@ -211,8 +211,7 @@ function withGame(WrappedComponent, events, additionalState) {
 		*/
 		
 		// Does an action. The second parameter (player) can also be passed as a
-		// property of action as action.turn or action.player, but this is not
-		// recommended
+		// property of action as action.turn or action.player, but this is not recommended
 		doAction(action, player) {
 			if (typeof player === undefined) {
 				console.log("[doAction] Player not passed, this is wrong! (But will work, I think.)");
@@ -301,6 +300,12 @@ function withGame(WrappedComponent, events, additionalState) {
 				return;
 			}
 			
+			// Somewhat rough way of preventing end-turn before the homeworld is set up
+			if (current.phase === "setup" && this.state.actionInProgress) {
+				console.log("Cannot end turn without a homeworld!");
+				return;
+			}
+			
 			this.updateGameState(newState, true);
 			if (events.onAfterEndTurn) {
 				events.onAfterEndTurn.call(this, player, newState);
@@ -346,8 +351,8 @@ function withGame(WrappedComponent, events, additionalState) {
 			});
 			
 			// also call any events
-			if (events.afterResetTurn) {
-				events.afterResetTurn.call(this, player, startOfTurn);
+			if (events.onAfterResetTurn) {
+				events.onAfterResetTurn.call(this, player, startOfTurn);
 			}
 		}
 		
