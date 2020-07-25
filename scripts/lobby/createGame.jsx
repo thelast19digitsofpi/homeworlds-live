@@ -10,6 +10,9 @@ class CreateGame extends React.Component {
 		this.state = {
 			numPlayers: 2,
 			invitedPlayers: props.invitedPlayers || [],
+			
+			isRated: true,
+			
 			// tc stands for time control
 			isTimed: false,
 			tcMinutes: 10,
@@ -94,6 +97,10 @@ class CreateGame extends React.Component {
 		return <form onSubmit={formSubmitter}>
 			<div className="form-row">
 				<div className="col-md">
+					{/* 
+						Left Side.
+						Contains number of players, invitations, rated game option, and submit.
+					*/}
 					<div className="form-group">
 						{errorMessage}
 						<label htmlFor="selectNumPlayers">Number of Players</label>
@@ -104,6 +111,19 @@ class CreateGame extends React.Component {
 						</select>
 						<p className="form-text small">Currently only 2-player games are supported.</p>
 					</div>
+					
+					{/* Is game rated? */}
+					<div className="form-check">
+						<input type="checkbox"
+						       id="isRated"
+						       name="isRated"
+						       className="form-check-input"
+						       checked={this.state.isRated}
+						       onChange={this.handleInput} />
+						<label htmlFor="isRated" className="form-check-label">Is Game Rated?</label>
+					</div>
+					
+					{/* Invite Players */}
 					<div className="form-group">
 						<label htmlFor="selectInvitedPlayers">Invite Players (optional)</label>
 						<select className="custom-select"
@@ -119,11 +139,16 @@ class CreateGame extends React.Component {
 							Control+Click (Command on Mac) to select multiple or deselect.
 						</p>
 					</div>
+					
 					{/* If the display is 2 columns, it makes sense to put submit here */}
 					<input type="submit"
 					       className="btn btn-primary d-none d-md-inline-block" />
 				</div>
 				<div className="col-md">
+					{/* 
+						Right Side.
+						Entirely devoted to time control right now.
+					*/}
 					<div className="form-check">
 						<input type="checkbox"
 						       id="isTimed"
@@ -134,6 +159,7 @@ class CreateGame extends React.Component {
 						<label htmlFor="isTimed" className="form-check-label">Use Time Control?</label>
 					</div>
 					<p className="form-text small">Time controls limit the amount of time that a player has to take their turn. Your clock runs during your turn and stops when you are finished.</p>
+					{/* Enter starting time */}
 					<div className="form-group">
 						<label htmlFor="tcMinutes">Starting Time</label>
 						{/* I wish Bootstrap had an easier way to put 2 inputs on a line */}
@@ -170,6 +196,7 @@ class CreateGame extends React.Component {
 							</div>
 						</div>
 					</div>
+					{/* Enter delay or increment */}
 					<div className="form-row">
 						<div className="col form-group">
 							<label htmlFor="tcType">Time Control Type</label>
@@ -191,10 +218,10 @@ class CreateGame extends React.Component {
 							       onChange={this.handleInput} />
 						</div>
 					</div>
-					<p className="form-text small">Delay and Increment give additional time on each turn. <br/>
-						The difference is that Increment adds {this.state.tcBonus} seconds to your main clock after each turn, <strong>allowing you to gain time if you end your turn quickly</strong>. <br/>
-						Delay just does not start your clock until after {this.state.tcBonus} seconds, so your main clock will never increase. <br/>
-						Using a delay or increment of at least 3 seconds is recommended, but you can enter 0 to disable it.
+					<p className="form-text small"><strong>Delay</strong> gives you the first {this.state.tcBonus} seconds of each turn free. <br/>
+						<strong>Increment</strong> adds {this.state.tcBonus} seconds to your clock after each turn. <br/>
+						Delay does NOT let you gain time if you finish within the allotted time, but Increment DOES. <br/>
+						If you want neither, enter 0, but this is not recommended.
 					</p>
 					{/* If the display is 1 column, submit goes at the end */}
 					<input type="submit"

@@ -11,6 +11,7 @@ const Game = require("./oneGame.js");
 const db = require("./database.js");
 const {io, checkSocketCookie} = require("./socket.js");
 const {renewCookie} = require("./accounts.js");
+const elo = require("./elo.js");
 
 const ioGame = io.of("/game");
 ioGame.use(checkSocketCookie);
@@ -35,7 +36,7 @@ GameManager.prototype.getGameById = function(givenID) {
 GameManager.prototype.startGameByRoom = function(gameRoom) {
 	// This can NOT POSSIBLY be all there is...
 	// .slice() to copy the array
-	const newGame = new Game(gameRoom.id, gameRoom.options, gameRoom.players.slice());
+	const newGame = new Game(gameRoom.id, gameRoom.options, gameRoom.players.slice(), this);
 	this.games.push(newGame);
 	// Add the new players to the list of players in our game collection
 	// But is this really needed?
@@ -45,6 +46,63 @@ GameManager.prototype.startGameByRoom = function(gameRoom) {
 			this.players.push(player);
 		}
 	}
+}
+
+// IMPORTANT: This function is asynchronous!
+GameManager.prototype.onGameEnd = async function(game) {
+	console.log("Game End!");
+	// Game is over!
+	const winner = game.getWinner();
+	
+	// Was the game rated?
+	let ratingData = null;
+	if (game.options.isRated) {
+		try {
+			// Note: this assumes 2-player game
+			// (should 3-4 player games even BE rated?)
+			const player0 = game.players[0].username;
+			const player1 = game.players[1].username;
+			const result = (
+				winner === player0 ? 1 :
+				winner === player1 ? 0 :
+				0.5
+			);
+			console.log("end game calculation", winner, player0, player1, result);
+			ratingData = await elo.updateUserRatings(result, player0, player1);
+		} catch (error) {
+			console.log("ERROR IN RATINGS");
+			console.error(error);
+		}
+	} else {
+		console.log("Not rated");
+		console.log(game.options);
+	}
+	
+	// Get the synopsis of the game.
+	let summary = "something went wrong, we are sorry";
+	try {
+		summary = game.getSummary(true);
+	} catch (error) {
+		console.log("ERROR IN SUMMARY");
+		console.error(error);
+	}
+	
+	game.endGameInfo = {
+		// so that gameOver can be a replacement for gamePosition
+		game: game.getClientData(),
+		history: game.history,
+		
+		winner: winner,
+		summary: summary,
+		ratingData: ratingData,
+		
+		// again, gameOver is a replacement for gamePosition
+		actionsThisTurn: [],
+		turnResets: 0,
+	};
+	
+	// Send the room a message.
+	ioGame.to(game.socketRoom).emit("gameOver", game.endGameInfo);
 }
 
 // I am not sure what I want the procedure to be for this
@@ -117,6 +175,7 @@ ioGame.on("connection", function(socket) {
 		} else {
 			// Game does not exist
 			// ...but why? This should have been caught...
+			console.log("Game does not exist!");
 		}
 	});
 	
@@ -134,6 +193,14 @@ ioGame.on("connection", function(socket) {
 			if (you) {
 				// attempt to do the action
 				try {
+					if (data.action.type === "eliminate") {
+						socket.emit("actionError", {
+							message: "Nice try.",
+						});
+						console.log("Well, it happened. Someone tried to send an \"eliminate\" action.")
+						return false;
+					}
+					
 					const success = game.onReceiveAction(data, false, you);
 					// sends the action to everyone except the sender!
 					if (success) {
@@ -223,7 +290,7 @@ ioGame.on("connection", function(socket) {
 			if (you) {
 				try {
 					// attempt to do the action
-					const success = game.onReceiveAction(data, true, you);
+					const success = game.onReceiveAction(data, true, you, gameManager);
 					if (success) {
 						// sends the action to everyone except the sender!
 						socket.to(game.socketRoom).emit("endTurn", {

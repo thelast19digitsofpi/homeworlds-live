@@ -27,6 +27,9 @@ function launchEloDatabase() {
 	});
 }
 
+// is this proper?
+launchEloDatabase();
+
 // "result" is 1 for first player wins, 0.5 for draw, 0 for first player loses
 // returns an array [newRating1, newRating2]
 function getAdjustedRatings(result, rating1, rating2) {
@@ -89,10 +92,12 @@ async function setRatingByUsername(username, rating) {
 }
 
 // testing only
-console.log("Alice rating", getRatingByUsername("alice"));
-setRatingByUsername("alice", Math.floor(Math.random() * 400 + 1500));
-console.log("Alice new rating", getRatingByUsername("alice"));
-console.log("Bob rating", getRatingByUsername("bob")); // should always be 1500 until bob plays rated games
+setTimeout(async function() {
+	console.log("Alice rating", await getRatingByUsername("alice"));
+	await setRatingByUsername("alice", Math.floor(Math.random() * 400 + 1500));
+	console.log("Alice new rating", await getRatingByUsername("alice"));
+	console.log("Bob rating", await getRatingByUsername("bob")); // should always be 1500 until bob plays rated games
+}, 500);
 
 // This function actually adjusts the ratings in the table.
 // Again, 1 = first player wins, etc.
@@ -102,13 +107,19 @@ async function updateUserRatings(result, username1, username2) {
 	// hope no errors occurred
 	if (rating1 !== -1 && rating2 !== -1) {
 		const newRatings = getAdjustedRatings(result, rating1, rating2);
+		// these are also async but we do not care
 		setRatingByUsername(username1, newRatings[0]);
 		setRatingByUsername(username2, newRatings[1]);
+		// e.g. { "alice": [1500, 1516], "bob", [1500, 1484] }
+		return {
+			[username1]: [rating1, newRatings[0]],
+			[username2]: [rating2, newRatings[1]],
+		};
 	} else {
 		console.log("Some rating failed!");
 	}
 }
-
+/*
 const tests = [
 	[0, 1500, 1500],
 	[0.5, 1500, 1500],
@@ -123,3 +134,10 @@ const tests = [
 for (let i = 0; i < tests.length; i++) {
 	console.log("Elo Test", tests[i], "result: ", getAdjustedRatings.apply(null, tests[i]));
 }
+*/
+module.exports = {
+	getAdjustedRatings: getAdjustedRatings,
+	getRatingByUsername: getRatingByUsername,
+	setRatingByUsername: setRatingByUsername,
+	updateUserRatings: updateUserRatings,
+};

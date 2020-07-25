@@ -10,6 +10,7 @@ const GameRoom = require("./lobbyGameRoom.js");
 const {gameManager} = require("./gameManager.js");
 // so we can refresh the cookie
 const {renewCookie} = require("./accounts.js");
+const elo = require("./elo.js");
 
 const ioLobby = io.of("/lobby");
 
@@ -31,6 +32,7 @@ Lobby.prototype.whosOnline = function() {
 			// the disconnect timer thing is not useful
 			username: this.players[i].username,
 			connected: this.players[i].connected,
+			elo: this.players[i].elo,
 		});
 	}
 	return playerList;
@@ -79,6 +81,12 @@ Lobby.prototype.onPlayerJoin = function(newPlayer) {
 		return false;
 	}
 	this.players.push(newPlayer);
+	
+	// Get their elo rating
+	// TODO: Is this a memory leak?
+	elo.getRatingByUsername(newPlayer.username).then(function(value) {
+		newPlayer.elo = value;
+	});
 };
 // Pass a specific game room to indicate the player left to join that game
 // or null/undefined/nothing if they disconnect
@@ -278,6 +286,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 					bonus: data.tcBonus,
 					type: data.tcType,
 				} : null,
+				isRated: data.isRated,
 			}
 		);
 		console.error("NOTE: Adding current player to player list -- should be better.");

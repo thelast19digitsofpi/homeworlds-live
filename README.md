@@ -8,11 +8,11 @@ It is still in progress. Actually, assuming I did not break anything, you can st
 
 This **implementation** of the game of Homeworlds is licensed under GPL 3.0.
 
-### Coding style quirks
-I used tabs for indentation and (almost) always end objects with a comma, like
-```javascript
-{
-	prop1: "value1",
-	prop2: 2, // <-- comma here
-}
-```
+### Star map implementation
+Should there be need for it, here is how I organized the star map (arrangement of pieces):
+- A piece's "serial number" is its color and size (e.g. g3) followed by a letter (A, B, or C). Example: `r1B`, `y3A`.
+- The map itself is an object with each possible "serial number" as a key:
+	- A value of `null` means the piece is in the stash.
+	- Otherwise, the value is an object `{at: Number, owner: String}` for ships (`owner` is `null` for stars).
+	- Systems are simply referred to by an incrementing number (the homeworlds are 1 and 2, the first discovered system is 3, etc).
+- Homeworld data is a separate object: `{playerName: systemNumber}`.

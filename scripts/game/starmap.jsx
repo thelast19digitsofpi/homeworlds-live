@@ -143,7 +143,7 @@ class StarMap extends React.Component {
 				return rowDisplay;
 			}
 		} else if (sizes1.length === 0 || sizes2.length === 0) {
-			console.log("[Starmap] cases g/h");
+			//console.log("[Starmap] cases g/h");
 			// one of the homeworlds is gone
 			// there is really no hope for order here
 			return rowDisplay;

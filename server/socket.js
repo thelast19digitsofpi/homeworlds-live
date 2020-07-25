@@ -12,7 +12,7 @@ const db = require("./database.js");
 //console.warn(io);
 
 async function checkSocketCookie(socket, next) {
-	console.log("Begin Middleware");
+	//console.log("Begin Middleware");
 	
 	const cookies = cookie.parse(socket.request.headers.cookie);
 	// authenticate user
@@ -41,8 +41,6 @@ async function checkSocketCookie(socket, next) {
 		socket._username = auth;
 	}
 	console.log("Connection:", socket._username);
-	
-	console.log("End Middleware");
 	
 	next();
 };

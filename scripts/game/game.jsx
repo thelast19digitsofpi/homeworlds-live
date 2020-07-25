@@ -254,6 +254,10 @@ function withGame(WrappedComponent, events, additionalState) {
 					case "catastrophe":
 						newState = current.doCatastrophe(action.color, action.system);
 						break;
+					case "eliminate":
+						// note: this is only due to clock/disconnection eliminations or other interventions
+						newState = current.manuallyEliminatePlayer(action.player);
+						break;
 					default:
 						throw new Error("Invalid action type " + action.type + ". Could be a bug!");
 				}
@@ -605,7 +609,7 @@ function withGame(WrappedComponent, events, additionalState) {
 		
 		render() {
 			const current = this.getCurrentState();
-			const winBanner = <p className="alert alert-info lead">
+			const winBanner = <p className="alert alert-primary lead">
 				{"Game over, " +
 					(current.winner ? current.winner + " has won!" : "the game is a draw!")
 				}
@@ -674,12 +678,12 @@ function withGame(WrappedComponent, events, additionalState) {
 						/>
 						{canInteract && <button
 							onClick={() => this.handleResetClick()}
-							className="btn btn-danger">Reset Turn</button>
+							className="btn btn-danger mt-1">Reset Turn</button>
 						}
 						<br/>
 						{canInteract &&
 							/* todo: clicking "end turn" should check for warnings like overpopulations */
-						<button className="btn btn-lg btn-info"
+						<button className="btn btn-lg btn-info mt-1"
 						        onClick={() => this.doEndTurn(current.turn)}>End Turn</button>
 						}
 					</div>

@@ -103,7 +103,20 @@ class GameState {
 			return false;
 		}
 		
-		// actions is also easy
+		// phase is also easy
+		if (this.phase !== other.phase) {
+			return false;
+		}
+		
+		if (this.nextSystemID !== other.nextSystemID) {
+			return false;
+		}
+		
+		if (this.winner !== other.winner) {
+			return false;
+		}
+		
+		// actions is a bit more complicated
 		if (this.actions.number    !== other.actions.number ||
 		    this.actions.sacrifice !== other.actions.sacrifice) {
 			return false;
@@ -131,7 +144,33 @@ class GameState {
 			// this piece is good, repeat for the others
 		}
 		
+		// this probably is not needed but is good to check
+		for (let serial in other.map) {
+			if (!(serial in this.map)) {
+				return false;
+			}
+		}
 		
+		// check the homeworld data
+		for (let player in this.homeworldData) {
+			// again, does it have a counterpart...
+			if (!(player in other.homeworldData)) {
+				return false;
+			}
+			// ...and do they match?
+			if (this.homeworldData[player] !== other.homeworldData[player]) {
+				return false;
+			}
+		}
+		// and also check the other's data if we are missing any keys
+		for (let player in other.homeworldData) {
+			if (!(player in this.homeworldData)) {
+				return false;
+			}
+		}
+		
+		//
+		return true;
 	}
 	
 	// Basic method to get all pieces at a particular system.
@@ -1399,15 +1438,13 @@ class GameState {
 	
 	// OK, not last.
 	// Note: Players are automatically eliminated in doEndTurn() if their homeworld is destroyed. This only needs called if a player loses on time or resigns.
-	// This also advances the turn if it was the given player's turn.
+	// Does not advance the turn or anything, so it is possible for a "zombie" player to do an action after they are manually eliminated, unless a second update is done.
 	manuallyEliminatePlayer(player) {
 		const newHWData = GameState.copyObject(this.homeworldData);
 		delete newHWData[player];
-		if (this.turn === player) {
-			// advance to the next turn
-			const index = 0;
-			
-		}
+		return this.updateState({
+			homeworldData: newHWData,
+		});
 	}
 	
 	/*

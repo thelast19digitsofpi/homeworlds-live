@@ -9,6 +9,7 @@
 function Player(username) {
 	this.username = username;
 	this.connected = true; // easier+more intuitive to read from a boolean
+	this.elo = -1; // i.e. unknown
 	
 	// Because Node timer objects are objects (not integers),
 	// I need to make this a private field

@@ -78,6 +78,8 @@ GameClock.prototype.getTimeLeft = function() {
 GameClock.prototype.getDelay = function() {
 	if (this.type === "delay") {
 		return Math.max(0, this.bonus - (Date.now() - this.started) / 1000);
+	} else {
+		return 0;
 	}
 }
 // Sends information in a format the client wants

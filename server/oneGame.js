@@ -9,7 +9,9 @@ const GameState = require("../scripts/game/gameState.js");
 const GameClock = require("./game-clock.js");
 
 // This might work...
-function Game(id, options, players) {
+// note: manager is a reference to the GameManager
+// used when clocks expire
+function Game(id, options, players, manager) {
 	this.id = id;
 	this.socketRoom = "game-" + this.id.toString();
 	this.options = options;
@@ -34,8 +36,13 @@ function Game(id, options, players) {
 			const clock = new GameClock(player.username, tc.start, tc.bonus, tc.type);
 			clock.addListener(function() {
 				console.log(`\n\n\n---\n${player.username} RAN OUT OF TIME\n---\n\n\n`);
+				this.onClockExpire(player, manager);
 			}.bind(this));
 			this.clocks[player.username] = clock;
+			if (i === 0) {
+				// first turn
+				clock.beginTurn();
+			}
 		}
 	} else {
 		this.clocks = null;
@@ -66,6 +73,76 @@ Game.prototype.getPlayerByUsername = function(username) {
 	return null;
 };
 
+Game.prototype.getWinner = function() {
+	// simple
+	return this.currentState.winner;
+}
+
+// For use after a game, for analysis
+// pass true to make it more compact but both are strings
+Game.prototype.getSummary = function(useCompact) {
+	if (useCompact) {
+		console.log("Generating Summary!");
+		const lines = [];
+		for (let i = 0; i < this.allActions.length; i++) {
+			// allActions is an array of arrays
+			const turnActions = this.allActions[i];
+			// closest thing JS has to a string builder
+			const columns = [];
+			for (let j = 0; j < turnActions.length; j++) {
+				const action = turnActions[j];
+				// format: action type (b=build t=trade m=move d=discover x=steal s=sacrifice c=catastrophe h=homeworld e=eliminate)
+				let column = [];
+				switch (action.type) {
+					case "homeworld":
+						column = ["h", action.star1, action.star2, action.ship];
+						break;
+					case "build":
+						column = ["b", action.newPiece, action.system];
+						break;
+					case "trade":
+						column = ["t", action.oldPiece, action.newPiece];
+						break;
+					case "move":
+						// oldPiece is what you move
+						column = ["m", action.oldPiece, action.system];
+						break;
+					case "discover":
+						// oldPiece is what you move, newPiece is the new system
+						// the system counter auto-increments
+						column = ["d", action.oldPiece, action.newPiece];
+						break;
+					case "steal":
+						// "x" because "s" is used for sacrifice (and "x" is capture in chess)
+						column = ["x", action.oldPiece];
+						break;
+					case "sacrifice":
+						column = ["s", action.oldPiece];
+						break;
+					case "catastrophe":
+						column = ["c", action.color, action.system];
+						break;
+					case "eliminate":
+						column = ["e", action.player];
+					default:
+						console.log("Invalid action!", action);
+						break;
+				}
+				// parts of an action are separated by commas
+				// e.g. "h,b1A,r2C,g3C"
+				columns.push(column.join(","));
+			}
+			// actions are separated by semicolons
+			// e.g. "s,g1A;b,y3C,5"
+			lines.push(columns.join(";"));
+		}
+		// turns are separated by newlines
+		return lines.join("\n");
+	} else {
+		return JSON.stringify(this.allActions);
+	}
+}
+
 // TODO: better support for race conditions
 // basically we at endTurn send the server an array of all actions we take on the turn
 Game.prototype.doAction = function(action, player) {
@@ -75,6 +152,12 @@ Game.prototype.doAction = function(action, player) {
 	// Each doThing() function throws if the move is illegal.
 	const name = player.username;
 	const current = this.currentState;
+	
+	if (current.phase === "end") {
+		console.log("[Game#doAction] The game is over!");
+		return false;
+	}
+	
 	switch (action.type) {
 		case "homeworld":
 			newState = current.doHomeworld(name, action.star1, action.star2, action.ship);
@@ -112,13 +195,20 @@ Game.prototype.doAction = function(action, player) {
 	// Do not update the clocks or anything because we have not called endTurn()
 }
 
-Game.prototype.doEndTurn = function(player, actionList) {
+Game.prototype.doEndTurn = function(player, actionList, manager) {
 	console.log("End turn", player.username);
-	console.log("Current turn is", this.currentState.turn);
+	console.log("Current turn (before end) is", this.currentState.turn);
+	
+	if (this.currentState.phase === "end") {
+		console.log("[Game#doEndTurn] The game is over!");
+		return false;
+	}
 	
 	if (this.currentState.turn === player.username) {
 		const name = player.username;
 		const newState = this.currentState.doEndTurn();
+		
+		console.log("Now the new turn is", newState.turn);
 		
 		// hmmm... should I instead make the history a private variable?
 		this.history.push([newState]);
@@ -130,7 +220,14 @@ Game.prototype.doEndTurn = function(player, actionList) {
 		if (this.clocks) {
 			// press their clock
 			this.clocks[player.username].endTurn();
-			if (newState.phase !== "end") {
+			// If we just ended the game...
+			if (newState.phase === "end") {
+				// let the manager end it
+				if (manager) {
+					// note: this is async but I don't care
+					manager.onGameEnd(this);
+				}
+			} else {
 				// start the next player's clock running
 				this.clocks[newState.turn].beginTurn();
 			}
@@ -145,6 +242,11 @@ Game.prototype.doEndTurn = function(player, actionList) {
 Game.prototype.doResetTurn = function(player) {
 	console.log("Reset turn", player.username);
 	console.log("Current turn is ", this.currentState.turn);
+	
+	if (this.currentState.phase === "end") {
+		console.log("[Game#doResetTurn] The game is over!");
+		return false;
+	}
 	
 	if (this.currentState.turn === player.username) {
 		const name = player.username;
@@ -162,7 +264,8 @@ Game.prototype.doResetTurn = function(player) {
 
 // Methods called when the client sends information.
 // Returns true if it worked.
-Game.prototype.onReceiveAction = function(data, isEndingTurn, player) {
+// Note: manager is optional if the player is not ending their turn.
+Game.prototype.onReceiveAction = function(data, isEndingTurn, player, manager) {
 	// I'm finding the server is sharing a LOT of the same logic as the client...
 	console.log("onReceiveAction", player.username, this.currentState.turn);
 	if (player.username === this.currentState.turn) {
@@ -174,11 +277,11 @@ Game.prototype.onReceiveAction = function(data, isEndingTurn, player) {
 		if (theirResets > ourResets) {
 			// this is on a new iteration of the turn
 			// reset and try again
-			this.doResetTurn(data.player);
+			this.doResetTurn(player);
 			// then do all their actions
 			this.turnResets = theirResets;
 			for (var i = 0; i < theirActions.length; i++) {
-				this.doAction(theirActions[i], data.player);
+				this.doAction(theirActions[i], player);
 			}
 			this.actionsThisTurn = theirActions.slice();
 		} else if (theirResets === ourResets) {
@@ -202,7 +305,7 @@ Game.prototype.onReceiveAction = function(data, isEndingTurn, player) {
 		
 		// End the turn if appropriate.
 		if (isEndingTurn) {
-			this.doEndTurn(player, theirActions);
+			this.doEndTurn(player, theirActions, manager);
 			this.actionsThisTurn = [];
 			this.turnResets = 0;
 		}
@@ -233,9 +336,23 @@ Game.prototype.onReceiveReset = function(data, player) {
 	}
 }
 
-// for clocks, mostly
-Game.prototype.manuallyEliminate = function(player) {
-	
+// when you run out of time
+// note: manager is passed via the constructor and lives inside the clock expire handlers
+// there is no this.manager
+Game.prototype.onClockExpire = function(player, manager) {
+	// eliminate them
+	const newState = this.currentState.manuallyEliminatePlayer(player.username);
+	// put that on the stack
+	this.history[this.history.length - 1].push(newState);
+	this.currentState = newState;
+	// record an elimination "action"
+	this.actionsThisTurn.push({
+		type: "eliminate",
+		player: player.username,
+	});
+	// end their turn
+	this.doEndTurn(player, this.actionsThisTurn, manager);
+	console.log("Clock Expired. Phase =", this.currentState.phase);
 }
 
 // Prepares a list of clocks in a format for sending to the client.

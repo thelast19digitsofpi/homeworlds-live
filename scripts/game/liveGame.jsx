@@ -12,8 +12,9 @@ function LiveGameDisplay(props) {
 	if (clocks) {
 		for (let i = 0; i < clocks.length; i++) {
 			const clock = clocks[i];
-			let className = "clock text-md-right card";
+			let className = "clock text-right card";
 			if (clock.running) {
+				// text-light seems to actually be dark
 				className += " bg-primary text-light";
 			}
 			
@@ -37,11 +38,12 @@ function LiveGameDisplay(props) {
 			}
 			let timeLeft = clock.timeLeft;
 			if (clock.running) {
-				// so here some time has passed...
-				if (timeElapsed > clock.delayLeft) {
-					// delay time is expired
-					// remove however much time has passed exceeding the delay
-					timeLeft -= (timeElapsed - clock.delayLeft);
+				if (clock.delayLeft) {
+					// subtract only that portion after the delay time
+					timeLeft = Math.min(timeLeft, timeLeft - timeElapsed + clock.delayLeft);
+				} else {
+					// subtract what has been used
+					timeLeft -= timeElapsed;
 				}
 			}
 			
@@ -52,7 +54,7 @@ function LiveGameDisplay(props) {
 			
 			const timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
 			
-			let usernameClassName = "card-title clock-name";
+			let usernameClassName = "card-title clock-name d-md-inline-block mr-4 mr-lg-none";
 			if (clock.username.length > 15) {
 				usernameClassName += " h6"; // make it small to fit
 			} else if (clock.username.length > 6) {
@@ -64,8 +66,8 @@ function LiveGameDisplay(props) {
 			clockElements.push(
 				<div key={clock.username} className={className}>
 					<div className="card-body">
-						<h5 className="card-title clock-name">{clock.username}</h5>
-						<h4 className="clock-value">{timeDisplay}</h4>
+						<p className={usernameClassName}>{clock.username}</p>
+						<h4 className="clock-value d-md-inline-block">{timeDisplay}</h4>
 					</div>
 				</div>
 			);
@@ -85,18 +87,84 @@ function LiveGameDisplay(props) {
 				</div>
 			</div>)
 		}
-		clockElements.push()
 	}
 	
-	return <div className="row">
-		<div className="col-12 col-lg-10">{props.children}</div>
-		{/*
-		basically:
-		on small screens, clocks are positioned below the board and flex horizontally
-		on large screens, clocks are positioned to the right and flex vertically
-		*/}
-		<div className="col-12 col-lg-2 d-flex flex-row flex-lg-column justify-content-around justify-content-lg-start">{clockElements}</div>
+	let endGameBanner = null;
+	if (state.endGameInfo) {
+		const info = state.endGameInfo;
+		const winnerMessage = (info.winner ? info.winner + " has won" : "it's a draw");
+		
+		let ratingDisplay = <p>This game was not rated.</p>
+		if (info.ratingData) {
+			let ratingElements = [];
+			for (let player in info.ratingData) {
+				const playerData = info.ratingData[player];
+				// new rating minus old rating
+				const diff = playerData[1] - playerData[0];
+				const adjustmentString = (
+					player + ": " + playerData[1] + "(" + (
+						diff > 0 ? "+" + diff :
+						diff < 0 ? diff :
+						"\u01770" // plus/minus sign: plus or minus 0
+					) + ")"
+				)
+				
+				ratingElements.push(
+					<div className="col" key={player}>adjustmentString</div>
+				);
+			}
+			ratingDisplay = <div className="row">{ratingElements}</div>
+		}
+		endGameBanner = (
+			<div className="col-12 alert alert-secondary">
+				<div className="float-right">
+					<textarea id="game-log"
+					          className="float-right"
+					          readOnly
+					          value={info.summary}>{info.summary}</textarea>
+					<br/>
+					<button onClick={() => {
+						// copy the text into your clipboard
+						document.getElementById("game-log").select();
+						document.execCommand("copy");
+					}} className="btn btn-secondary">Copy</button>
+				</div>
+				
+				<h3 className="alert-heading text-center">Game over, {winnerMessage}!</h3>
+				
+				{ratingDisplay}
+				
+				<p>If you wish, you can copy this log of the game for analysis (right).</p>
+			</div>
+		);
+	}
+	
+	const offerDraw = <div className="card">
+		<button className="btn btn-light" disabled>Offer a Draw</button>
+		<p className="text-center">Votes: (none)</p>
 	</div>
+	
+	const resign = <div className="card">
+		<button className="btn btn-danger" disabled>RESIGN</button>
+	</div>	
+	
+	return <React.Fragment>
+		{endGameBanner}
+		<div className="row">
+			{/*
+			basically:
+			on small screens, clocks are positioned above the board and flex horizontally
+			on large screens, clocks are positioned to the right and flex vertically
+			*/}
+			<div className="col-12 d-flex flex-row justify-content-around
+				col-lg-2 flex-lg-column justify-content-lg-start order-lg-12">
+				{clockElements}
+				{offerDraw}
+				{resign}
+			</div>
+			<div className="col-12 col-lg-10 order-lg-1">{props.children}</div>
+		</div>
+	</React.Fragment>
 }
 
 // wrapper component, events, additional state
@@ -220,6 +288,34 @@ const LiveGame = withGame(LiveGameDisplay, {
 			}
 		}.bind(this));
 		
+		socket.on("gameOver", function(data) {
+			const game = data.game;
+			this.setState({
+				current: GameState.recoverFromJSON(game.currentState),
+				history: data.history,
+				// we still have to display them
+				clocks: game.clocks,
+				clocksReceived: Date.now(),
+				
+				endGameInfo: {
+					winner: data.winner,
+					summary: data.summary,
+					ratingData: data.ratingData,
+				},
+				
+				// things that need cleared
+				popup: null,
+				actionInProgress: null,
+				actionsThisTurn: [],
+				turnResets: 0,
+			});
+			if (data.viewer) {
+				this.setState({
+					viewer: data.viewer,
+				});
+			}
+		}.bind(this));
+		
 		// TODO: Better way to handle the timers
 		setInterval(this.forceUpdate.bind(this), 250);
 	},
@@ -297,6 +393,8 @@ const LiveGame = withGame(LiveGameDisplay, {
 	// for race condition avoidance
 	actionsThisTurn: [],
 	turnResets: 0,
+	
+	endGameInfo: null,
 });
 
 ReactDOM.render(<LiveGame />, document.getElementById("game-container"));
