@@ -3,7 +3,6 @@
 // This file does not know that the games.js file exists.
 
 const {app} = require("./https.js");
-const {io, checkSocketCookie} = require("./socket.js");
 const Player = require("./player.js");
 const GameState = require("../scripts/game/gameState.js");
 const GameClock = require("./game-clock.js");
@@ -18,7 +17,7 @@ function Game(id, options, players, manager) {
 	this.players = players.slice();
 	// GameState player objects need to be strings
 	this.currentState = new GameState(players.map(player => player.username));
-	this.history = [[]]; // a lot like the client's...
+	this.history = [[this.currentState]]; // a lot like the client's...
 	
 	// Race Condition Defenses, Inc.
 	this.turnResets = 0;
@@ -124,6 +123,7 @@ Game.prototype.getSummary = function(useCompact) {
 						break;
 					case "eliminate":
 						column = ["e", action.player];
+						break;
 					default:
 						console.log("Invalid action!", action);
 						break;
@@ -196,6 +196,16 @@ Game.prototype.doAction = function(action, player) {
 }
 
 Game.prototype.doEndTurn = function(player, actionList, manager) {
+	if (!manager) {
+		try {
+			throw new Error("No manager");
+		} catch (error) {
+			console.log(error);
+		}
+	} else {
+		console.log("Manager exists");
+	}
+	
 	console.log("End turn", player.username);
 	console.log("Current turn (before end) is", this.currentState.turn);
 	
@@ -205,10 +215,10 @@ Game.prototype.doEndTurn = function(player, actionList, manager) {
 	}
 	
 	if (this.currentState.turn === player.username) {
-		const name = player.username;
 		const newState = this.currentState.doEndTurn();
 		
 		console.log("Now the new turn is", newState.turn);
+		console.log("Phase", newState.phase);
 		
 		// hmmm... should I instead make the history a private variable?
 		this.history.push([newState]);
@@ -219,21 +229,23 @@ Game.prototype.doEndTurn = function(player, actionList, manager) {
 		
 		if (this.clocks) {
 			// press their clock
+			console.log("Pausing clock", player.username);
 			this.clocks[player.username].endTurn();
 			// If we just ended the game...
-			if (newState.phase === "end") {
-				// let the manager end it
-				if (manager) {
-					// note: this is async but I don't care
-					manager.onGameEnd(this);
-				}
-			} else {
+			if (newState.phase !== "end") {
 				// start the next player's clock running
+				console.log("Starting clock", newState.turn);
 				this.clocks[newState.turn].beginTurn();
 			}
 		}
 	} else {
 		console.warn("[Game#doEndTurn] Wrong player's turn!");
+	}
+	
+	// let the manager end it
+	if (manager && this.currentState.phase === "end") {
+		// note: this is async but I don't care
+		manager.onGameEnd(this);
 	}
 	
 	this.debugLogMap();
@@ -249,7 +261,6 @@ Game.prototype.doResetTurn = function(player) {
 	}
 	
 	if (this.currentState.turn === player.username) {
-		const name = player.username;
 		// beginning of turn = the first part of the most recent turn
 		const newState = this.history[this.history.length - 1][0];
 		

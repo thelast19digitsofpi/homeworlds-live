@@ -6,7 +6,6 @@
 // but this does not know that lobby.js exists.
 
 const {app} = require("./https.js");
-const Player = require("./player.js");
 const Game = require("./oneGame.js");
 const db = require("./database.js");
 const {io, checkSocketCookie} = require("./socket.js");
@@ -19,7 +18,7 @@ ioGame.use(checkSocketCookie);
 
 function GameManager() {
 	this.games = [];
-	this.players = [];
+	this.players = []; // TODO: Is this even being used?
 }
 // getSomethingBySomethingelse
 GameManager.prototype.getGameById = function(givenID) {
@@ -56,7 +55,8 @@ GameManager.prototype.onGameEnd = async function(game) {
 	
 	// Was the game rated?
 	let ratingData = null;
-	if (game.options.isRated) {
+	// note: if the game ends without all players taking a turn, it is not rated
+	if (game.options.isRated && game.history.length > 3) {
 		try {
 			// Note: this assumes 2-player game
 			// (should 3-4 player games even BE rated?)
@@ -67,7 +67,7 @@ GameManager.prototype.onGameEnd = async function(game) {
 				winner === player1 ? 0 :
 				0.5
 			);
-			console.log("end game calculation", winner, player0, player1, result);
+			console.log("rating calculation", winner, player0, player1, result);
 			ratingData = await elo.updateUserRatings(result, player0, player1);
 		} catch (error) {
 			console.log("ERROR IN RATINGS");
@@ -111,6 +111,24 @@ GameManager.prototype.backupToDatabase = function() {
 	console.warn("Nope");
 }
 
+// Gets the list of players who are currently playing a game.
+GameManager.prototype.whosPlaying = function() {
+	let playerList = [];
+	for (let i = 0; i < this.games.length; i++) {
+		const game = this.games[i];
+		for (let j = 0; j < game.players.length; j++) {
+			// right now 2P games mean a game ends when one is eliminated
+			const player = game.players[j];
+			playerList.push({
+				username: player.username,
+				connected: player.connected,
+				elo: player.elo,
+				gameID: game.id,
+			});
+		}
+	}
+	return playerList;
+}
 
 const gameManager = new GameManager();
 
@@ -134,12 +152,12 @@ app.get("/game/:gameID", function(req, res) {
 function pretendLag(ms) {
 	// just for comparison
 	const randomID = Math.random();
-	console.log("begin fake lag", Math.round(ms), "id", randomID);
-	return new Promise(function(resolve, reject) {
+	//console.log("begin fake lag", Math.round(ms), "id", randomID);
+	return new Promise(function(resolve) {
 		setTimeout(function() {
-			console.log("end fake lag", Math.round(ms), "id", randomID);
+			//console.log("end fake lag", Math.round(ms), "id", randomID);
 			resolve();
-		}, ms);
+		}, ms*0);
 	});
 };
 
@@ -234,7 +252,7 @@ ioGame.on("connection", function(socket) {
 			socket.emit("actionError", {
 				message: "Weird. I could not find that game. This is almost certainly a bug.",
 			});
-			console.error(`BUG! Game ${data.gameID} was not found in doAction ${action.type}`);
+			console.error(`BUG! Game ${data.gameID} was not found in doAction ${data.action.type}`);
 		}
 	});
 	
@@ -277,7 +295,7 @@ ioGame.on("connection", function(socket) {
 			socket.emit("actionError", {
 				message: "Weird. I could not find that game. This is almost certainly a bug, but try refreshing.",
 			});
-			console.error(`BUG! Game ${data.gameID} was not found in doResetTurn ${action.type}`);
+			console.error(`BUG! Game ${data.gameID} was not found in doResetTurn ${data.action.type}`);
 		}
 	});
 	
@@ -318,7 +336,7 @@ ioGame.on("connection", function(socket) {
 			socket.emit("actionError", {
 				message: "Weird. I could not find that game. This is almost certainly a bug, but try refreshing.",
 			});
-			console.error(`BUG! Game ${data.gameID} was not found in doEndTurn ${action.type}`);
+			console.error(`BUG! Game ${data.gameID} was not found in doEndTurn ${data.action.type}`);
 		}
 	});
 });

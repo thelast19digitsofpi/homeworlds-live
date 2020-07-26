@@ -2,7 +2,6 @@
 //
 // For the screen when you are deciding which game to play
 
-
 class MainLobby extends React.Component {
 	constructor(props) {
 		super(props);
@@ -10,6 +9,7 @@ class MainLobby extends React.Component {
 		this.state = {
 			pingMs: "unknown",
 			whosOnline: [],
+			whosPlaying: [],
 			gameRooms: [],
 			
 			view: "game-list",
@@ -62,10 +62,12 @@ class MainLobby extends React.Component {
 	handleServerUpdateResponse(data) {
 		this.setState({
 			whosOnline: data.whosOnline,
+			whosPlaying: data.whosPlaying,
 			gameRooms: data.gameRooms,
 		});
 		console.log("Received server update response");
 		
+		// If you are inside a room, watch for changes to that room
 		let foundRoom = false;
 		for (let i = 0; i < data.gameRooms.length; i++) {
 			if (data.gameRooms[i].id === this.state.roomID) {
@@ -191,7 +193,14 @@ class MainLobby extends React.Component {
 				{mainScreen}
 				<div className="col-xs-12 col-lg-3">
 					<h4>Who's Online</h4>
-					<WhosOnline list={this.state.whosOnline} />
+					<div className="row">
+						<div className="col-6 col-lg-12">
+							<WhosOnline list={this.state.whosOnline} />
+						</div>
+						<div className="col-6 col-lg-12">
+							<WhosPlaying list={this.state.whosPlaying} />
+						</div>
+					</div>
 					<p className="small">Ping time: {this.state.pingMs} ms</p>
 				</div>
 			</div>

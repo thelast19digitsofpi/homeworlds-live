@@ -43,6 +43,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				// For actions in progress. E.g. you click the "trade" button THEN a stash piece.
 				actionInProgress: null,
 			};
+			this.state.current = GameState.recoverFromJSON(this.state.current);
 			// start with a state in the history list!
 			this.state.history[0].push(this.state.current);
 			
@@ -113,64 +114,6 @@ function withGame(WrappedComponent, events, additionalState) {
 				number: Number(serial[1]),
 				sacrifice: serial[0],
 			};
-		}
-		
-		// I cannot think of how to do this without looping twice.
-		// This function finds systems with either ships or stars, but not both.
-		// You can pass a system ID to preserve.
-		// This way, if you temporarily abandon your homeworld, it stays there.
-		clearLonersMap(oldMap, preserveSystem) {
-			// Data will be organized as { systemID: { ships: true, stars: false }, ... }.
-			console.log("[clearLonersMap]", arguments);
-			throw new Error("Should not be calling Game.clearLonersMap");
-			
-			// First, get all the systems
-			let systemStatus = {};
-			for (let serial in oldMap) {
-				// If it is in play, record it in the system data.
-				const data = oldMap[serial];
-				if (data) {
-					// It can either be a ship or a star.
-					// If we have not seen that system before, create a template.
-					if (!systemStatus[data.at]) {
-						systemStatus[data.at] = { ships: false, stars: false };
-					}
-					
-					// Now, update depending on what type this is
-					if (data.owner === null) {
-						// it is a star, so this system has a star
-						systemStatus[data.at].stars = true;
-					} else {
-						// it is a ship
-						systemStatus[data.at].ships = true;
-					}
-				}
-			}
-			
-			// Now, for any object (ship or star) at a system with nothing of the other type, delete it.
-			let newMap = {};
-			for (let serial in oldMap) {
-				const data = oldMap[serial];
-				newMap[serial] = data; // copy over either the null or the data.
-				if (data) {
-					// Ignore any ships at preserveSystem.
-					// This would probably be the active player's homeworld.
-					if (data.at !== preserveSystem) {
-						// Now check if the ship or star is actually abandoned!
-						const hasShips = systemStatus[data.at].ships;
-						const hasStars = systemStatus[data.at].stars;
-						// If there are no stars OR no ships, then null.
-						if (!hasShips || !hasStars) {
-							newMap[serial] = null;
-						} else {
-							// Copy over the old stuff.
-							newMap[serial] = data;
-						}
-					}
-				}
-			}
-			
-			return newMap;
 		}
 		
 		/*
@@ -299,7 +242,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			const newState = current.doEndTurn();
 			// whoa there... check that you actually can end the turn
 			if (events.onBeforeEndTurn && 
-					!events.onBeforeEndTurn.call(this, player, oldState, newState)) {
+					!events.onBeforeEndTurn.call(this, player, current, newState)) {
 				console.log("Blocked");
 				return;
 			}
@@ -339,7 +282,8 @@ function withGame(WrappedComponent, events, additionalState) {
 			const newHistory = this.state.history.slice();
 			console.log(newHistory);
 			// clear the most recent turn
-			const startOfTurn = newHistory[newHistory.length - 1][0];
+			const startOfTurn = (newHistory[newHistory.length - 1][0]) || this.getCurrentState();
+			
 			// set the most recent turn to only contain that state
 			newHistory[newHistory.length - 1] = [startOfTurn];
 			// change the history
@@ -483,7 +427,6 @@ function withGame(WrappedComponent, events, additionalState) {
 				return;
 			}
 			
-			let success = true;
 			try {
 				switch (actionData.type) {
 					case "build":
@@ -508,7 +451,6 @@ function withGame(WrappedComponent, events, additionalState) {
 				// TODO: better messaging
 				alert(error.message || String(error));
 				console.warn(error);
-				success = false;
 			}
 			
 			// and at the end...
@@ -535,7 +477,6 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 			
 			if (aip) {
-				let success = true;
 				try {
 					if (aip.type === "trade" || aip.type === "discover") {
 						this.doAction({
@@ -580,9 +521,8 @@ function withGame(WrappedComponent, events, additionalState) {
 								actionInProgress: newAIP,
 							});
 						}
-					} else {
-						success = false; // no action to do here
 					}
+					// else, no action to do here
 				} catch (error) {
 					// TODO: better delivery
 					// TODO: custom error class?

@@ -4,7 +4,7 @@
 
 const {app} = require("./https.js");
 const {io, checkSocketCookie} = require("./socket.js");
-const {promiseTimeout} = require("./my-util.js");
+//const {promiseTimeout} = require("./my-util.js"); // do we need this?
 const Player = require("./player.js");
 const GameRoom = require("./lobbyGameRoom.js");
 const {gameManager} = require("./gameManager.js");
@@ -154,7 +154,7 @@ Lobby.prototype.onSocketConnect = function(socket) {
 Lobby.prototype.onSocketDisconnect = function(socket) {
 	const username = socket._username;
 	for (let i = 0; i < this.players.length; i++) {
-		if (this.players[i].username === socket._username) {
+		if (this.players[i].username === username) {
 			// match!
 			this.players[i].onDisconnect(this);
 			return;
@@ -206,6 +206,7 @@ ioLobby.use(checkSocketCookie);
 function sendUpdate(socket) {
 	socket.volatile.emit("updateResponse", {
 		whosOnline: gameLobby.whosOnline(),
+		whosPlaying: gameManager.whosPlaying(),
 		gameRooms: gameLobby.gameRooms,
 	});
 }

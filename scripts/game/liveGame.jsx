@@ -77,9 +77,9 @@ function LiveGameDisplay(props) {
 		const current = props.gameState;
 		const players = current.turnOrder;
 		for (let i = 0; i < players.length; i++) {
-			let className = "clock";
+			let className = "clock card";
 			if (players[i] === current.turn) {
-				className += " active";
+				className += " bg-primary text-light";
 			}
 			clockElements.push(<div key={players[i]} className={className}>
 				<div className="card-body">
@@ -110,7 +110,7 @@ function LiveGameDisplay(props) {
 				)
 				
 				ratingElements.push(
-					<div className="col" key={player}>adjustmentString</div>
+					<div className="col" key={player}>{adjustmentString}</div>
 				);
 			}
 			ratingDisplay = <div className="row">{ratingElements}</div>
@@ -135,6 +135,8 @@ function LiveGameDisplay(props) {
 				{ratingDisplay}
 				
 				<p>If you wish, you can copy this log of the game for analysis (right).</p>
+				
+				<a href="/lobby" role="button" className="btn btn-lg btn-primary text-black">Return to Lobby</a>
 			</div>
 		);
 	}

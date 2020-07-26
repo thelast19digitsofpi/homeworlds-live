@@ -17,7 +17,8 @@ function WhosOnline(props) {
 		elements.push(
 			<li key={user.username}>
 				{connectedIcon}
-				{user.username}
+				{user.username}&nbsp;
+				({user.elo})
 			</li>
 		)
 	}
