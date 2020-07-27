@@ -29,7 +29,19 @@ GameManager.prototype.getGameById = function(givenID) {
 		}
 	}
 	return null;
-}
+};
+
+GameManager.prototype.getPlayerByUsername = function(username) {
+	for (let i = 0; i < this.games.length; i++) {
+		const game = this.games[i];
+		for (let j = 0; j < game.players.length; j++) {
+			if (game.players[j].username === username) {
+				return game.players[j];
+			}
+		}
+	}
+	return null;
+};
 
 // Note that this does not require lobbyGameRoom.js...
 GameManager.prototype.startGameByRoom = function(gameRoom) {
@@ -41,11 +53,14 @@ GameManager.prototype.startGameByRoom = function(gameRoom) {
 	// But is this really needed?
 	for (let i = 0; i < gameRoom.players.length; i++) {
 		const player = gameRoom.players[i];
+		// if they are not already in 
 		if (this.players.indexOf(player) === -1) {
 			this.players.push(player);
 		}
+		// Set a timer, in case the player never shows up!
+		player.setTimer(newGame, 3 * 60 * 1e3);
 	}
-}
+};
 
 // IMPORTANT: This function is asynchronous!
 GameManager.prototype.onGameEnd = async function(game) {
@@ -103,13 +118,13 @@ GameManager.prototype.onGameEnd = async function(game) {
 	
 	// Send the room a message.
 	ioGame.to(game.socketRoom).emit("gameOver", game.endGameInfo);
-}
+};
 
 // I am not sure what I want the procedure to be for this
 // After all, this could easily blast thru my file limits
 GameManager.prototype.backupToDatabase = function() {
 	console.warn("Nope");
-}
+};
 
 // Gets the list of players who are currently playing a game.
 GameManager.prototype.whosPlaying = function() {
@@ -128,8 +143,14 @@ GameManager.prototype.whosPlaying = function() {
 		}
 	}
 	return playerList;
-}
+};
 
+// When a socket disconnects
+GameManager.prototype.onSocketDisconnect = function(socket) {
+	const game = this.getGameById(socket._gameID);
+};
+
+// Our particular game manager
 const gameManager = new GameManager();
 
 // Opening specific games like /game/5.
@@ -172,6 +193,7 @@ ioGame.on("connection", function(socket) {
 	
 	// Listen for an ask of what game it is
 	socket.on("getGame", function(id) {
+		socket._gameID = id;
 		const game = gameManager.getGameById(id);
 		if (game) {
 			// You are allowed to watch games in progress. I think.
@@ -338,6 +360,11 @@ ioGame.on("connection", function(socket) {
 			});
 			console.error(`BUG! Game ${data.gameID} was not found in doEndTurn ${data.action.type}`);
 		}
+	});
+	
+	socket.on("disconnect", function() {
+		console.warn("DISCONNECT from GameManager");
+		gameManager.onSocketDisconnect(socket);
 	});
 });
 

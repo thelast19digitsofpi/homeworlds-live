@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>How to play on Homeworlds Live</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h2>Playing on Homeworlds Live</h2>
+			<h6 class="text-warning">This page only covers how this website operates. It does not cover how to play the game of Homeworlds in general.</h6>
+			<br/>
+			<h3>Lobby</h3>
+			<h5>Joining Rooms</h5>
+			<ul>
+				<li>In the lobby you can create game rooms or join rooms that exist already.</li>
+				<li>In the "join a game" view, click on a row to view details. From there you can join the room.</li>
+				<li><strong>Sometimes players are invited into rooms</strong>. Invitees get priority over non-invitees.</li>
+				<li>If you are invited, the room will appear orange in the table.</li>
+			</ul>
+			
+			<h5>Creating Rooms</h5>
+			<ul>
+				<li>Click the "Create a game instead" button in the lobby to create a room. You can specify the time control, make the game unrated, and choose specific players to invite.</li>
+				<li>Only 2-player games are supported, but you can invite more than one player (first come first serve).</li>
+			</ul>
+			
+			<h5>Launch Sequence</h5>
+			<ul>
+				<li>The owner of a room (whoever has been in it the longest) can decide to start a game.</li>
+				<li>All players in the room must agree to start. If anyone declines, the start sequence is halted.</li>
+				<li>When everyone (including the owner) confirms, the game starts.</li>
+			</ul>
+			
+			<p>You can also watch games in progress by clicking the links in the lobby.</p>
+			
+			<h3>In Game</h3>
+			<h5>Turns</h5>
+			<ul>
+				<li>When it is your turn, the border of the star map will turn white.</li>
+				<li>Click pieces on the board and stash to do actions (see below).</li>
+				<li>When you are finished, <strong class="text-warning">you must click END TURN!</strong></li>
+				<li>If you mess up, you can click "Reset Turn" to undo your actions. You may use this any number of times.</li>
+				<li>Once you click End Turn, your previous turn is final and cannot be changed.</li>
+			</ul>
+			
+			<h5>Specific Actions</h5>
+			<ul>
+				<li><strong class="text-dark">Homeworld Setup</strong>: Click your two stars first, then your ship. They are displayed in the lower left. Handicaps are not supported. Use "Reset Turn" if you make a mistake.</li>
+				<li><strong class="text-success">Building</strong>: Click on a ship of the same color in the intended system, then click the Build button. (Example: if you want to build a red at your homeworld, click a red ship you already have there.)</li>
+				<li><strong class="text-primary">Trading</strong>: Click the ship you want to trade, click the "Trade" button, then click a stash piece.</li>
+				<li><strong class="text-warning">Movement</strong>: Click the ship you want to move, click the "Move" button, then click any piece at the target system.</li>
+				<li><strong class="text-warning">Discovery</strong>: Like movement, but click the "Discover" button followed by a piece in the stash.</li>
+				<li><strong class="text-danger">Capturing</strong>: Click the enemy ship, then the Capture button.</li>
+				<li><strong class="text-info">Sacrificing</strong>: Click the ship to sacrifice, then the Sacrifice button. Then do your sacrifice actions as above.</li>
+				<li><strong class="text-info">Catastrophes</strong>: Click any piece of the overpopulated color at the system, then the catastrophe button.</li>
+			</ul>
+		</div>
+		<%- include("footer") %>
+	</body>
+</html>

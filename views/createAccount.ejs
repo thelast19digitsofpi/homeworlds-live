@@ -24,21 +24,21 @@
 					<h6 class="text-warning"><%= error.message %></h4>
 					<% } %>
 					<!-- Content -->
-					<label for="create-password" class="lead">Password</label>
+					<label for="create-password" class="lead">Passphrase</label>
 					<input type="password" name="password" class="form-control" aria-describedby="login-password" required />
 					<p class="form-text">
-						Password must be between 12 and 99 characters and please <strong class="text-danger">do NOT use anything you have used on another site</strong>. <br/>
-						No, really. I am just a college student who made this as a summer project. I probably have a security hole somewhere. Use a unique password, so if it is hacked all you lose is this.
+						Must be between 12 and 99 characters and please <strong class="text-danger">do NOT use anything you have used on another site</strong>. <br/>
+						No, really. I am just a college student who made this as a summer project. I probably have a security hole somewhere. Your best recourse is simply to pick a unique passphrase.
 					</p>
 				</div>
 				<div class="form-group">
 					<% if (typeof error !== 'undefined' && error.type === "confirmPassword") { %>
 					<h6 class="text-warning"><%= error.message %></h4>
 					<% } %>
-					<label for="create-confirm-password" class="lead">Confirm Password</label>
+					<label for="create-confirm-password" class="lead">Confirm Passphrase</label>
 					<input type="password" name="confirmPassword" class="form-control" aria-describedby="login-password" required />
 					<p class="form-text">
-						I really mean it. DO. NOT. REUSE. PASSWORDS.
+						I really mean it. <strong class="text-warning">DO. NOT. REUSE. PASSWORDS.</strong> (You really should not be reusing them at all, but especially not on some security novice's random project. You might want to look into password managers.)
 					</p>
 				</div>
 				<input type="submit" class="btn btn-primary btn-lg" />

@@ -96,10 +96,8 @@ Lobby.prototype.onPlayerLeave = function(player, gameRoom) {
 	
 	// Remove them from this.players, if they are present.
 	const pIndex = this.players.indexOf(player);
-	let notFound = false;
 	if (pIndex === -1) {
 		console.log("[Lobby.onPlayerLeave] Player leaves without being in this.players");
-		notFound = true;
 	} else {
 		this.players.splice(pIndex, 1);
 	}
@@ -122,16 +120,20 @@ Lobby.prototype.onPlayerLeave = function(player, gameRoom) {
 	}
 	
 	// Finally, erase all abandoned rooms
-	this.cleanup();
+	this.cleanupRooms();
 };
 // Cleans up by removing all rooms that are abandoned.
-Lobby.prototype.cleanup = function() {
-	for (var i = this.gameRooms.length - 1; i >= 0; i--) {
+Lobby.prototype.cleanupRooms = function() {
+	for (let i = this.gameRooms.length - 1; i >= 0; i--) {
 		const room = this.gameRooms[i];
 		if (room.players.length === 0) {
 			this.gameRooms.splice(i, 1);
 		}
 	}
+};
+// Cleans up by removing all players who are disconnected for more than 5 minutes.
+Lobby.prototype.cleanupPlayers = function() {
+	
 };
 // When you connect, either make a new player or reconnect an existing one
 Lobby.prototype.onSocketConnect = function(socket) {
@@ -140,7 +142,7 @@ Lobby.prototype.onSocketConnect = function(socket) {
 		const existingPlayer = this.players[i];
 		if (existingPlayer.username === socket._username) {
 			// match!
-			existingPlayer.onReconnect();
+			existingPlayer.connect(socket, this);
 			socket.join("player-" + existingPlayer.username);
 			return;
 		}
@@ -155,8 +157,8 @@ Lobby.prototype.onSocketDisconnect = function(socket) {
 	const username = socket._username;
 	for (let i = 0; i < this.players.length; i++) {
 		if (this.players[i].username === username) {
-			// match!
-			this.players[i].onDisconnect(this);
+			// match! remove them after 5 minutes
+			this.players[i].disconnect(this, 5 * 60 * 1e3);
 			return;
 		}
 	}
@@ -323,7 +325,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		const you = gameLobby.getPlayerByUsername(thisUsername);
 		if (you && room) {
 			room.onPlayerLeave(you);
-			gameLobby.cleanup();
+			gameLobby.cleanupRooms();
 			room.sendUpdate(ioLobby);
 		} else {
 			socket.emit("gameRoomError", {
@@ -350,7 +352,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 				} else {
 					console.warn("Player " + theirUsername + " was kicked from a room they were not in or invited to!");
 				}
-				gameLobby.cleanup();
+				gameLobby.cleanupRooms();
 				room.sendUpdate(ioLobby);
 			} else {
 				socket.emit("gameRoomError", {
