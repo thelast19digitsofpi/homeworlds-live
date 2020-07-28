@@ -19,6 +19,7 @@ ioGame.use(checkSocketCookie);
 function GameManager() {
 	this.games = [];
 	this.players = []; // TODO: Is this even being used?
+	this.archiveGames = [];
 }
 // getSomethingBySomethingelse
 GameManager.prototype.getGameById = function(givenID) {
@@ -28,6 +29,16 @@ GameManager.prototype.getGameById = function(givenID) {
 			return game;
 		}
 	}
+	
+	// search thru the archives
+	for (let i = 0; i < this.archiveGames.length; i++) {
+		const deadGame = this.archiveGames[i];
+		if (deadGame.id === givenID) {
+			return deadGame;
+		}
+	}
+	
+	// ok, no such game exists
 	return null;
 };
 
@@ -58,12 +69,17 @@ GameManager.prototype.startGameByRoom = function(gameRoom) {
 			this.players.push(player);
 		}
 		// Set a timer, in case the player never shows up!
-		player.setTimer(newGame, 3 * 60 * 1e3);
+		player.setTimer(newGame, "forfeit", 300 * 1e3);
 	}
 };
 
 // IMPORTANT: This function is asynchronous!
-GameManager.prototype.onGameEnd = async function(game) {
+GameManager.prototype.onGameEnd = async function(game, cause) {
+	if (this.games.indexOf(game) === -1) {
+		console.warn("onGameEnd called but game does not exist");
+		return false;
+	}
+	
 	console.log("Game End!");
 	// Game is over!
 	const winner = game.getWinner();
@@ -102,11 +118,15 @@ GameManager.prototype.onGameEnd = async function(game) {
 		console.error(error);
 	}
 	
+	// stop the clocks
+	game.stopAllClocks();
+	
 	game.endGameInfo = {
 		// so that gameOver can be a replacement for gamePosition
 		game: game.getClientData(),
 		history: game.history,
 		
+		cause: cause || (winner ? "defeating the enemy" : "mutual destruction"),
 		winner: winner,
 		summary: summary,
 		ratingData: ratingData,
@@ -118,6 +138,10 @@ GameManager.prototype.onGameEnd = async function(game) {
 	
 	// Send the room a message.
 	ioGame.to(game.socketRoom).emit("gameOver", game.endGameInfo);
+	
+	// finally, move it to the archive
+	this.games.splice(this.games.indexOf(game), 1);
+	this.archiveGames.push(game);
 };
 
 // I am not sure what I want the procedure to be for this
@@ -148,6 +172,13 @@ GameManager.prototype.whosPlaying = function() {
 // When a socket disconnects
 GameManager.prototype.onSocketDisconnect = function(socket) {
 	const game = this.getGameById(socket._gameID);
+	if (game) {
+		const player = game.getPlayerByUsername(socket._username);
+		if (player) {
+			// 300 seconds = 5 minutes
+			player.disconnect(socket, "forfeit", 300e3);
+		}
+	}
 };
 
 // Our particular game manager
@@ -168,21 +199,7 @@ app.get("/game/:gameID", function(req, res) {
 	}
 });
 
-
-// For debugging lag.
-function pretendLag(ms) {
-	// just for comparison
-	const randomID = Math.random();
-	//console.log("begin fake lag", Math.round(ms), "id", randomID);
-	return new Promise(function(resolve) {
-		setTimeout(function() {
-			//console.log("end fake lag", Math.round(ms), "id", randomID);
-			resolve();
-		}, ms*0);
-	});
-};
-
-
+// Connection handler!
 ioGame.on("connection", function(socket) {
 	console.log("Connection to some game");
 	
@@ -196,17 +213,22 @@ ioGame.on("connection", function(socket) {
 		socket._gameID = id;
 		const game = gameManager.getGameById(id);
 		if (game) {
-			// You are allowed to watch games in progress. I think.
+			// You are allowed to watch games in progress.
 			let viewer = game.players[0].username;
-			if (game.getPlayerByUsername(thisUsername) !== null) {
+			const yourPlayer = game.getPlayerByUsername(thisUsername);
+			if (yourPlayer !== null) {
 				// They see it from their own perspective.
 				viewer = thisUsername;
+				// And also you are connected.
+				yourPlayer.connect(socket, game);
 			}
 			// maybe this could be more refined? hmmm...
 			socket.emit("gamePosition", {
 				game: game.getClientData(),
 				history: game.history,
 				viewer: viewer,
+				
+				drawVotes: game.drawVotes.map(player => player.username),
 				
 				actionsThisTurn: game.actionsThisTurn,
 				turnResets: game.turnResets,
@@ -220,10 +242,9 @@ ioGame.on("connection", function(socket) {
 	});
 	
 	// Event listeners
-	socket.on("doAction", async function onDoAction(data) {
+	socket.on("doAction", function onDoAction(data) {
 		console.log("doAction");
 		// TODO: Obviously, delete this!!
-		await pretendLag(Math.random() * 3000);
 		// you are still connected
 		renewCookie(thisUsername);
 		// ok now actually find the requested game
@@ -280,10 +301,8 @@ ioGame.on("connection", function(socket) {
 	
 	// Resets the board to the position at the start of your turn.
 	// Like an "undo" option, in a sense.
-	socket.on("doResetTurn", async function onDoReset(data) {
+	socket.on("doResetTurn", function onDoReset(data) {
 		console.log("doResetTurn");
-		// TODO: Obviously, delete this!!
-		await pretendLag(Math.random() * 3000);
 		// standard
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
@@ -321,16 +340,15 @@ ioGame.on("connection", function(socket) {
 		}
 	});
 	
-	socket.on("doEndTurn", async function onDoEndTurn(data) {
+	socket.on("doEndTurn", function onDoEndTurn(data) {
 		// TODO: Obviously, delete this!!
-		await pretendLag(Math.random() * 3000);
 		const game = gameManager.getGameById(data.gameID);
 		if (game) {
 			const you = game.getPlayerByUsername(thisUsername);
 			if (you) {
 				try {
 					// attempt to do the action
-					const success = game.onReceiveAction(data, true, you, gameManager);
+					const success = game.onReceiveAction(data, true, you);
 					if (success) {
 						// sends the action to everyone except the sender!
 						socket.to(game.socketRoom).emit("endTurn", {
@@ -362,9 +380,62 @@ ioGame.on("connection", function(socket) {
 		}
 	});
 	
+	socket.on("resign", function onResign(gameID) {
+		// standard
+		const game = gameManager.getGameById(gameID);
+		if (game) {
+			const you = gameManager.getPlayerByUsername(thisUsername);
+			if (you) {
+				// we assume the client has already confirmed
+				game.forfeit(you, "resignation");
+			}
+		}
+	});
+	
+	socket.on("offerDraw", function offerDraw(gameID) {
+		const game = gameManager.getGameById(gameID);
+		if (game) {
+			const you = gameManager.getPlayerByUsername(thisUsername);
+			if (you) {
+				const success = game.onOfferDraw(you);
+				if (success) {
+					ioGame.to(game.socketRoom).emit("drawOfferChange", {
+						drawVotes: game.drawVotes.map(player => player.username),
+					});
+				}
+			}
+		}
+	});
+	
+	socket.on("cancelDraw", function cancelDraw(gameID) {
+		const game = gameManager.getGameById(gameID);
+		if (game) {
+			const you = gameManager.getPlayerByUsername(thisUsername);
+			if (you) {
+				const success = game.onCancelDraw(you);
+				if (success) {
+					ioGame.to(game.socketRoom).emit("drawOfferChange", {
+						drawVotes: game.drawVotes.map(player => player.username),
+					});
+				}
+			}
+		}
+	});
+	
 	socket.on("disconnect", function() {
 		console.warn("DISCONNECT from GameManager");
 		gameManager.onSocketDisconnect(socket);
+	});
+	
+	socket.on("reconnect", function() {
+		// you are back!
+		const game = gameManager.getGameById(socket._gameID);
+		if (game) {
+			const you = gameManager.getPlayerByUsername(thisUsername);
+			if (you) {
+				you.connect(socket, game);
+			}
+		}
 	});
 });
 

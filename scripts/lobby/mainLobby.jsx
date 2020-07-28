@@ -145,7 +145,39 @@ class MainLobby extends React.Component {
 			this.showGameList();
 		});
 		
-		
+		socket.on("roomUpdate", function(roomData) {
+			if (roomData.id === this.state.roomID) {
+				this.setState({
+					room: roomData,
+				});
+			}
+			
+			// update the room
+			let newRooms = [];
+			for (let i = 0; i < this.state.gameRooms.length; i++) {
+				const oldRoom = this.state.gameRooms[i];
+				if (oldRoom.id === roomData.id) {
+					newRooms.push(roomData);
+					
+					// if the room is starting the game, add an alert
+					if (!oldRoom.isStarting && roomData.isStarting) {
+						// check if you are playing
+						for (let j = 0; j < roomData.players.length; j++) {
+							if (roomData.players[j].username === YOUR_USERNAME) {
+								// You are indeed on the list
+								this.addNewAlert(`Game #${roomData.id} is starting! Get in there and confirm that you are ready!`, "success");
+								break;
+							}
+						}
+					}
+				} else {
+					newRooms.push(oldRoom);
+				}
+			}
+			this.setState({
+				gameRooms: newRooms,
+			});
+		}.bind(this));
 		
 		// The final event handler
 		// Seems so anti-climactic

@@ -56,6 +56,9 @@ GameClock.prototype.endTurn = function() {
 	}
 }
 GameClock.prototype.getTimeLeft = function() {
+	if (this.expired) {
+		return 0;
+	}
 	let timeLeft;
 	if (this.running) {
 		// time spent is (now - started) but those are in milliseconds

@@ -72,6 +72,14 @@ GameRoom.prototype.onPlayerJoin = function(player) /* throws */ {
 		if (this.players.length + this.invitedPlayers.length >= this.numPlayers) {
 			throw new UserError("This room has filled up. You need to join or create another room.");
 		}
+		
+		// you cannot be banned
+		if (this.bannedPlayers.indexOf(player) !== -1) {
+			// at some point, bans should be forgiven...
+			// but for right now you can just abandon the room
+			throw new UserError("You have been kicked out of this room. You must join another room.");
+		}
+		
 		// no duplicates allowed
 		const index = this.players.indexOf(player);
 		if (index === -1) {
@@ -106,14 +114,33 @@ GameRoom.prototype.removeInvitation = function(player) {
 	}
 }
 
-// Generic function that sends all players a message.
-// Takes the io namespace as a parameter.
-// TODO: Instead maybe use socket.io rooms?
-GameRoom.prototype.sendUpdate = function(ioNamespace) {
+// Gets data to send to the clients.
+GameRoom.prototype.getClientData = function(lobby) {
+	let sendData = {
+		id: this.id,
+		numPlayers: this.numPlayers,
+		options: this.options,
+		isStarting: this.isStarting,
+	};
+	// The client wants a "connected" property so use the player's isConnected method.
+	const playerMap = (player) => ({
+		username: player.username,
+		// my React mindset is infecting the server...
+		connected: player.isConnected(lobby),
+		elo: player.elo,
+	});
+	// Render anything with players in it as in the above format.
+	sendData.players = this.players.map(playerMap);
+	sendData.invitedPlayers = this.invitedPlayers.map(playerMap);
+	sendData.bannedPlayers = this.bannedPlayers.map(playerMap);
+	sendData.confirmedStart = this.confirmedStart.map(playerMap);
+	return sendData;
+}
+
+GameRoom.prototype.sendUpdate = function(ioNamespace, lobby) {
 	for (let i = 0; i < this.players.length; i++) {
-		ioNamespace
-			.to("player-" + this.players[i].username)
-			.emit("roomUpdate", this);
+		ioNamespace.to("player-" + this.players[i].username)
+			.emit("roomUpdate", this.getClientData(lobby));
 	}
 }
 
@@ -127,7 +154,6 @@ The launch sequence goes as follows:
 	- Yes, everyone. The owner may have clicked accidentally, so we should force them to confirm.
 3. Any player who clicks Decline aborts the process and leaves the room.
 4. When everyone has clicked Accept, the Game starts!
-
 
 Note: We should keep track of players who are in games and send that in WhosOnline data.
 */

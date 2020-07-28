@@ -101,3 +101,8 @@ body {
 .clock-value {
 	font-family: monospace;
 }
+
+/* Summary */
+#game-log {
+	min-height: 3.5em;
+}

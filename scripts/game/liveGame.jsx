@@ -3,170 +3,241 @@
 // Higher order components really do work, albeit somewhat messily.
 // I still think inheritance (class LiveGame extends Game) would be slightly cleaner.
 
-function LiveGameDisplay(props) {
-	// get the state object of the game
-	const state = props.reactState;
+class LiveGameDisplay extends React.Component {
+	constructor(props) {
+		super(props);
+		this.state = {
+			isPlaying: false,
+			drawVotes: [],
+			confirmResign: false,
+			endGameInfo: null,
+		}
+	}
 	
-	const clocks = state.clocks; // somehow get these
-	let clockElements = [];
-	if (clocks) {
-		for (let i = 0; i < clocks.length; i++) {
-			const clock = clocks[i];
-			let className = "clock text-right card";
-			if (clock.running) {
-				// text-light seems to actually be dark
-				className += " bg-primary text-light";
-			}
-			
-			// Work out how much time is really left.
-			/*
-			Clock is {
-				username: username,
-				running: Boolean,
-				timeLeft: seconds,
-				delayLeft: seconds,
-				type: "delay" or "increment",
-				bonus: seconds,
-			};
-			These values all reflect what was on the clock WHEN IT WAS SENT.
-			*/
-			
-			// How much time has passed since you started?
-			const timeElapsed = (Date.now() - state.clocksReceived) / 1000;
-			if (timeElapsed < 0) {
-				console.warn("Oh no! There has been a temporal distortion!", state.clocksReceived, timeElapsed);
-			}
-			let timeLeft = clock.timeLeft;
-			if (clock.running) {
-				if (clock.delayLeft) {
-					// subtract only that portion after the delay time
-					timeLeft = Math.min(timeLeft, timeLeft - timeElapsed + clock.delayLeft);
-				} else {
-					// subtract what has been used
-					timeLeft -= timeElapsed;
+	handleClickOfferDraw() {
+		socket.emit("offerDraw", GAME_ID);
+	}
+	handleClickCancelDraw() {
+		socket.emit("cancelDraw", GAME_ID);
+	}
+	handleClickResign() {
+		this.setState({
+			confirmResign: true,
+		});
+	}
+	handleClickCancelResign() {
+		this.setState({
+			confirmResign: false,
+		});
+	}
+	handleClickConfirmResign() {
+		socket.emit("resign", GAME_ID);
+	}
+	
+	componentDidMount() {
+		socket.on("drawOfferChange", function(data) {
+			console.log("change offer");
+			this.setState({
+				drawVotes: data.drawVotes,
+			});
+		}.bind(this));
+		// test
+		socket.on("gamePosition", function(data) {
+			this.setState({
+				isPlaying: data.isPlaying,
+				drawVotes: data.drawVotes,
+			})
+		}.bind(this));
+	}
+	
+	render() {
+		// get the state object of the game
+		const innerState = this.props.reactState;
+		
+		const clocks = innerState.clocks; // somehow get these
+		let clockElements = [];
+		if (clocks) {
+			for (let i = 0; i < clocks.length; i++) {
+				const clock = clocks[i];
+				let className = "clock text-right card";
+				if (clock.running) {
+					// text-light seems to actually be dark
+					className += " bg-primary text-light";
 				}
-			}
-			
-			// Absolute value, to avoid weird renders like -1:0-2
-			const min = Math.floor(Math.abs(timeLeft) / 60);
-			// floor both, so it is an integer
-			const sec = Math.floor(Math.abs(timeLeft) % 60);
-			
-			const timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
-			
-			let usernameClassName = "card-title clock-name d-md-inline-block mr-4 mr-lg-none";
-			if (clock.username.length > 15) {
-				usernameClassName += " h6"; // make it small to fit
-			} else if (clock.username.length > 6) {
-				usernameClassName += " h5";
-			} else {
-				usernameClassName += " h4"; // more room = bigger
-			}
-			
-			clockElements.push(
-				<div key={clock.username} className={className}>
-					<div className="card-body">
-						<p className={usernameClassName}>{clock.username}</p>
-						<h4 className="clock-value d-md-inline-block">{timeDisplay}</h4>
+				
+				// Work out how much time is really left.
+				/*
+				Clock is {
+					username: username,
+					running: Boolean,
+					timeLeft: seconds,
+					delayLeft: seconds,
+					type: "delay" or "increment",
+					bonus: seconds,
+				};
+				These values all reflect what was on the clock WHEN IT WAS SENT.
+				*/
+				
+				// How much time has passed since you started?
+				const timeElapsed = (Date.now() - innerState.clocksReceived) / 1000;
+				if (timeElapsed < 0) {
+					console.warn("Oh no! There has been a temporal distortion!", innerState.clocksReceived, timeElapsed);
+				}
+				let timeLeft = clock.timeLeft;
+				if (clock.running) {
+					if (clock.delayLeft) {
+						// subtract only that portion after the delay time
+						timeLeft = Math.min(timeLeft, timeLeft - timeElapsed + clock.delayLeft);
+					} else {
+						// subtract what has been used
+						timeLeft -= timeElapsed;
+					}
+				}
+				
+				// Absolute value, to avoid weird renders like -1:0-2
+				const min = Math.floor(Math.abs(timeLeft) / 60);
+				// floor both, so it is an integer
+				const sec = Math.floor(Math.abs(timeLeft) % 60);
+				
+				const timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
+				
+				let usernameClassName = "card-title clock-name d-md-inline-block mr-4 mr-lg-none";
+				if (clock.username.length > 12) {
+					usernameClassName += " h6"; // make it small to fit
+				} else if (clock.username.length > 6) {
+					usernameClassName += " h5";
+				} else {
+					usernameClassName += " h4"; // more room = bigger
+				}
+				
+				clockElements.push(
+					<div key={clock.username} className={className}>
+						<div className="card-body">
+							<p className={usernameClassName}>{clock.username}</p>
+							<h4 className="clock-value d-md-inline-block">{timeDisplay}</h4>
+						</div>
 					</div>
+				);
+			}
+		} else {
+			// still show the player turn order
+			const current = this.props.gameState;
+			const players = current.turnOrder;
+			for (let i = 0; i < players.length; i++) {
+				let className = "clock card";
+				if (players[i] === current.turn) {
+					className += " bg-primary text-light";
+				}
+				clockElements.push(<div key={players[i]} className={className}>
+					<div className="card-body">
+						<h5 className="card-title clock-name">{players[i]}</h5>
+					</div>
+				</div>)
+			}
+		}
+		
+		let endGameBanner = null;
+		if (innerState.endGameInfo) {
+			const info = innerState.endGameInfo;
+			const winnerMessage = (info.winner ? info.winner + " has won" : "it's a draw");
+			
+			let ratingDisplay = <p>This game was not rated.</p>
+			if (info.ratingData) {
+				let ratingElements = [];
+				for (let player in info.ratingData) {
+					const playerData = info.ratingData[player];
+					// new rating minus old rating
+					const diff = playerData[1] - playerData[0];
+					const adjustmentString = (
+						player + ": " + playerData[1] + "(" + (
+							diff > 0 ? "+" + diff :
+							diff < 0 ? diff :
+							"\u01770" // plus/minus sign: plus or minus 0
+						) + ")"
+					)
+					
+					ratingElements.push(
+						<div className="col" key={player}>{adjustmentString}</div>
+					);
+				}
+				ratingDisplay = <div className="row">{ratingElements}</div>
+			}
+			endGameBanner = (
+				<div className="col-12 alert alert-secondary">
+					<div className="float-right">
+						<textarea id="game-log"
+						          className="float-right"
+						          readOnly
+						          rows="3"
+						          value={info.summary}>{info.summary}</textarea>
+						<br/>
+						<button onClick={() => {
+							// copy the text into your clipboard
+							document.getElementById("game-log").select();
+							document.execCommand("copy");
+						}} className="btn btn-secondary">Copy</button>
+					</div>
+					
+					<h3 className="alert-heading text-center">Game over, {winnerMessage}!</h3>
+					
+					{ratingDisplay}
+					
+					<p>If you wish, you can copy this log of the game for analysis (right).</p>
+					
+					<a href="/lobby" role="button" className="btn btn-lg btn-primary text-black">Return to Lobby</a>
 				</div>
 			);
 		}
-	} else {
-		// still show the player turn order
-		const current = props.gameState;
-		const players = current.turnOrder;
-		for (let i = 0; i < players.length; i++) {
-			let className = "clock card";
-			if (players[i] === current.turn) {
-				className += " bg-primary text-light";
-			}
-			clockElements.push(<div key={players[i]} className={className}>
-				<div className="card-body">
-					<h5 className="card-title clock-name">{players[i]}</h5>
-				</div>
-			</div>)
-		}
-	}
-	
-	let endGameBanner = null;
-	if (state.endGameInfo) {
-		const info = state.endGameInfo;
-		const winnerMessage = (info.winner ? info.winner + " has won" : "it's a draw");
 		
-		let ratingDisplay = <p>This game was not rated.</p>
-		if (info.ratingData) {
-			let ratingElements = [];
-			for (let player in info.ratingData) {
-				const playerData = info.ratingData[player];
-				// new rating minus old rating
-				const diff = playerData[1] - playerData[0];
-				const adjustmentString = (
-					player + ": " + playerData[1] + "(" + (
-						diff > 0 ? "+" + diff :
-						diff < 0 ? diff :
-						"\u01770" // plus/minus sign: plus or minus 0
-					) + ")"
+		const offerDraw = <div className="card">
+			{/* Only show the offer-draw button if you are playing */}
+			{innerState.isPlaying && <button className="btn btn-secondary"
+				onClick={() => this.handleClickOfferDraw()}>Offer a Draw</button>}
+			<p className="text-center">Draw votes: {this.state.drawVotes.join(", ")}</p>
+			{
+				this.state.drawVotes.length > 0 && innerState.isPlaying && (
+					<button className="btn btn-primary"
+						onClick={() => this.handleClickCancelDraw()}>Cancel Draw</button>
 				)
-				
-				ratingElements.push(
-					<div className="col" key={player}>{adjustmentString}</div>
-				);
 			}
-			ratingDisplay = <div className="row">{ratingElements}</div>
-		}
-		endGameBanner = (
-			<div className="col-12 alert alert-secondary">
-				<div className="float-right">
-					<textarea id="game-log"
-					          className="float-right"
-					          readOnly
-					          value={info.summary}>{info.summary}</textarea>
-					<br/>
-					<button onClick={() => {
-						// copy the text into your clipboard
-						document.getElementById("game-log").select();
-						document.execCommand("copy");
-					}} className="btn btn-secondary">Copy</button>
-				</div>
-				
-				<h3 className="alert-heading text-center">Game over, {winnerMessage}!</h3>
-				
-				{ratingDisplay}
-				
-				<p>If you wish, you can copy this log of the game for analysis (right).</p>
-				
-				<a href="/lobby" role="button" className="btn btn-lg btn-primary text-black">Return to Lobby</a>
-			</div>
-		);
-	}
-	
-	const offerDraw = <div className="card">
-		<button className="btn btn-light" disabled>Offer a Draw</button>
-		<p className="text-center">Votes: (none)</p>
-	</div>
-	
-	const resign = <div className="card">
-		<button className="btn btn-danger" disabled>RESIGN</button>
-	</div>	
-	
-	return <React.Fragment>
-		{endGameBanner}
-		<div className="row">
-			{/*
-			basically:
-			on small screens, clocks are positioned above the board and flex horizontally
-			on large screens, clocks are positioned to the right and flex vertically
-			*/}
-			<div className="col-12 d-flex flex-row justify-content-around
-				col-lg-2 flex-lg-column justify-content-lg-start order-lg-12">
-				{clockElements}
-				{offerDraw}
-				{resign}
-			</div>
-			<div className="col-12 col-lg-10 order-lg-1">{props.children}</div>
 		</div>
-	</React.Fragment>
+		
+		let resignButtons = null;
+		if (innerState.isPlaying) {
+			if (this.state.confirmResign) {
+				resignButtons = <div className="card">
+					<button className="btn btn-success"
+						onClick={() => this.handleClickCancelResign()}
+						>CANCEL!</button>
+					<button className="btn btn-danger mt-2"
+						onClick={() => this.handleClickConfirmResign()}>Confirm<br/>RESIGN</button>
+				</div>
+			} else {
+				resignButtons = <div className="card">
+					<button className="btn btn-warning"
+					onClick={() => this.handleClickResign()}>Resign</button>
+				</div>
+			}
+		}
+		
+		return <React.Fragment>
+			{endGameBanner}
+			<div className="row">
+				{/*
+				basically:
+				on small screens, clocks are positioned above the board and flex horizontally
+				on large screens, clocks are positioned to the right and flex vertically
+				*/}
+				<div className="col-12 d-flex flex-row justify-content-around
+					col-lg-2 flex-lg-column justify-content-lg-start order-lg-12">
+					{clockElements}
+					{offerDraw}
+					{resignButtons}
+				</div>
+				<div className="col-12 col-lg-10 order-lg-1">{this.props.children}</div>
+			</div>
+		</React.Fragment>
+	}
 }
 
 // wrapper component, events, additional state
@@ -174,6 +245,8 @@ const LiveGame = withGame(LiveGameDisplay, {
 	// These methods will be run on the wrapped component
 	onMount: function() {
 		socket.on("gamePosition", function(data) {
+			console.log(data.viewer);
+			console.log(YOUR_USERNAME);
 			// data contains the game and the viewer
 			const game = data.game;
 			const isYourTurn = (game.currentState.turn === YOUR_USERNAME);
@@ -192,6 +265,9 @@ const LiveGame = withGame(LiveGameDisplay, {
 				// clock functionality requires knowing when the clocks were received
 				clocks: game.clocks,
 				clocksReceived: Date.now(),
+				
+				// flag for if you are playing and thus have access to draw offer and resign buttons
+				isPlaying: data.viewer === YOUR_USERNAME,
 			});
 		}.bind(this));
 		
@@ -388,6 +464,7 @@ const LiveGame = withGame(LiveGameDisplay, {
 	},
 }, {
 	viewer: YOUR_USERNAME,
+	isPlaying: false,
 	clocks: [],
 	clocksReceived: Date.now(),
 	pingMS: 0,

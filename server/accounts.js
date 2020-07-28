@@ -35,14 +35,18 @@ async function isUsernameTaken(username) {
 }
 
 function isUsernameValid(username) {
+	if (typeof username !== "string") {
+		console.log("Bad username: not a string. It is good to know that is possible...")
+		return false;
+	}
 	// 3-16 characters
 	if (username.length < 3 || username.length > 16) {
 		console.log("Bad username: bad length", username, username.length);
 		return false;
 	}
 	
-	// only letters and numbers are allowed
-	if (/[^A-Za-z0-9\.,!@#$%^&*\(\)_\-+= ]/.test(username)) {
+	// only letters, numbers, and some special characters are allowed
+	if (/[^A-Za-z0-9\.!@#$%^&*\(\)_\-+= ]/.test(username)) {
 		console.log("Bad username: contains weird characters", username);
 		return false;
 	}

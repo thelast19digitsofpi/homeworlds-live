@@ -1,7 +1,10 @@
 // test.js
 //
-// yeah, empty. What all to put here?
+// currently not too much
 
-//const thing = require("./something.js");
+const elo = require("./elo.js");
 
-console.error("No testing is implemented right now");
+
+console.log("<-----ELO TEST----->");
+elo.test();
+console.log("</----ELO TEST----->");

@@ -28,12 +28,12 @@ const db = new sqlite3.Database(".data/database.db", function(error) {
 });
 
 // Closes the server when a Control+C is used to shut it down
-function shutdownDatabase(event) {
+function shutdownDatabase() {
 	console.log("SIGINT");
 	db.close();
 	process.exit(0);
 };
-process.on('SIGINT', shutdownDatabase)
-
+process.on('SIGINT', shutdownDatabase);
+process.on('SIGTERM', shutdownDatabase);
 
 module.exports = db;

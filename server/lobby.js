@@ -31,7 +31,7 @@ Lobby.prototype.whosOnline = function() {
 		playerList.push({
 			// the disconnect timer thing is not useful
 			username: this.players[i].username,
-			connected: this.players[i].connected,
+			connected: this.players[i].isConnected(this),
 			elo: this.players[i].elo,
 		});
 	}
@@ -95,8 +95,10 @@ Lobby.prototype.onPlayerLeave = function(player, gameRoom) {
 	// This might help re-stabilize if somehow they vanish from .players or something.
 	
 	// Remove them from this.players, if they are present.
+	let notFound = false;
 	const pIndex = this.players.indexOf(player);
 	if (pIndex === -1) {
+		notFound = true;
 		console.log("[Lobby.onPlayerLeave] Player leaves without being in this.players");
 	} else {
 		this.players.splice(pIndex, 1);
@@ -151,6 +153,7 @@ Lobby.prototype.onSocketConnect = function(socket) {
 	// but technically "for-else" and "while-else" would mean something totally different
 	const newPlayer = new Player(socket._username);
 	socket.join("player-" + newPlayer.username);
+	newPlayer.connect(socket, this);
 	this.onPlayerJoin(newPlayer);
 };
 Lobby.prototype.onSocketDisconnect = function(socket) {
@@ -158,7 +161,7 @@ Lobby.prototype.onSocketDisconnect = function(socket) {
 	for (let i = 0; i < this.players.length; i++) {
 		if (this.players[i].username === username) {
 			// match! remove them after 5 minutes
-			this.players[i].disconnect(this, 5 * 60 * 1e3);
+			this.players[i].disconnect(socket, "onPlayerLeave", 5 * 60 * 1e3);
 			return;
 		}
 	}
@@ -209,7 +212,7 @@ function sendUpdate(socket) {
 	socket.volatile.emit("updateResponse", {
 		whosOnline: gameLobby.whosOnline(),
 		whosPlaying: gameManager.whosPlaying(),
-		gameRooms: gameLobby.gameRooms,
+		gameRooms: gameLobby.gameRooms.map(room => room.getClientData(gameLobby)),
 	});
 }
 
@@ -307,7 +310,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		if (you && room) {
 			try {
 				room.onPlayerJoin(you);
-				room.sendUpdate(ioLobby);
+				room.sendUpdate(ioLobby, gameLobby);
 			} catch (error) {
 				if (error.isUserError) {
 					// Send it
@@ -326,7 +329,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		if (you && room) {
 			room.onPlayerLeave(you);
 			gameLobby.cleanupRooms();
-			room.sendUpdate(ioLobby);
+			room.sendUpdate(ioLobby, gameLobby);
 		} else {
 			socket.emit("gameRoomError", {
 				message: "You have attempted to leave a room that does not exist!",
@@ -345,7 +348,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 				// 3. Remove them (assuming they exist).
 				const them = gameLobby.getPlayerByUsername(theirUsername);
 				if (room.isPlayerIn(them)) {
-					room.onPlayerLeave(them);
+					room.forcePlayerOut(them);
 				} else if (room.isPlayerInvited(them)) {
 					// You can cancel an invitation if you invited someone to the room
 					room.removeInvitation(them);
@@ -353,7 +356,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 					console.warn("Player " + theirUsername + " was kicked from a room they were not in or invited to!");
 				}
 				gameLobby.cleanupRooms();
-				room.sendUpdate(ioLobby);
+				room.sendUpdate(ioLobby, gameLobby);
 			} else {
 				socket.emit("gameRoomError", {
 					message: "You do not have permission to remove players. You are not the room's owner.",
@@ -374,7 +377,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		if (room && you) {
 			try {
 				room.prepareToStart(you);
-				room.sendUpdate(ioLobby);
+				room.sendUpdate(ioLobby, gameLobby);
 			} catch (error) {
 				if (error.isUserError) {
 					socket.emit("gameRoomError", error);
@@ -418,7 +421,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 			// OK, so NOW, if we did indeed confirm, see if we can start
 			// I'm getting excited...
 			if (confirmed) {
-				room.sendUpdate(ioLobby);
+				room.sendUpdate(ioLobby, gameLobby);
 				if (room.canStartForReal()) {
 					// Launch sequence complete!
 					gameLobby.startGame(room);
@@ -443,6 +446,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 		const you = gameLobby.getPlayerByUsername(thisUsername);
 		if (room && you) {
 			room.onPlayerCancelStart(you);
+			room.sendUpdate(ioLobby, gameLobby);
 		} else {
 			// no room, that's odd...
 			if (!room) {

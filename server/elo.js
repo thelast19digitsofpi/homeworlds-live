@@ -91,14 +91,6 @@ async function setRatingByUsername(username, rating) {
 	return -1;
 }
 
-// testing only
-setTimeout(async function() {
-	console.log("Alice rating", await getRatingByUsername("alice"));
-	await setRatingByUsername("alice", Math.floor(Math.random() * 400 + 1500));
-	console.log("Alice new rating", await getRatingByUsername("alice"));
-	console.log("Bob rating", await getRatingByUsername("bob")); // should always be 1500 until bob plays rated games
-}, 500);
-
 // This function actually adjusts the ratings in the table.
 // Again, 1 = first player wins, etc.
 async function updateUserRatings(result, username1, username2) {
@@ -119,25 +111,29 @@ async function updateUserRatings(result, username1, username2) {
 		console.log("Some rating failed!");
 	}
 }
-/*
-const tests = [
-	[0, 1500, 1500],
-	[0.5, 1500, 1500],
-	[1, 1500, 1500],
-	[0, 1400, 1600],
-	[1, 1400, 1600],
-	[0, 1000, 2000],
-	[0.5, 1000, 2000],
-	[1, 1000, 2000],
-];
 
-for (let i = 0; i < tests.length; i++) {
-	console.log("Elo Test", tests[i], "result: ", getAdjustedRatings.apply(null, tests[i]));
+function test() {
+	const tests = [
+		[0, 1500, 1500],
+		[0.5, 1500, 1500],
+		[1, 1500, 1500],
+		[0, 1400, 1600],
+		[1, 1400, 1600],
+		[0, 1000, 2000],
+		[0.5, 1000, 2000],
+		[1, 1000, 2000],
+	];
+
+	for (let i = 0; i < tests.length; i++) {
+		console.log("Elo Test", tests[i], "result: ", getAdjustedRatings.apply(null, tests[i]));
+	}
 }
-*/
+
 module.exports = {
 	getAdjustedRatings: getAdjustedRatings,
 	getRatingByUsername: getRatingByUsername,
 	setRatingByUsername: setRatingByUsername,
 	updateUserRatings: updateUserRatings,
+	
+	test: test,
 };
