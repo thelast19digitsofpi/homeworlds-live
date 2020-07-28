@@ -11,3 +11,4 @@ require("./server/main-page.js");
 require("./server/socket.js");
 require("./server/lobby.js");
 require("./server/gameManager.js");
+require("./server/tutorials.js");
