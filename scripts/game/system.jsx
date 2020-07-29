@@ -2,7 +2,8 @@
 // 
 // Holds one star system.
 
-
+import React from 'react';
+import Piece from './piece.jsx';
 
 class System extends React.Component {
 	constructor(props) {
@@ -85,3 +86,5 @@ class System extends React.Component {
 		);
 	}
 }
+
+export default System;

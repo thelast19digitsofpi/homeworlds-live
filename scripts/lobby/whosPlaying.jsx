@@ -2,6 +2,8 @@
 //
 // Like whosOnline but displays who is playing currently
 
+import React from 'react';
+
 function WhosPlaying(props) {
 	const list = props.list;
 	
@@ -22,3 +24,5 @@ function WhosPlaying(props) {
 	
 	return <ul>{elements}</ul>;
 }
+
+export default WhosPlaying;

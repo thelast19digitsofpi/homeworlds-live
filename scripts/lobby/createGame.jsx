@@ -3,6 +3,8 @@
 // The screen for creating a game.
 // This might be a case where state is owned by multiple components...
 
+import React from 'react';
+
 class CreateGame extends React.Component {
 	constructor(props) {
 		super(props);
@@ -231,3 +233,5 @@ class CreateGame extends React.Component {
 		</form>
 	}
 }
+
+export default CreateGame;

@@ -4,8 +4,9 @@
 
 const {app} = require("./https.js");
 const Player = require("./player.js");
-const GameState = require("../scripts/game/gameState.js");
 const GameClock = require("./game-clock.js");
+let GameState;
+console.log("GameState is ", GameState);
 
 // This might work...
 // note: manager is a reference to the GameManager
@@ -58,6 +59,7 @@ function Game(id, options, players, manager) {
 		return manager;
 	};
 }
+Game.READY = false;
 
 // for debug
 Game.prototype.debugLogMap = function() {
@@ -462,5 +464,11 @@ Game.prototype.getClientData = function() {
 	};
 };
 
+(import("../scripts/game/gameState.mjs")).then(function(gs) {
+	GameState = gs.default;
+	Game.READY = true;
+	console.log("GameState loaded");
+	console.log(GameState);
+});
 
 module.exports = Game;

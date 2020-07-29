@@ -7,7 +7,7 @@
 
 let db = require("./database.js");
 const {app} = require("./https.js");
-const a2 = require("argon2-ffi");
+const a2 = require("argon2");
 const crypto = require("crypto");
 const myUtil = require("./my-util.js");
 
@@ -15,11 +15,13 @@ const myUtil = require("./my-util.js");
 
 
 // Not sure of the best place to put these
-const argonOptions = {
+const passwordOptions = {
+	type: a2.argon2i,
 	timeCost: 8,
 	memoryCost: 12800,
 	parallelism: 4,
-	hashLength: 48
+	hashLength: 48,
+	saltLength: 24,
 };
 // 1 hour
 const COOKIE_LIFE = 1000 * 60 * 60;
@@ -60,10 +62,18 @@ function isUsernameValid(username) {
 	return true;
 }
 
+// Hashes a cookie using sha256.
+// I figure since cookies are not brute-forceable (192 bit random tokens), 
+function hashCookie(cookie) {
+	return crypto.createHmac("sha256", "cookie").update(cookie).digest("base64");
+}
+
 // Returns either a username (string) or null.
 async function authenticateCookie(cookie) {
+	// Get the sha256 of the cookie.
+	const hashedCookie = hashCookie(cookie);
 	try {
-		const row = await myUtil.databaseCall(db, "get", "SELECT * FROM users WHERE cookie = ?", [cookie]);
+		const row = await myUtil.databaseCall(db, "get", "SELECT * FROM users WHERE cookie = ?", [hashedCookie]);
 		if (row) {
 			console.log("Authenticating Cookie\nExpires at:");
 			console.log(row.cookieExpires);
@@ -161,10 +171,10 @@ app.post("/login", async function(req, res) {
 		if (!row) {
 			// pretend to care about the password
 			// this is the hash of something I computed during testing
-			await argon2d.verify("$argon2d$v=19$m=12800,t=8,p=4$6Qusa8rgnoE2qPS4Xm4KSjf4GXw4vqN5$OKiKl0NranAXgCreJtoO2yl+g9BByUrk1/wY0fP0XPvDMowIS9p9t8tZ99m/vvqo", passwordGuess);
+			await a2.verify("$argon2d$v=19$m=12800,t=8,p=4$6Qusa8rgnoE2qPS4Xm4KSjf4GXw4vqN5$OKiKl0NranAXgCreJtoO2yl+g9BByUrk1/wY0fP0XPvDMowIS9p9t8tZ99m/vvqo", passwordGuess);
 		} else {
 			// verify the password
-			const correct = await a2.argon2d.verify(row.hashedPassword, passwordGuess);
+			const correct = await a2.verify(row.hashedPassword, passwordGuess);
 			console.log("Password correct? " + correct);
 			if (correct) {
 				invalid = false;
@@ -176,9 +186,15 @@ app.post("/login", async function(req, res) {
 			return res.render("login", res.locals.render);
 		} else {
 			// You have successfully logged in
-			const cookie = (await myUtil.promiseCryptoBytes(24)).toString('hex');
-			res.append('Set-Cookie', `hwl-session=${cookie}; Path=/; HttpOnly`)
-			myUtil.databaseCall(db, 'run', "UPDATE users SET cookie = ?, cookieExpires = ? WHERE username = ?", [cookie, Date.now() + COOKIE_LIFE, username]);
+			// 33 bytes, because that is divisible by 3 and thus base64 encodes nicely
+			const cookie = (await myUtil.promiseCryptoBytes(33))
+				.toString('base64')
+				// url safe
+				.replace(/\//g, "-").replace(/\+/g, "_");
+			// Put the cookie in the http headers
+			res.append('Set-Cookie', `hwl-session=${cookie}; Path=/; HttpOnly`);
+			// Put the hashed cookie in the database
+			myUtil.databaseCall(db, 'run', "UPDATE users SET cookie = ?, cookieExpires = ? WHERE username = ?", [hashCookie(cookie), Date.now() + COOKIE_LIFE, username]);
 			return res.redirect("/lobby");
 		}
 	} catch (error) {
@@ -188,16 +204,11 @@ app.post("/login", async function(req, res) {
 
 // Creating Account
 app.post("/createAccount", async function(req, res) {
-	console.log("<POST-REQUEST> to createAccount");
-	console.log(req);
-	console.log("\n</POST-REQUEST>");
+	console.log("POST to createAccount");
 	
 	const username = req.body.username;
 	const password = req.body.password;
 	const confirmPassword = req.body.confirmPassword; // I hope this works
-	console.log(username);
-	console.log(password);
-	console.log(confirmPassword);
 	
 	if (password !== confirmPassword) {
 		res.locals.render.username = username;
@@ -237,16 +248,17 @@ app.post("/createAccount", async function(req, res) {
 	
 	// create their account
 	try {
-		const salt = await myUtil.promiseCryptoBytes(24);
-		const hashedPassword = await a2.argon2d.hash(password, salt, argonOptions);
+		const hashedPassword = await a2.hash(password, passwordOptions);
 		console.log(hashedPassword);
 		
 		// Create the cookie for this session
-		const cookie = (await myUtil.promiseCryptoBytes(24)).toString('hex');
+		const cookie = (await myUtil.promiseCryptoBytes(33)).toString('base64')
+			.replace(/\+/g, "_").replace(/\//g, "-");
+		// Put the raw cookie in the http header
 		res.append('Set-Cookie', `hwl-session=${cookie}; Path=/; HttpOnly`);
 		// Append the user to the database!!
 		await myUtil.databaseCall(db, "run", "INSERT INTO users VALUES (null, ?, ?, ?, ?)",
-			[username, hashedPassword, cookie, Date.now() + COOKIE_LIFE]);
+			[username, hashedPassword, hashCookie(cookie), Date.now() + COOKIE_LIFE]);
 		// When they log in, redirect them to the lobby
 		return res.redirect("/lobby");
 	} catch (error) {
@@ -270,4 +282,5 @@ app.get("/logout", function(req, res) {
 module.exports = {
 	cookieLife: COOKIE_LIFE,
 	renewCookie: renewCookie,
+	authenticateCookie: authenticateCookie,
 };

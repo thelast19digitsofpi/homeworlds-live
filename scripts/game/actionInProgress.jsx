@@ -3,6 +3,9 @@
 // Used for the alert banner that shows up when you are in the middle of some
 // action, like creating a homeworld or discovering a system.
 
+import React from 'react';
+import Piece from './piece.jsx';
+
 function ActionInProgress(props) {
 	const aip = props.actionInProgress;
 	if (aip) {
@@ -43,3 +46,5 @@ function ActionInProgress(props) {
 		return null;
 	}
 }
+
+export default ActionInProgress;

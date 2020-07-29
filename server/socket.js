@@ -5,30 +5,23 @@
 
 const {app, httpsServer} = require("./https.js");
 const io = require("socket.io")(httpsServer);
-const cookie = require("cookie");
+const cookieModule = require("cookie");
 const myUtil = require("./my-util.js");
 const db = require("./database.js");
+const {authenticateCookie} = require("./accounts.js");
 
 //console.warn(io);
 
 async function checkSocketCookie(socket, next) {
 	//console.log("Begin Middleware");
 	
-	const cookies = cookie.parse(socket.request.headers.cookie);
+	const cookies = cookieModule.parse(socket.request.headers.cookie);
 	// authenticate user
 	const session = cookies["hwl-session"];
 	
 	let auth = null;
 	if (session) {
-		try {
-			const row = await myUtil.databaseCall(db, 'get', "SELECT * FROM users WHERE cookie = ?", [session]);
-			if (row) {
-				auth = row.username;
-			}
-		} catch (error) {
-			console.log("SQL ERROR!");
-			console.error(error);
-		}
+		auth = await authenticateCookie(session);
 	}
 	
 	// Auth is a username or null

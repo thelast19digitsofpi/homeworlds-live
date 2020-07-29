@@ -2,31 +2,40 @@
 <html>
 	<head>
 		<%- include("headElement") %>
-		<title>Game Sandbox</title>
+		<title>Game #<%- gameID %></title>
 	</head>
 	<body>
 		<%- include("header") %>
 		
-		<h3 class="title">Homeworlds Sandbox</h3>
-		<h5 class="subtitle">Play all sides of a game of Homeworlds with this sandbox.</h5>
 		<div id="game-container"></div>
 		
 		<%- include("footer") %>
 		
 		<script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin nonce="<%- nonce %>"></script>
 		<script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin nonce="<%- nonce %>"></script>
-		<!-- Babel - ->
+		<!-- Babel -->
 		<script src="https://unpkg.com/babel-standalone@6/babel.min.js" nonce="<%- nonce %>"></script>
-		< ! -- Scripts for game components - ->
-		<   !--
-		<script src="/scripts/game/gameState.mjs" type="text/javascript" nonce="<%- nonce %>"></script> <  !-- pure js - -   >
+		
+		<!-- Socket -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js" nonce="<%- nonce %>"></script>
+		
+		<script nonce="<%- nonce %>">
+
+// server-side value injection (of the harmless kind)
+const GAME_ID = <%- gameID %>;
+		</script>
+		
+		<!-- Scripts for game components -->
+		<script src="/scripts/game/gameState.js" type="text/javascript" nonce="<%- nonce %>"></script> <!-- pure js -->
 		<script src="/scripts/game/actionInProgress.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 		<script src="/scripts/game/piece.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 		<script src="/scripts/game/system.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 		<script src="/scripts/game/action_popup.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 		<script src="/scripts/game/stash.jsx" type="text/babel" nonce="<%- nonce %>"></script>
 		<script src="/scripts/game/starmap.jsx" type="text/babel" nonce="<%- nonce %>"></script>
-		<script src="/scripts/game/game.jsx" type="text/babel" nonce="<%- nonce %>"></script> -->
-		<script src="/scripts/game/sandbox.jsx" type="module" nonce="<%- nonce %>"></script>
-	</body>
+		<script src="/scripts/game/game.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+		
+		<!-- Live game script (includes sockets and timers and so on) -->
+		<script src="/scripts/game/liveGame.jsx" type="text/babel" nonce="<%- nonce %>"></script>
+	<script src="/vendor.js?af767e7fd4b52924f316"></script><script src="/game.js?af767e7fd4b52924f316"></script></body>
 </html>

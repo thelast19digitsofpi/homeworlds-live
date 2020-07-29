@@ -20,6 +20,13 @@ EVENTS:
 - [?] onUnmount(): Called inside componentWillUnmount.
 */
 
+import React from 'react';
+import GameState from './gameState.mjs';
+import StarMap from './starmap.jsx';
+import ActionInProgress from './actionInProgress.jsx';
+import ActionsPopup from './action_popup.jsx';
+import Stash from './stash.jsx';
+
 function withGame(WrappedComponent, events, additionalState) {
 	return class extends React.Component {
 		constructor(props) {
@@ -633,4 +640,4 @@ function withGame(WrappedComponent, events, additionalState) {
 	}
 }
 
-
+export default withGame;

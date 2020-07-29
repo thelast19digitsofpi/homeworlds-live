@@ -2,6 +2,8 @@
 //
 // Component for holding the stash of unused pieces.
 
+import React from 'react';
+import Piece from './piece.jsx';
 
 // can I do this as a function component?! Sure...
 function Stash(props) {
@@ -68,4 +70,6 @@ function Stash(props) {
 		</table>
 	);
 }
+
+export default Stash;
 

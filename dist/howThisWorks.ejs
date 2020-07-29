@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>How to play on Homeworlds Live</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h2>Playing on Homeworlds Live</h2>
+			<h6 class="text-primary">This page only covers how this website operates. It does not cover how to play the game of Homeworlds in general.</h6>
+			<h5 class="text-warning">It is especially important to read the bullet points in orange.</h5>
+			<br/>
+			<h3>Lobby</h3>
+			<h5>Joining Rooms</h5>
+			<ul>
+				<li>In the lobby you can create game rooms or join rooms that exist already.</li>
+				<li>In the "join a game" view, click on a row to view details. From there you can join the room.</li>
+				<li><strong>Sometimes players are invited into rooms</strong>. Invitees get priority over non-invitees.</li>
+				<li>If you are invited, the room will appear orange in the table.</li>
+			</ul>
+			
+			<h5>Creating Rooms</h5>
+			<ul>
+				<li>Click the "Create a game instead" button in the lobby to create a room. You can specify the time control, make the game unrated, and choose specific players to invite.</li>
+				<li>Only 2-player games are supported, but you can invite more than one player (first come first serve).</li>
+			</ul>
+			
+			<h5>Launch Sequence</h5>
+			<ul>
+				<li>The owner of a room (whoever has been in it the longest) can decide to start a game.</li>
+				<li>All players in the room must agree to start. If anyone declines, the start sequence is halted.</li>
+				<li>When everyone (including the owner) confirms, the game starts.</li>
+			</ul>
+			
+			<p>You can also watch games in progress by clicking the links in the lobby.</p>
+			
+			<h3>In Game</h3>
+			<h5>Turns</h5>
+			<ul>
+				<li>When it is your turn, the border of the star map will turn white.</li>
+				<li>Click pieces on the board and stash to do actions (see below).</li>
+				<li class="text-warning">When you are finished, <strong>you must click "End Turn"!</strong></li>
+				<li>If you mess up, you can click "Reset Turn" to undo your actions. You may use this any number of times.</li>
+				<li>Once you click End Turn, you may no longer undo it.</li>
+			</ul>
+			
+			<h5>Specific Actions</h5>
+			<ul>
+				<li><strong class="text-dark">Homeworld Setup</strong>: Click your two stars first, then your ship. They are displayed below the star map. Use "Reset Turn" if you make a mistake.</li>
+				<li><strong class="text-success">Building</strong>: <span class="text-warning">First click on a ship of the same color</span> in the intended system, then click the Build button. (Example: if you want to build a red at your homeworld, click a red ship you already have there.)</li>
+				<li><strong class="text-primary">Trading</strong>: Click the ship you want to trade, click the "Trade" button, then click a stash piece.</li>
+				<li><strong style="color: #ee3">Movement</strong>: Click the ship you want to move, click the "Move" button, then click any piece at the target system.</li>
+				<li><strong style="color: #ee3">Discovery</strong>: Like movement, but click the "Discover" button followed by a piece in the stash.</li>
+				<li><strong class="text-danger">Capturing</strong>: Click the enemy ship, then the Capture button.</li>
+				<li><strong class="text-info">Sacrificing</strong>: Click the ship to sacrifice, then the Sacrifice button. Then do your sacrifice actions as above.</li>
+				<li><strong class="text-info">Catastrophes</strong>: Click any piece of the overpopulated color at the system, then the catastrophe button.</li>
+			</ul>
+			
+			<h5>Some Quirks</h5>
+			<ul>
+				<li>If you set a timed game, <strong class="text-warning">the clock is completely unforgiving.</strong></li>
+				<li><strong class="text-warning">If half of a homeworld is destroyed, the map will likely re-arrange.</strong></li>
+				<ul>
+					<li>You may actually find this useful (because it emphasizes that things are different).</li>
+					<li>You may also want to pay attention to the system numbers. These do not change.</li>
+					<li>This is mostly because right now the stars are positioned by a simple algorithm that has no memory of previous arrangements.</li>
+				</ul>
+				<li><strong class="text-warning">If you <em>disconnect</em> for more than 5 minutes, you forfeit the game</strong> even if it is not timed.</li>
+				<li>If you do the game-winning catastrophe or capture, but do not click "End Turn" until after your clock expires, <strong>the game is considered a draw</strong>.</li>
+			</ul>
+		</div>
+		<%- include("footer") %>
+	<script src="/vendor.js?af767e7fd4b52924f316"></script></body>
+</html>

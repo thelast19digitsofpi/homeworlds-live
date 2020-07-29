@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Under Construction</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container-fluid">
+			<div class="jumbotron">
+				<p class="float-right">
+					<!-- star size is 28 + 20*size -->
+					<img src="/images/star-b2.svg" width="51" />
+					<img src="/images/star-y1.svg" width="36" />
+					<img src="/images/ship-g2.svg" width="51" />
+					<img src="/images/ship-g1.svg" width="36" />
+					<img src="/images/ship-g1.svg" width="36" />
+				</p>
+				<h2>Homeworlds Live</h2>
+				<p class="lead">This is (eventually going to be) a real-time web implementation of the board game <a href="https://www.looneylabs.com/games/homeworlds">(Binary) Homeworlds</a>.</p>
+				<p>For now, you can play around in the <a href="/sandbox">sandbox</a>. If you have played Homeworlds before, <a href="/login">log In</a> or <a href="/createAccount">create an account</a> to start playing! Otherwise <del>go to the <a href="/tutorials">tutorials page</a> to learn.</del> (Nope, not quite yet.)</p>
+				
+				<p>
+					<strong class="text-warning">Note:</strong>
+					This website is about as stable as that homeworld up there would be, and I am not the best at user interface. Please be patient.
+				</p>
+				
+				<a class="btn btn-primary btn-lg" href="/lobby" role="button">Start Playing</a>
+				<a class="btn btn-info btn-lg disabled" href="/tutorials" role="button" disabled>Learn How to Play</a>
+				
+				<p><em>I am not affiliated with Looney Labs.</em></p>
+			</div>
+		</div>
+		<%- include("footer") %>
+	<script src="/vendor.js?af767e7fd4b52924f316"></script></body>
+</html>

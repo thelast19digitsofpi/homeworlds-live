@@ -2,6 +2,8 @@
 //
 // React component for displaying the list of all users connected in the lobby.
 
+import React from 'react';
+
 function WhosOnline(props) {
 	const list = props.list;
 	
@@ -14,6 +16,7 @@ function WhosOnline(props) {
 		} else {
 			connectedIcon = <i className="material-icons mr-2 text-danger">star_outline</i>;
 		}
+		
 		elements.push(
 			<li key={user.username}>
 				{connectedIcon}
@@ -25,3 +28,5 @@ function WhosOnline(props) {
 	
 	return <ul>{elements}</ul>;
 }
+
+export default WhosOnline;

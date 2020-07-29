@@ -1,13 +1,10 @@
-
-
-class Tutorial {
-	constructor(data) {
-		this.startPosition = data;
-	}
-}
-
-
+// tutorialData.js
+//
 // just trying to get a sense for what tutorials would look like
+// this is *not* the React component
+
+// import nothing from null;
+// ...right?
 
 const tutorialList = [
 	new Tutorial({
@@ -132,3 +129,4 @@ const tutorialList = [
 	}),
 ]
 
+export default tutorialList;

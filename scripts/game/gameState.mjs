@@ -1,4 +1,4 @@
-// gameState.js
+// gameState.mjs
 //
 // Generic immutable single game state.
 // Designed to work with both client and server. No React code here!
@@ -1543,7 +1543,4 @@ class GameState {
 	}
 }
 
-// "module.exports" does not exist on the client...
-if (typeof module !== "undefined") {
-	module.exports = GameState;
-}
+export default GameState;

@@ -2,6 +2,19 @@
 //
 // For the screen when you are deciding which game to play
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+// Socket
+import socket from './lobbySocket.js';
+// React components
+// Yes, all of these are top level.
+import Alerts from './alerts.jsx';
+import GameRooms from './gameRooms.jsx';
+import CreateGame from './createGame.jsx';
+import SpecificRoom from './specificRoom.jsx';
+import WhosOnline from './whosOnline.jsx';
+import WhosPlaying from './whosPlaying.jsx';
+
 class MainLobby extends React.Component {
 	constructor(props) {
 		super(props);

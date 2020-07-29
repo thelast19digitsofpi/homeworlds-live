@@ -3,6 +3,8 @@
 // The component for showing the list of all game rooms.
 // Note that this is a function prop. See specificRoom.jsx for more...
 
+import React from 'react';
+
 function GameRooms(props) {
 	console.log(props);
 	const list = props.list;
@@ -69,3 +71,5 @@ function GameRooms(props) {
 		</tbody>
 	</table>;
 }
+
+export default GameRooms;

@@ -3,6 +3,10 @@
 // Higher order components really do work, albeit somewhat messily.
 // I still think inheritance (class LiveGame extends Game) would be slightly cleaner.
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+import withGame from './game.jsx';
+
 class LiveGameDisplay extends React.Component {
 	constructor(props) {
 		super(props);

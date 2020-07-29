@@ -2,6 +2,7 @@
 //
 // When you click on a room, it shows you this.
 
+import React from 'react';
 
 // Props Wanted:
 // room
@@ -262,3 +263,5 @@ class SpecificRoom extends React.Component {
 		}
 	}
 }
+
+export default SpecificRoom;

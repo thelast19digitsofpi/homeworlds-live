@@ -2,6 +2,9 @@
 //
 // Probably could have called it the "board" but Homeworlds does not really have a board.
 
+import React from 'react';
+import System from './system.jsx'; // maybe "StarSystem" would have been better
+
 class StarMap extends React.Component {
 	constructor(props) {
 		super(props);
@@ -414,3 +417,4 @@ class StarMap extends React.Component {
 	}
 }
 
+export default StarMap;

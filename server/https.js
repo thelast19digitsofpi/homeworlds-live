@@ -50,6 +50,7 @@ app.use('/scripts', express.static("scripts"));
 
 // Use EJS
 app.set('view engine', 'ejs');
+//app.set('views', path.join(__dirname, "/dist/views"));
 
 app.use(function(req, res, next) {
 	res.locals.render = {};

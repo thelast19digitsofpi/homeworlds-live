@@ -1,4 +1,6 @@
 
+import React from 'react';
+
 function ActionsPopup(props) {
 	// possibly render popup
 	let popupElement = null;
@@ -74,3 +76,5 @@ function ActionsPopup(props) {
 		return null;
 	}
 }
+
+export default ActionsPopup;

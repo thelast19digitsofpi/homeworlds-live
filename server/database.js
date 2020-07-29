@@ -8,7 +8,6 @@ const sqlite3 = require("sqlite3");
 const db = new sqlite3.Database(".data/database.db", function(error) {
 	if (error === null) {
 		console.log("Database success!");
-		console.log(arguments);
 		db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users';", [], function(error, stuff) {
 			if (!stuff) {
 				// table does not exist
