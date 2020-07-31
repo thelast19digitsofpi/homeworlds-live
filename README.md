@@ -18,4 +18,6 @@ Should there be need for it, here is how I organized the star map (arrangement o
 ### Licensing
 Before anyone runs off with this, I want to ask Looney Labs exactly what their stance is on projects like this. I did ask a while back and someone said it would be okay to make something like this but then I realized open source licenses are tricky... and I'm just a bit nervous because I don't know that much about copyright stuff.
 
-That being said, I did formerly state that this **implementation** of the game of Homeworlds was licensed under GPL 3.0.
+That being said, I did formerly state that this **implementation** of the game of Homeworlds was licensed under GPL 3.0. I do not own the **game**, though, so I'm not sure how exactly that plays in to the license.
+
+Argh I'm just paranoid for no reason. If you are reading this, just... don't abuse this, all right?
