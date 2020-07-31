@@ -43,9 +43,11 @@
 				<li class="text-warning">When you are finished, <strong>you must click "End Turn"!</strong></li>
 				<li>If you mess up, you can click "Reset Turn" to undo your actions. You may use this any number of times.</li>
 				<li>Once you click End Turn, you may no longer undo it.</li>
+				<li><strong class="text-warning">There is currently NO warnings for abandoning your homeworld, forgetting a catastrophe, etc!</strong></li>
 			</ul>
 			
 			<h5>Specific Actions</h5>
+			<p>Most of the actions are pretty intuitive (except perhaps building and homeworld setup), but here is the list of what to do:</p>
 			<ul>
 				<li><strong class="text-dark">Homeworld Setup</strong>: Click your two stars first, then your ship. They are displayed below the star map. Use "Reset Turn" if you make a mistake.</li>
 				<li><strong class="text-success">Building</strong>: <span class="text-warning">First click on a ship of the same color</span> in the intended system, then click the Build button. (Example: if you want to build a red at your homeworld, click a red ship you already have there.)</li>
@@ -57,14 +59,23 @@
 				<li><strong class="text-info">Catastrophes</strong>: Click any piece of the overpopulated color at the system, then the catastrophe button.</li>
 			</ul>
 			
+			<h5>Game End</h5>
+			<ul>
+				<li><strong class="text-warning">You must click "End Turn", even on the game-winning move!</strong></li>
+				<li>You can also offer a draw. If your opponent offers a draw, you can click the offer button to accept, or reject it.</li>
+				<li>Threefold repetition is not enforced (but that is on my list).</li>
+				<li>However, mutual destruction DOES result in a draw.</li>
+				<li>When the game ends, you have the option to copy a log of the game. <strong>Currently, the games are NOT backed up to the server.</strong></li>
+			</ul>
+			
 			<h5>Some Quirks</h5>
 			<ul>
 				<li>If you set a timed game, <strong class="text-warning">the clock is completely unforgiving.</strong></li>
-				<li><strong class="text-warning">If half of a homeworld is destroyed, the map will likely re-arrange.</strong></li>
+				<li><strong class="text-warning">The map may rearrange dramatically if half a homeworld is destroyed.</strong></li>
 				<ul>
-					<li>You may actually find this useful (because it emphasizes that things are different).</li>
-					<li>You may also want to pay attention to the system numbers. These do not change.</li>
 					<li>This is mostly because right now the stars are positioned by a simple algorithm that has no memory of previous arrangements.</li>
+					<li>You may actually find this useful (because it emphasizes that things are different).</li>
+					<li>It might help to pay attention to the system numbers. These do not change.</li>
 				</ul>
 				<li><strong class="text-warning">If you <em>disconnect</em> for more than 5 minutes, you forfeit the game</strong> even if it is not timed.</li>
 				<li>If you do the game-winning catastrophe or capture, but do not click "End Turn" until after your clock expires, <strong>the game is considered a draw</strong>.</li>

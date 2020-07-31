@@ -20,6 +20,18 @@ const db = new sqlite3.Database(".data/database.db", function(error) {
 				)`);
 			}
 		});
+		db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='gameArchive';", [], function(error, stuff2) {
+			if (!stuff2) {
+				// Game archive. The id is always unique
+				db.run(`CREATE TABLE gameArchive(
+					id INTEGER PRIMARY KEY,
+					summary TEXT,
+					players TEXT NOT NULL,
+					winner TEXT,
+					options TEXT
+				)`);
+			}
+		});
 	} else {
 		console.error("/!\\ SOMETHING WENT WRONG /!\\");
 		console.error(error);
@@ -28,7 +40,7 @@ const db = new sqlite3.Database(".data/database.db", function(error) {
 
 // Closes the server when a Control+C is used to shut it down
 function shutdownDatabase() {
-	console.log("SIGINT");
+	console.log("SIGINT (or SIGTERM?)");
 	db.close();
 	process.exit(0);
 };

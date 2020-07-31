@@ -4,6 +4,7 @@
 
 import React from 'react';
 import System from './system.jsx'; // maybe "StarSystem" would have been better
+import GameState from './gameState.mjs';
 
 class StarMap extends React.Component {
 	constructor(props) {
@@ -15,10 +16,11 @@ class StarMap extends React.Component {
 			scaleFactor: 0.5, // good baseline
 		}
 		
-		this.handleResize = this.handleResize.bind(this);
+		//this.handleResize = this.handleResize.bind(this);
+		this.getSystemOwnershipScore = this.getSystemOwnershipScore.bind(this);
 	}
 	
-	componentDidMount() {
+	/*componentDidMount() {
 		window.addEventListener("resize", this.handleResize, {passive: true});
 	}
 	componentWillUnmount() {
@@ -27,6 +29,34 @@ class StarMap extends React.Component {
 	
 	handleResize() {
 		
+	}*/
+	
+	// Numeric score used for Array.sort
+	getSystemOwnershipScore(reactSystemElement) {
+		const ships = reactSystemElement.props.ships;
+		// to prevent logarithm errors
+		let yourScore = 0;
+		let enemyScore = 0;
+		for (let i = 0; i < ships.length; i++) {
+			// size^3
+			// dunno why I added the 64
+			const shipScore = [0, 1, 8, 27, 64][ships[i].size];
+			if (ships[i].owner === this.props.viewer) {
+				yourScore += shipScore;
+			} else {
+				enemyScore += shipScore;
+			}
+		}
+		
+		// Ties go to system ID, to preserve some semblance of order
+		return yourScore - enemyScore + reactSystemElement.props.id/10000;
+	}
+	
+	sortContainer(container) {
+		// these are React system objects
+		return container.sort(function(sys1, sys2) {
+			return this.getSystemOwnershipScore(sys1) - this.getSystemOwnershipScore(sys2);
+		}.bind(this));
 	}
 	
 	// gets the number of different sizes in a homeworld
@@ -60,7 +90,7 @@ class StarMap extends React.Component {
 		}
 		
 		return (
-			<div className="row">
+			<div className="row justify-content-around">
 				<div className="col-auto" align="center">{leftSide}</div>
 				<div className="col-auto" align="center">{center}</div>
 				<div className="col-auto" align="center">{rightSide}</div>
@@ -394,6 +424,11 @@ class StarMap extends React.Component {
 					}
 				}
 			} // end for loop
+			
+			// sort them
+			for (let which in containers) {
+				containers[which] = this.sortContainer(containers[which]);
+			}
 			
 			if (hws.length === 2) {
 				innerDisplay = this.renderHTMLContainers(hws[0], hws[1], containers);

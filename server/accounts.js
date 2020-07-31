@@ -43,19 +43,16 @@ function isUsernameValid(username) {
 	}
 	// 3-16 characters
 	if (username.length < 3 || username.length > 16) {
-		console.log("Bad username: bad length", username, username.length);
 		return false;
 	}
 	
 	// only letters, numbers, and some special characters are allowed
 	if (/[^A-Za-z0-9\.!@#$%^&*\(\)_\-+= ]/.test(username)) {
-		console.log("Bad username: contains weird characters", username);
 		return false;
 	}
 	
 	// spaces may not be at the beginning or end
 	if (/^\s/.test(username) || /\s$/.test(username)) {
-		console.log("Bad username: spaces on the end", username);
 		return false;
 	}
 	
@@ -75,9 +72,6 @@ async function authenticateCookie(cookie) {
 	try {
 		const row = await myUtil.databaseCall(db, "get", "SELECT * FROM users WHERE cookie = ?", [hashedCookie]);
 		if (row) {
-			console.log("Authenticating Cookie\nExpires at:");
-			console.log(row.cookieExpires);
-			console.log("Now:", Date.now());
 			if (Date.now() < row.cookieExpires) {
 				return row.username;
 			}
@@ -99,7 +93,6 @@ function renewCookie(username) {
 
 // Authenticating Cookies
 app.use(async function(req, res, next) {
-	console.log("Cookies", req.cookies);
 	const sessionCookie = req.cookies["hwl-session"];
 	let valid = false;
 	// Disallow zero-length cookies as that might disrupt things
@@ -156,9 +149,7 @@ app.get("/createAccount", function(req, res) {
 
 // Logging in
 app.post("/login", async function(req, res) {
-	console.log("POST REQUEST\n\n\n");
-	console.log(req);
-	console.log("\n\n\nPOST REQUEST");
+	console.log("POST to login");
 	
 	// First get the username
 	const username = req.body.username;
@@ -175,7 +166,6 @@ app.post("/login", async function(req, res) {
 		} else {
 			// verify the password
 			const correct = await a2.verify(row.hashedPassword, passwordGuess);
-			console.log("Password correct? " + correct);
 			if (correct) {
 				invalid = false;
 			}
@@ -249,7 +239,6 @@ app.post("/createAccount", async function(req, res) {
 	// create their account
 	try {
 		const hashedPassword = await a2.hash(password, passwordOptions);
-		console.log(hashedPassword);
 		
 		// Create the cookie for this session
 		const cookie = (await myUtil.promiseCryptoBytes(33)).toString('base64')
@@ -271,8 +260,8 @@ app.post("/createAccount", async function(req, res) {
 // Log Out
 // Note that technically this is a side effect but you should be able to type /logout in the web browser
 app.get("/logout", function(req, res) {
-	if (res.locals.userInfo.loggedIn) {
-		const username = res.locals.userInfo.username;
+	if (res.locals.render.userInfo.loggedIn) {
+		const username = res.locals.render.userInfo.username;
 		// we do not actually need a callback, as this can run on its own
 		db.run("UPDATE users SET cookie = NULL, cookieExpires = 0 WHERE username = ?", [username]);
 	}

@@ -3,6 +3,7 @@
 // When you click on a room, it shows you this.
 
 import React from 'react';
+import socket from './lobbySocket.js';
 
 // Props Wanted:
 // room
@@ -234,7 +235,7 @@ class SpecificRoom extends React.Component {
 					this.state.error && 
 					<p className="text-danger">
 						{this.state.error}
-						<button class="btn btn-secondary btn-small" onClick={() => this.clearError()}>OK</button>
+						<button className="btn btn-secondary btn-small" onClick={() => this.clearError()}>OK</button>
 					</p>
 				}
 				

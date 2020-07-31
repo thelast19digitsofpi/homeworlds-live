@@ -37,6 +37,10 @@ function withGame(WrappedComponent, events, additionalState) {
 				// each element of "history" is a list of positions that together make up 1 move
 				history: [[]],
 				
+				// while history is a list of positions
+				// allActions is a list of, well, actions
+				allActions: [[]],
+				
 				// The current play state as a GameState object.
 				// Anyway, we hope the props are helpful...
 				current: props.current || props.gameState || new GameState(props.players || ["south", "north"]),
@@ -154,6 +158,18 @@ function withGame(WrappedComponent, events, additionalState) {
 			});
 		}
 		
+		// Appends the action to the list of actions taken so far
+		appendAction(action) {
+			// this is annoyingly difficult
+			const allActions = this.state.allActions.slice();
+			const thisTurn = allActions[allActions.length - 1].slice();
+			thisTurn.push(action);
+			allActions[allActions.length - 1] = thisTurn;
+			this.setState({
+				allActions: allActions,
+			});
+		}
+		
 		/*
 		Since most of the logic is in gameState.js, here we only need these 2 methods.
 		Note that catastrophe requires a call to doAction().
@@ -230,6 +246,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				if (doUpdate) {
 					console.log("Updating!");
 					this.updateGameState(newState);
+					this.appendAction(action);
 					if (events.onAfterAction) {
 						events.onAfterAction.call(this, action, player, newState);
 					}
@@ -261,6 +278,10 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 			
 			this.updateGameState(newState, true);
+			this.setState({
+				// append a single empty array to the end
+				allActions: this.state.allActions.concat([[]])
+			});
 			if (events.onAfterEndTurn) {
 				events.onAfterEndTurn.call(this, player, newState);
 			}
@@ -279,9 +300,6 @@ function withGame(WrappedComponent, events, additionalState) {
 				// just clear it totally
 				this.actionInProgress = null;
 			}
-			
-			// // delay logging until after render
-			// setTimeout(() => console.log(this.state.history), 100);
 		}
 		
 		// Undoes the actions you took this turn.
@@ -297,6 +315,9 @@ function withGame(WrappedComponent, events, additionalState) {
 			this.setState({
 				history: newHistory,
 				current: startOfTurn,
+				// remove the last array from the list, then append an empty array
+				allActions: this.state.allActions.slice(0, -1).concat([[]]),
+				
 				// also clear the action popup and action in progress
 				actionInProgress: (startOfTurn.phase === "setup" ? {
 					type: "homeworld",
@@ -421,6 +442,16 @@ function withGame(WrappedComponent, events, additionalState) {
 		
 		// Handles clicking on the action button.
 		handleButtonClick(actionData) {
+			if (actionData === null) {
+				// cancel
+				this.setState({
+					actionInProgress: null,
+					popup: null,
+				});
+				console.log("Canceling action");
+				return;
+			}
+			
 			const current = this.getCurrentState();
 			// are you authorized?
 			if (events.canInteract && !events.canInteract.call(this, current)) {

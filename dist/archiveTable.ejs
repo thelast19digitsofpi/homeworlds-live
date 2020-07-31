@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Archive</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h3 class="title">Archive</h3>
+			<h5 class="subtitle">Currently the archive viewer has not been implemented. However, you can obtain a copy of the game log.</h5>
+			<p>Unfortunately my notation is rather dense. I do plan to add an archive viewer where you can copy and paste the summary text into an import box.</p>
+			<table class="table table-hover table-responsive-sm">
+				<thead>
+					<th>ID</th>
+					<th>Players</th>
+					<th>Winner</th>
+					<th># Turns</th>
+					<th>Rated?</th>
+					<th colspan="2">Time control</th>
+				</thead>
+				<% 
+					for (let i = 0; i < archiveList.length; i++) {
+						var row = archiveList[i];
+				%>
+				<tr>
+					<th><a href="/archive/raw/<%= row.id %>"><%= row.id %> (view)</a></th>
+					<!-- unfortunately escaping player names prohibits <br/> as a separator -->
+					<td><%= row.players.join(", ") %></td>
+					<td><%= row.winner || "[Draw]" %></td>
+					<td><%= row.numTurns %></td>
+					<td><%- row.options.isRated ? "<strong>Yes</strong>" : "No" %></td>
+					<%
+						if (row.options.timeControl) {
+							// display time control e.g. 7m30s, 5I (for increment)
+							const tc = row.options.timeControl;
+					%>
+						<td><%= Math.floor(tc.start / 60) + "m" + (tc.start % 60) + "s" %></td>
+						<td><%= tc.bonus ? (tc.bonus + tc.type[0].toUpperCase()) : "" %></td>
+					<%
+						} else {
+							// just display a big "none"
+					%>
+						<td colspan="2">None</td>
+					<% } /* end if/else */ %>
+				</tr>
+				<% } /* end for */ %>
+			</table>
+		</div>
+		<%- include("footer") %>
+	</body>
+</html>

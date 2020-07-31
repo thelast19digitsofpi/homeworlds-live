@@ -140,7 +140,7 @@ Game.prototype.getSummary = function(useCompact) {
 						column = ["e", action.player];
 						break;
 					default:
-						console.log("Invalid action!", action);
+						console.log("[Game#getSummary] Invalid action!", action);
 						break;
 				}
 				// parts of an action are separated by commas

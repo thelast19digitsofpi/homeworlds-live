@@ -64,6 +64,12 @@ function ActionsPopup(props) {
 				>{message}</button>
 			)
 		}
+		if (buttons.length) {
+			buttons.push(
+				<button className="btn btn-outline-dark text-black" key="cancel" type="button"
+					onClick={() => props.handleButtonClick(null)}>Cancel</button>
+			)
+		}
 		popupElement = (
 			<div className="action-popup" style={styleData}>
 				<div className="btn-group-vertical">

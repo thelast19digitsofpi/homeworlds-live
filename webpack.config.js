@@ -4,6 +4,7 @@
 
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 // All these pages use only the basic scripting
@@ -20,6 +21,15 @@ module.exports = {
 	plugins: [
 		new webpack.ProvidePlugin({
 			_: "lodash",
+		}),
+		new CopyPlugin({
+			patterns: [
+				"views/headElement.ejs",
+				"views/header.ejs",
+				"views/footer.ejs",
+				"views/tutorial.ejs",
+				"views/archiveTable.ejs",
+			],
 		}),
 		new HtmlWebpackPlugin({
 			hash: true,
@@ -39,7 +49,15 @@ module.exports = {
 			filename: "./liveGame.ejs",
 			template: "./views/liveGame.ejs",
 		}),
+		new HtmlWebpackPlugin({
+			hash: true,
+			chunks: ["vendor", "archiveGame"],
+			filename: "./archiveViewer.ejs",
+			template: "./views/archiveViewer.ejs",
+		}),
 	].concat(simplePages),
+	mode: "production",
+	devtool: "source-map",
 	module: {
 		rules: [
 			{
@@ -72,8 +90,9 @@ module.exports = {
 		sandbox: path.resolve(__dirname, "scripts", "game", "sandbox.jsx"),
 		lobby: path.resolve(__dirname, "scripts", "lobby", "mainLobby.jsx"),
 		liveGame: path.resolve(__dirname, "scripts", "game", "liveGame.jsx"),
+		archiveGame: path.resolve(__dirname, "scripts", "game", "archiveViewer.jsx"),
 	},
 	output: {
-		publicPath: '/',
+		publicPath: '/scripts',
 	}
 };

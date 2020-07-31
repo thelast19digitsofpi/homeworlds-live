@@ -4,6 +4,7 @@
 // This might be a case where state is owned by multiple components...
 
 import React from 'react';
+import socket from './lobbySocket.js';
 
 class CreateGame extends React.Component {
 	constructor(props) {

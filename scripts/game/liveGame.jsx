@@ -6,6 +6,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import withGame from './game.jsx';
+import socket from './gameSocket.js';
+import GameState from './gameState.mjs';
 
 class LiveGameDisplay extends React.Component {
 	constructor(props) {

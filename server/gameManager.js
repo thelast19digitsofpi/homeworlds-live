@@ -113,6 +113,16 @@ GameManager.prototype.onGameEnd = async function(game, cause) {
 	let summary = "something went wrong, we are sorry";
 	try {
 		summary = game.getSummary(true);
+		const playersString = JSON.stringify(game.players.map(player => player.username));
+		const optionsString = JSON.stringify(game.options);
+		// This is an async function
+		// but we don't need to hold up the execution of onGameEnd
+		db.run("INSERT INTO gameArchive VALUES (?, ?, ?, ?, ?)", [game.id, summary, playersString, winner, optionsString], function(error) {
+			if (error) {
+				console.warn("Game NOT ADDED to the archive!");
+				return console.error(error);
+			}
+		});
 	} catch (error) {
 		console.log("ERROR IN SUMMARY");
 		console.error(error);
@@ -192,7 +202,7 @@ app.get("/game/:gameID", function(req, res) {
 	const game = gameManager.getGameById(requestedID);
 	if (game) {
 		res.locals.render.gameID = req.params.gameID;
-		res.render("game", res.locals.render);
+		res.render("liveGame", res.locals.render);
 	} else {
 		//res.render("error", res.locals.render);
 		res.status(404).send("That game was not found.")

@@ -10,6 +10,14 @@ class System extends React.Component {
 		super(props);
 	}
 	
+	// for use in .sort()
+	getShipSortScore(reactElement) {
+		const props = reactElement.props;
+		// size comes first, then color (alphabetical, blue comes first)
+		// enemy ships are sorted backwards
+		return (props.size * 1000 - props.color.charCodeAt(0)) * (props.rotation ? -1 : 1);
+	}
+	
 	render() {
 		// Calculate opponent's ships and your ships
 		// TODO: change to implement SVG and then 3-4 players
@@ -45,6 +53,13 @@ class System extends React.Component {
 				enemyShips.push(shipElement);
 			}
 		}
+		
+		// sort them
+		const sortCompare = function(ship1, ship2) {
+			return this.getShipSortScore(ship2) - this.getShipSortScore(ship1);
+		}.bind(this);
+		yourShips.sort(sortCompare);
+		enemyShips.sort(sortCompare);
 		
 		// now do stars
 		for (let i = 0; i < this.props.stars.length; i++) {

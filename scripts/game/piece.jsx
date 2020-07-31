@@ -2,6 +2,8 @@
 //
 // One individual piece, could be a ship or a star
 
+import React from 'react';
+
 // Expected props: type ("ship" or "star"), serial (e.g. "b2C")
 // Optional props: scaleFactor (default 0.4), rotation, symbolMode (boolean, default false)
 function Piece(props) {
@@ -36,3 +38,5 @@ function Piece(props) {
 	            highlight={props.highlight}
 	            onClick={(evt) => props.handleClick(props.serial, evt)} />
 }
+
+export default Piece;

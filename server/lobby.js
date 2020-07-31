@@ -11,6 +11,7 @@ const {gameManager} = require("./gameManager.js");
 // so we can refresh the cookie
 const {renewCookie} = require("./accounts.js");
 const elo = require("./elo.js");
+const db = require("./database.js");
 
 const ioLobby = io.of("/lobby");
 
@@ -21,7 +22,16 @@ function Lobby() {
 	this.players = [];
 	this.gameRooms = [];
 	// note: should I perhaps save this to the database?
-	this.gameRoomID = 1;
+	this.gameRoomID = 0;
+	db.get("SELECT MAX(id) FROM gameArchive", [], function(err, data) {
+		if (err || isNaN(data.max)) {
+			this.gameRoomID = 1;
+		} else {
+			// start with something unique
+			this.gameRoomID = data.max + 1;
+		}
+		console.log("Lobby starts at " + this.gameRoomID);
+	}.bind(this));
 }
 // For the client's request of active players and such
 Lobby.prototype.whosOnline = function() {

@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/lobby/mainLobby.jsx");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/liveGame.jsx");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -39239,10 +39239,10 @@ module.exports = yeast;
 
 /***/ }),
 
-/***/ "./scripts/lobby/alerts.jsx":
-/*!**********************************!*\
-  !*** ./scripts/lobby/alerts.jsx ***!
-  \**********************************/
+/***/ "./scripts/game/actionInProgress.jsx":
+/*!*******************************************!*\
+  !*** ./scripts/game/actionInProgress.jsx ***!
+  \*******************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -39250,36 +39250,57 @@ module.exports = yeast;
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-// alerts.jsx
+/* harmony import */ var _piece_jsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./piece.jsx */ "./scripts/game/piece.jsx");
+// actionInProgress.jsx
 //
-// Better than using window.alert(), which may even disconnect the socket!
-// Expects a prop function for closing an alert given its index.
-// Note that to get HTML (e.g. bold) one must pass a React element as the message.
+// Used for the alert banner that shows up when you are in the middle of some
+// action, like creating a homeworld or discovering a system.
 
 
-function Alerts(props) {
-  return props.list.map(function (alert, index) {
+
+function ActionInProgress(props) {
+  var aip = props.actionInProgress;
+
+  if (aip) {
+    var message = "Click on " + (aip.type === "trade" ? "a piece in the stash to TRADE for" : aip.type === "move" ? "any star on the board to MOVE there" : aip.type === "discover" ? "a piece in the stash to DISCOVER" : aip.type === "homeworld" ? !aip.star1 ? "a piece in the stash for your FIRST star" : !aip.star2 ? "a piece in the stash for your SECOND star" : !aip.ship ? "a piece in the stash for your SHIP" : "the END TURN button to finalize!" : "...something... [this is probably a bug!]"); // use the correct icon
+
+    var icon = aip.type === "trade" ? "autorenew" : aip.type === "move" ? "navigation" : aip.type === "discover" ? "add_location" : aip.type === "homeworld" ? "add_box" : "info" // info is the fallback
+    ; // Visually display the homeworld progress
+
+    var stars = null;
+
+    if (aip.type === "homeworld") {
+      stars = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+        className: "mr-2"
+      }, aip.star1 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_piece_jsx__WEBPACK_IMPORTED_MODULE_1__["default"], {
+        type: "star",
+        serial: aip.star1,
+        scaleFactor: 0.25
+      }), aip.star2 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_piece_jsx__WEBPACK_IMPORTED_MODULE_1__["default"], {
+        type: "star",
+        serial: aip.star2,
+        scaleFactor: 0.25
+      }));
+    }
+
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-      className: "alert alert-" + alert.type,
-      key: alert.key
-    }, alert.message, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-      type: "button",
-      className: "btn btn-light pull-right",
-      onClick: function onClick() {
-        return props.onClick(index);
-      }
-    }, "Dismiss"));
-  });
+      className: "alert alert-secondary"
+    }, stars || /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+      className: "material-icons mr-1"
+    }, icon), message);
+  } else {
+    return null;
+  }
 }
 
-/* harmony default export */ __webpack_exports__["default"] = (Alerts);
+/* harmony default export */ __webpack_exports__["default"] = (ActionInProgress);
 
 /***/ }),
 
-/***/ "./scripts/lobby/createGame.jsx":
-/*!**************************************!*\
-  !*** ./scripts/lobby/createGame.jsx ***!
-  \**************************************/
+/***/ "./scripts/game/action_popup.jsx":
+/*!***************************************!*\
+  !*** ./scripts/game/action_popup.jsx ***!
+  \***************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -39287,10 +39308,127 @@ function Alerts(props) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./lobbySocket.js */ "./scripts/lobby/lobbySocket.js");
-function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function ActionsPopup(props) {
+  // possibly render popup
+  var popupElement = null;
+  var popup = props.popup;
+
+  if (popup) {
+    var styleData = {}; // decide whether to use left or right
+
+    styleData[popup.xSide] = popup.x;
+    styleData[popup.ySide] = popup.y;
+    var buttons = [];
+
+    var _loop = function _loop(i) {
+      var ac = popup.actions[i];
+      var className = "btn btn-outline-";
+      var message = void 0;
+
+      if (ac.type === "build") {
+        // display "Build G1 here"
+        message = "Build " + ac.newPiece.substring(0, 2).toUpperCase() + " here";
+        className += "success";
+      } else if (ac.type === "trade") {
+        message = "Trade...";
+        className += "primary";
+      } else if (ac.type === "move") {
+        message = "Move...";
+        className += "warning";
+      } else if (ac.type === "discover") {
+        message = "Discover a system...";
+        className += "warning";
+      } else if (ac.type === "steal") {
+        message = "Capture this ship";
+        className += "danger";
+      } else if (ac.type === "sacrifice") {
+        var numActions = Number(ac.oldPiece[1]);
+        var actionType = {
+          g: "build",
+          b: "trade",
+          y: "move",
+          r: "capture",
+          // for tutorials?
+          x: "useless"
+        }[ac.oldPiece[0]]; // Use the color (first letter) to get the verb
+
+        message = "Sacrifice for\n".concat(numActions, " ").concat(actionType, " action").concat(numActions === 1 ? '' : 's');
+        className += "dark";
+      } else if (ac.type === "catastrophe") {
+        var fullColor = {
+          g: "green",
+          b: "blue",
+          y: "yellow",
+          r: "red",
+          x: "grey"
+        }[ac.color];
+        message = "Cause a ".concat(fullColor, " catastrophe");
+        className += "dark";
+      } else {
+        console.warn("Action element: ", ac);
+        throw new Error("Unknown action type " + ac.type);
+      }
+
+      buttons.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: className,
+        key: ac.type,
+        type: "button",
+        onClick: function onClick() {
+          return props.handleButtonClick(ac);
+        }
+      }, message));
+    };
+
+    for (var i = 0; i < popup.actions.length; i++) {
+      _loop(i);
+    }
+
+    if (buttons.length) {
+      buttons.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-outline-dark text-black",
+        key: "cancel",
+        type: "button",
+        onClick: function onClick() {
+          return props.handleButtonClick(null);
+        }
+      }, "Cancel"));
+    }
+
+    popupElement = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+      className: "action-popup",
+      style: styleData
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+      className: "btn-group-vertical"
+    }, buttons));
+    return popupElement;
+  } else {
+    return null;
+  }
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (ActionsPopup);
+
+/***/ }),
+
+/***/ "./scripts/game/game.jsx":
+/*!*******************************!*\
+  !*** ./scripts/game/game.jsx ***!
+  \*******************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
+/* harmony import */ var _starmap_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./starmap.jsx */ "./scripts/game/starmap.jsx");
+/* harmony import */ var _actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./actionInProgress.jsx */ "./scripts/game/actionInProgress.jsx");
+/* harmony import */ var _action_popup_jsx__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./action_popup.jsx */ "./scripts/game/action_popup.jsx");
+/* harmony import */ var _stash_jsx__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./stash.jsx */ "./scripts/game/stash.jsx");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -39312,361 +39450,734 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-// createGame.jsx
+// game.js
 //
-// The screen for creating a game.
-// This might be a case where state is owned by multiple components...
+// A higher-order component that makes game components.
+// The second parameter contains an object with optional events.
+// The third parameter contains an object with additional state.
+
+/*
+PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
+- [+] current (or gameState): GameState to start with.
+- [+] players: The array of players that are playing the game. I think only strings work.
+
+EVENTS:
+- [ ] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
+- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* counts as *true*, but console.log()s a warning.
+- [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
+- [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
+- [ ] onAfterEndTurn(player, newState): 
+- [?] onMount(): Called inside componentDidMount.
+- [?] onUnmount(): Called inside componentWillUnmount.
+*/
 
 
 
-var CreateGame = /*#__PURE__*/function (_React$Component) {
-  _inherits(CreateGame, _React$Component);
 
-  var _super = _createSuper(CreateGame);
 
-  function CreateGame(props) {
-    var _this;
 
-    _classCallCheck(this, CreateGame);
 
-    _this = _super.call(this, props);
-    _this.state = {
-      numPlayers: 2,
-      invitedPlayers: props.invitedPlayers || [],
-      isRated: true,
-      // tc stands for time control
-      isTimed: false,
-      tcMinutes: 10,
-      tcSeconds: 0,
-      tcBonus: 5,
-      tcType: "delay",
-      error: null
-    };
-    _this.handleInput = _this.handleInput.bind(_assertThisInitialized(_this));
-    _this.handleMultiInput = _this.handleMultiInput.bind(_assertThisInitialized(_this));
-    window._test = _assertThisInitialized(_this);
-    return _this;
-  }
+function withGame(WrappedComponent, events, additionalState) {
+  return /*#__PURE__*/function (_React$Component) {
+    _inherits(_class, _React$Component);
 
-  _createClass(CreateGame, [{
-    key: "handleInput",
-    value: function handleInput(event) {
-      // Very much stolen from reactjs.org/docs/forms.html yet I typed it myself...
-      var target = event.target;
-      var value = target.name === "isTimed" ? target.checked : target.value;
-      var name = target.name;
+    var _super = _createSuper(_class);
 
-      if (target.type === "number") {
-        value = Number(value);
-      }
+    function _class(props) {
+      var _this;
 
-      this.setState(_defineProperty({}, name, value));
-    } // requires special handler
+      _classCallCheck(this, _class);
 
-  }, {
-    key: "handleMultiInput",
-    value: function handleMultiInput(event) {
-      var target = event.target;
-      var values = [];
+      _this = _super.call(this, props);
+      _this.state = {
+        // array of arrays.
+        // each element of "history" is a list of positions that together make up 1 move
+        history: [[]],
+        // while history is a list of positions
+        // allActions is a list of, well, actions
+        allActions: [[]],
+        // The current play state as a GameState object.
+        // Anyway, we hope the props are helpful...
+        current: props.current || props.gameState || new _gameState_mjs__WEBPACK_IMPORTED_MODULE_1__["default"](props.players || ["south", "north"]),
+        // These are important.
+        scaleFactor: 0.5,
+        viewer: "south",
+        // Popup data for clicking on a ship.
+        popup: null,
+        // For actions in progress. E.g. you click the "trade" button THEN a stash piece.
+        actionInProgress: null
+      };
+      _this.state.current = _gameState_mjs__WEBPACK_IMPORTED_MODULE_1__["default"].recoverFromJSON(_this.state.current); // start with a state in the history list!
 
-      for (var i = 0; i < target.selectedOptions.length; i++) {
-        values.push(target.selectedOptions[i].value);
-      }
+      _this.state.history[0].push(_this.state.current); // extend or alter that state
 
-      var name = target.name;
-      this.setState(_defineProperty({}, name, values));
+
+      for (var key in additionalState) {
+        _this.state[key] = additionalState[key];
+      } // we need the coordinates of the star map
+
+
+      _this.starMapRef = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createRef(); // for my debugging!
+
+      window._g = _assertThisInitialized(_this);
+      return _this;
     }
-  }, {
-    key: "handleSubmit",
-    value: function handleSubmit() {
-      // we have all the data in the React state
-      // socket is a global variable
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("createGame", this.state);
-      console.log("Emitted createGame event"); // and wait to see if it was successful
-    }
-  }, {
-    key: "componentDidMount",
-    value: function componentDidMount() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].on("createGameError", function (error) {
-        this.setState({
-          error: error.message
+
+    _createClass(_class, [{
+      key: "componentDidMount",
+      value: function componentDidMount() {
+        if (events.onMount) {
+          events.onMount.call(this);
+        } // I will probably forget...
+
+
+        if (events.componentDidMount) {
+          events.componentDidMount.call(this);
+        } // we always need this one
+
+
+        var resizeTimer = null;
+        window.addEventListener("resize", function () {
+          var _this2 = this;
+
+          // Delay resizing until 250ms after there have been no resize events
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(function () {
+            return _this2.forceUpdate();
+          }, 250);
+        }.bind(this));
+      }
+    }, {
+      key: "componentWillUnmount",
+      value: function componentWillUnmount() {
+        if (events.onUnmount) {
+          events.onUnmount.call(this);
+        } // again, I will probably forget
+
+
+        if (events.componentWillUnmount) {
+          console.log("events.componentWillUnmount -> onUnmount, please"); // but do it anyway (this would be a very difficult bug to trace)
+
+          events.componentWillUnmount.call(this);
+        }
+      }
+      /*
+      I now divide the methods into categories.
+      The following methods are all very fundamental to managing state and such.
+      */
+      // Gets the current state.
+
+    }, {
+      key: "getCurrentState",
+      value: function getCurrentState() {
+        return this.state.current;
+      } // We cannot mutate maps...
+
+    }, {
+      key: "copyMap",
+      value: function copyMap(oldMap) {
+        var newMap = {};
+
+        for (var serial in oldMap) {
+          newMap[serial] = oldMap[serial];
+        }
+
+        return newMap;
+      } // Gets the number and type of actions you would have after sacrificing.
+
+    }, {
+      key: "getSacrificeActions",
+      value: function getSacrificeActions(serial) {
+        return {
+          number: Number(serial[1]),
+          sacrifice: serial[0]
+        };
+      }
+      /*
+      Doing actions.
+      
+      Yeah, these need to check for legality.
+      If they are done illegitimately, an Error is thrown.
+      */
+      // Pushes a new game state onto the history stack.
+      // Assumes (and ensures) 2 things:
+      // (1) The state at the start of a turn is index [0] in that turn's inner array.
+      // (2) The current state is the last item in the stack.
+
+    }, {
+      key: "updateGameState",
+      value: function updateGameState(newState, isNewTurn) {
+        // The safer method for calling React's setState()
+        this.setState(function (reactState) {
+          // Copy the history array
+          var history = reactState.history.slice(); // If we just ended a turn (started the next)...
+
+          if (isNewTurn) {
+            history.push([]);
+          } // Now, the current state onto the stack.
+
+
+          history[history.length - 1].push(newState); // Replace the history array and update the current state.
+
+          return {
+            history: history,
+            current: newState
+          };
         });
-      }.bind(this));
-    }
-  }, {
-    key: "componentWillUnmount",
-    value: function componentWillUnmount() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].off("createGameError");
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      var invitedPlayersOptions = [];
+      } // Appends the action to the list of actions taken so far
 
-      for (var i = 0; i < this.props.activeUsers.length; i++) {
-        var user = this.props.activeUsers[i];
-        invitedPlayersOptions.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("option", {
-          value: user.username,
-          key: user.username
-        }, user.username));
+    }, {
+      key: "appendAction",
+      value: function appendAction(action) {
+        // this is annoyingly difficult
+        var allActions = this.state.allActions.slice();
+        var thisTurn = allActions[allActions.length - 1].slice();
+        thisTurn.push(action);
+        allActions[allActions.length - 1] = thisTurn;
+        this.setState({
+          allActions: allActions
+        });
       }
+      /*
+      Since most of the logic is in gameState.js, here we only need these 2 methods.
+      Note that catastrophe requires a call to doAction().
+      It does NOT require that you have any actions left, nor does it cost one if you do.
+      */
+      // Does an action. The second parameter (player) can also be passed as a
+      // property of action as action.turn or action.player, but this is not recommended
 
-      var formSubmitter = function (event) {
-        console.log("Submitting form");
-        this.handleSubmit(); //socket.emit(...);
+    }, {
+      key: "doAction",
+      value: function doAction(action, player) {
+        if (_typeof(player) === undefined) {
+          console.log("[doAction] Player not passed, this is wrong! (But will work, I think.)");
+          player = action.player;
 
-        event.preventDefault();
-      }.bind(this);
+          if (_typeof(player) === undefined) {
+            console.log("^^ Belay that. It will not work.");
+            throw new TypeError("Still?! OK, this is a bug: Player not given to doAction()");
+          }
+        }
 
-      var errorMessage = null;
+        var current = this.getCurrentState();
 
-      if (this.state.error) {
-        errorMessage = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h6", {
-          className: "text-warning"
-        }, this.state.error);
+        if (current.turn !== player) {
+          throw new Error("It is not your turn!");
+        }
+
+        var newState;
+
+        try {
+          switch (action.type) {
+            case "homeworld":
+              newState = current.doHomeworld(player, action.star1, action.star2, action.ship);
+              break;
+
+            case "build":
+              newState = current.doBuild(player, action.newPiece, action.system);
+              break;
+
+            case "trade":
+              newState = current.doTrade(player, action.oldPiece, action.newPiece);
+              break;
+
+            case "move":
+              newState = current.doMove(player, action.oldPiece, action.system);
+              break;
+
+            case "discover":
+              // the "newPiece" is the new star you discover
+              newState = current.doDiscovery(player, action.oldPiece, action.newPiece);
+              break;
+
+            case "steal":
+              newState = current.doSteal(player, action.oldPiece);
+              break;
+
+            case "sacrifice":
+              newState = current.doSacrifice(player, action.oldPiece);
+              break;
+
+            case "catastrophe":
+              newState = current.doCatastrophe(action.color, action.system);
+              break;
+
+            case "eliminate":
+              // note: this is only due to clock/disconnection eliminations or other interventions
+              newState = current.manuallyEliminatePlayer(action.player);
+              break;
+
+            default:
+              throw new Error("Invalid action type " + action.type + ". Could be a bug!");
+          }
+
+          console.log("New state", newState);
+          var doUpdate = true; // Call any middleware (is that the right word?)
+
+          if (events.onBeforeAction) {
+            // return false to cancel the action
+            var valid = events.onBeforeAction.call(this, action, player, current, newState); // I explicitly stated that "undefined" return is considered a true
+            // I think undefined -> block causes more pain than good
+            // but false/null/0/"" do block
+
+            console.log("Validity:", valid);
+
+            if (!valid && valid !== undefined) {
+              doUpdate = false;
+            }
+          }
+
+          if (doUpdate) {
+            console.log("Updating!");
+            this.updateGameState(newState);
+            this.appendAction(action);
+
+            if (events.onAfterAction) {
+              events.onAfterAction.call(this, action, player, newState);
+            }
+          }
+        } catch (error) {
+          // again, a better error system is good
+          if (error.constructor !== Error) {
+            // TypeError, etc
+            console.error("[Game.doAction]", error);
+          }
+
+          alert("Illegal action!\n" + error.message);
+        }
       }
+    }, {
+      key: "doEndTurn",
+      value: function doEndTurn(player) {
+        var current = this.getCurrentState();
+        var newState = current.doEndTurn(); // whoa there... check that you actually can end the turn
 
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("form", {
-        onSubmit: formSubmitter
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-row"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col-md"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-group"
-      }, errorMessage, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "selectNumPlayers"
-      }, "Number of Players"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("select", {
-        className: "custom-select",
-        id: "selectNumPlayers",
-        name: "numPlayers",
-        value: this.state.numPlayers,
-        onChange: this.handleInput
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("option", {
-        value: 2
-      }, "2")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "form-text small"
-      }, "Currently only 2-player games are supported.")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-check"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        type: "checkbox",
-        id: "isRated",
-        name: "isRated",
-        className: "form-check-input",
-        checked: this.state.isRated,
-        onChange: this.handleInput
-      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "isRated",
-        className: "form-check-label"
-      }, "Is Game Rated?")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-group"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "selectInvitedPlayers"
-      }, "Invite Players (optional)"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("select", {
-        className: "custom-select",
-        multiple: true,
-        id: "selectInvitedPlayers",
-        name: "invitedPlayers",
-        value: this.state.invitedPlayers,
-        onChange: this.handleMultiInput
-      }, invitedPlayersOptions), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "form-text small"
-      }, "You can select specific people to challenge. Any seats not reserved will be open to any player. ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), "Control+Click (Command on Mac) to select multiple or deselect.")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        type: "submit",
-        className: "btn btn-primary d-none d-md-inline-block"
-      })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col-md"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-check"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        type: "checkbox",
-        id: "isTimed",
-        name: "isTimed",
-        className: "form-check-input",
-        checked: this.state.isTimed,
-        onChange: this.handleInput
-      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "isTimed",
-        className: "form-check-label"
-      }, "Use Time Control?")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "form-text small"
-      }, "Time controls limit the amount of time that a player has to take their turn. Your clock runs during your turn and stops when you are finished."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-group"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "tcMinutes"
-      }, "Starting Time"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-row"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "input-group"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        id: "tcMinutes",
-        name: "tcMinutes",
-        type: "number",
-        value: this.state.tcMinutes,
-        min: "0",
-        max: "90",
-        className: "form-control",
-        disabled: !this.state.isTimed,
-        onChange: this.handleInput
-      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "input-group-append"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-        className: "input-group-text"
-      }, "min")))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "input-group"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        id: "tcSeconds",
-        name: "tcSeconds",
-        className: "form-control",
-        type: "number",
-        value: this.state.tcSeconds,
-        min: "0",
-        max: "55",
-        step: "5",
-        disabled: !this.state.isTimed,
-        onChange: this.handleInput
-      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "input-group-append"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-        className: "input-group-text"
-      }, "sec")))))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "form-row"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col form-group"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "tcType"
-      }, "Time Control Type"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("select", {
-        className: "custom-select",
-        name: "tcType",
-        id: "tcType",
-        value: this.state.tcType,
-        disabled: !this.state.isTimed,
-        onChange: this.handleInput
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("option", {
-        value: "delay"
-      }, "Delay"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("option", {
-        value: "increment"
-      }, "Increment"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col form-group"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("label", {
-        htmlFor: "tcBonus"
-      }, "Delay/Increment"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        type: "number",
-        value: this.state.tcBonus,
-        id: "tcBonus",
-        name: "tcBonus",
-        className: "form-control",
-        disabled: !this.state.isTimed,
-        onChange: this.handleInput
-      }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "form-text small"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("strong", null, "Delay"), " gives you the first ", this.state.tcBonus, " seconds of each turn free. ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("strong", null, "Increment"), " adds ", this.state.tcBonus, " seconds to your clock after each turn. ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), "Delay does NOT let you gain time if you finish within the allotted time, but Increment DOES. ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), "If you want neither, enter 0, but this is not recommended."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("input", {
-        type: "submit",
-        className: "btn btn-primary d-inline-block d-md-none"
-      }))));
-    }
-  }]);
-
-  return CreateGame;
-}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
-
-/* harmony default export */ __webpack_exports__["default"] = (CreateGame);
-
-/***/ }),
-
-/***/ "./scripts/lobby/gameRooms.jsx":
-/*!*************************************!*\
-  !*** ./scripts/lobby/gameRooms.jsx ***!
-  \*************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-// gameRooms.jsx
-//
-// The component for showing the list of all game rooms.
-// Note that this is a function prop. See specificRoom.jsx for more...
+        if (events.onBeforeEndTurn && !events.onBeforeEndTurn.call(this, player, current, newState)) {
+          console.log("Blocked");
+          return;
+        } // Somewhat rough way of preventing end-turn before the homeworld is set up
 
 
-function GameRooms(props) {
-  console.log(props);
-  var list = props.list;
-  var trows = [];
+        if (current.phase === "setup" && this.state.actionInProgress) {
+          console.log("Cannot end turn without a homeworld!");
+          return;
+        }
 
-  var userToElement = function userToElement(user) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-      className: "mb-0",
-      key: user.username
-    }, user.username);
-  };
+        this.updateGameState(newState, true);
+        this.setState({
+          // append a single empty array to the end
+          allActions: this.state.allActions.concat([[]])
+        });
 
-  var _loop = function _loop(i) {
-    var room = list[i];
-    var timeString = "None";
-
-    if (room.options && room.options.timeControl) {
-      var tc = room.options.timeControl;
-      var seconds = tc.start % 60;
-      timeString = Math.floor(tc.start / 60) + "m" + ( // e.g. 7m30s but not 10m0s
-      seconds ? seconds + "s" : "") + ( // if a bonus is added, add e.g. "+ 5d" (delay) or "+ 3i" (increment)
-      tc.bonus ? " + " + tc.bonus + tc.type[0].toUpperCase() : "");
-    } // Use color to indicate rooms you own or are invited to
+        if (events.onAfterEndTurn) {
+          events.onAfterEndTurn.call(this, player, newState);
+        } // Clear any actions in progress.
+        // In homeworld setup phase, start the homeworld actionInProgress if it is your turn.
 
 
-    var rowClassName = ""; // If you are in the room...
+        var dontShow = events.canInteract && !events.canInteract.call(this, newState); // the double negative is a little weird
 
-    for (var j = 0; j < room.players.length; j++) {
-      var player = room.players[j];
+        if (newState.phase === "setup" && !dontShow) {
+          this.setState({
+            actionInProgress: {
+              type: "homeworld",
+              player: newState.turn
+            }
+          });
+        } else {
+          // just clear it totally
+          this.actionInProgress = null;
+        }
+      } // Undoes the actions you took this turn.
 
-      if (player.username === YOUR_USERNAME) {
-        // Use blue for rooms you own
-        rowClassName = j === 0 ? "table-primary" : "table-secondary";
-        break;
+    }, {
+      key: "doResetTurn",
+      value: function doResetTurn(player) {
+        var newHistory = this.state.history.slice();
+        console.log(newHistory); // clear the most recent turn
+
+        var startOfTurn = newHistory[newHistory.length - 1][0] || this.getCurrentState(); // set the most recent turn to only contain that state
+
+        newHistory[newHistory.length - 1] = [startOfTurn]; // change the history
+
+        this.setState({
+          history: newHistory,
+          current: startOfTurn,
+          // remove the last array from the list, then append an empty array
+          allActions: this.state.allActions.slice(0, -1).concat([[]]),
+          // also clear the action popup and action in progress
+          actionInProgress: startOfTurn.phase === "setup" ? {
+            type: "homeworld",
+            player: player
+          } : null,
+          popup: null
+        }); // also call any events
+
+        if (events.onAfterResetTurn) {
+          events.onAfterResetTurn.call(this, player, startOfTurn);
+        }
       }
-    } // Or if you are invited...
+      /*
+      Clicking on a ship.
+      
+      The idea is that we show the user a pop-up with actions.
+      */
+      // Gets available actions.
+      // You click on:
+      // (1) An existing ship of yours of some color, to build that color.
+      // (2) A ship of yours, to trade it.
+      // (3) A ship of yours, to move it.
+      // (4) A ship of yours, to discover a new system.
+      // (5) An enemy ship, to steal it.
+      // (6) Any piece, to cause a catastrophe.
+      // (7) A ship of yours, to sacrifice it.
+      // NOTE: Clicking a piece in the bank does NOT work,
+      // unless you have already begun an actionInProgress.
+
+    }, {
+      key: "getActionsAvailableForPiece",
+      value: function getActionsAvailableForPiece(player, piece) {
+        var current = this.getCurrentState();
+        return current.getActionsAvailableForPiece(player, piece);
+      } // Handles clicking on any piece on the board.
+
+    }, {
+      key: "handleBoardClick",
+      value: function handleBoardClick(piece, event) {
+        console.error(event);
+        window.___lastE = event.nativeEvent;
+        var aip = this.state.actionInProgress;
+        var current = this.getCurrentState(); // are you authorized?
+
+        if (events.canInteract && !events.canInteract.call(this, current)) {
+          // meant as a silent failure, but I want to know about it
+          console.warn("Player cannot do actions."); // additionally, clear the AIP window so it is not stuck
+
+          this.setState({
+            actionInProgress: null,
+            popup: null
+          });
+          return;
+        }
+
+        if (aip) {
+          // If an action is in progress:
+          try {
+            if (aip.type === "move") {
+              this.doAction({
+                type: "move",
+                player: current.turn,
+                oldPiece: aip.oldPiece,
+                system: current.map[piece].at
+              }, current.turn);
+            }
+          } catch (error) {
+            // TODO: Not alert()!
+            if (error instanceof TypeError) {
+              console.warn(error);
+              alert("This is a bug! You clicked on " + piece + " which has no map data, or some other bug...");
+            } else {
+              alert("Illegal action!\n" + error.message);
+            }
+          }
+
+          this.setState({
+            actionInProgress: null
+          });
+        } else {
+          // Start of an action.
+          // For now, console.log the actions
+          var actions = this.getActionsAvailableForPiece(current.turn, piece);
+          console.log(actions); // Where to position the popup?
+
+          var rect = this.starMapRef.current.getBoundingClientRect();
+          var offsetX = rect.left + window.scrollX;
+          var offsetY = rect.top + window.scrollY; // position the popup
+
+          var x = event.nativeEvent.pageX - offsetX;
+          var y = event.nativeEvent.pageY - offsetY;
+          var xSide = "left";
+          var ySide = "top"; // make the popup display on the left if you click on the right side of the screen
+
+          if (x > rect.width / 2) {
+            x = rect.width - x;
+            xSide = "right";
+          } // same thing vertically
 
 
-    for (var _j = 0; _j < room.invitedPlayers.length; _j++) {
-      var _player = room.invitedPlayers[_j];
+          if (y > rect.height / 2) {
+            y = rect.height - y;
+            ySide = "bottom";
+          }
 
-      if (_player.username === YOUR_USERNAME) {
-        rowClassName = "table-warning";
+          this.setState({
+            popup: {
+              actions: actions,
+              x: x + 10,
+              y: y + 10,
+              // which CSS position property to use
+              xSide: xSide,
+              ySide: ySide
+            }
+          });
+        }
+      } // Handles clicking on the action button.
+
+    }, {
+      key: "handleButtonClick",
+      value: function handleButtonClick(actionData) {
+        if (actionData === null) {
+          // cancel
+          this.setState({
+            actionInProgress: null,
+            popup: null
+          });
+          console.log("Canceling action");
+          return;
+        }
+
+        var current = this.getCurrentState(); // are you authorized?
+
+        if (events.canInteract && !events.canInteract.call(this, current)) {
+          // meant as a silent failure, but I want to know about it
+          console.warn("Player cannot do actions."); // additionally, clear the UI so they are not stuck
+
+          this.setState({
+            actionInProgress: null,
+            popup: null
+          });
+          return;
+        }
+
+        try {
+          switch (actionData.type) {
+            case "build":
+            case "steal":
+            case "sacrifice":
+            case "catastrophe":
+              this.doAction(actionData, current.turn);
+              break;
+
+            case "trade":
+            case "move":
+            case "discover":
+              // Trades and movements are done by later clicking a different piece
+              this.setState({
+                actionInProgress: actionData
+              });
+              break;
+
+            default:
+              throw new Error("This action (" + actionData.type + ") is invalid (or not supported)");
+              break;
+          }
+        } catch (error) {
+          // TODO: better messaging
+          alert(error.message || String(error));
+          console.warn(error);
+        } // and at the end...
+
+
+        this.setState({
+          popup: null
+        });
+      } // Handles clicking on stash pieces.
+
+    }, {
+      key: "handleStashClick",
+      value: function handleStashClick(serial) {
+        var aip = this.state.actionInProgress;
+        var current = this.getCurrentState(); // are you authorized?
+        // (if the method exists but returns a false...)
+
+        if (events.canInteract && !events.canInteract.call(this, current)) {
+          // meant as a silent failure, but I want to know about it
+          console.warn("Player cannot do actions."); // additionally, clear the AIP window so it is not stuck
+
+          this.setState({
+            actionInProgress: null
+          });
+          return;
+        }
+
+        if (aip) {
+          try {
+            if (aip.type === "trade" || aip.type === "discover") {
+              this.doAction({
+                type: aip.type,
+                player: current.turn,
+                oldPiece: aip.oldPiece,
+                newPiece: serial
+              }, current.turn);
+            } else if (aip.type === "homeworld") {
+              // Here we have to update the actionInProgress object itself
+              var newAIP = {};
+
+              if (!aip.star1) {
+                newAIP = {
+                  star1: serial
+                };
+              } else if (aip.star2 === undefined) {
+                // because "null" is a legit option for star2
+                newAIP = {
+                  star1: aip.star1,
+                  star2: serial
+                };
+              } else if (!aip.ship) {
+                newAIP = {
+                  star1: aip.star1,
+                  star2: aip.star2,
+                  ship: serial
+                };
+              }
+
+              newAIP.type = "homeworld";
+              newAIP.player = current.turn; // Check if you are done
+              // note: if the order gets changed, this will BREAK
+
+              if (newAIP.ship) {
+                this.doAction(newAIP, current.turn); // clear the AIP
+
+                this.setState({
+                  actionInProgress: null
+                });
+              } else {
+                this.setState({
+                  actionInProgress: newAIP
+                });
+              }
+            } // else, no action to do here
+
+          } catch (error) {
+            // TODO: better delivery
+            // TODO: custom error class?
+            console.warn("[Game.handleStashClick]", error);
+            alert(error.message);
+          } // Homeworld setup is a 3-part action; all others only require 1 stash click
+
+
+          if (aip.type !== "homeworld") {
+            this.setState({
+              actionInProgress: null
+            });
+          }
+        }
       }
-    }
+    }, {
+      key: "handleResetClick",
+      value: function handleResetClick() {
+        if (events.canInteract && !events.canInteract.call(this, this.getCurrentState())) {
+          console.warn("Cannot Interact with the Board");
+          return false;
+        }
 
-    trows.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tr", {
-      key: room.id,
-      onClick: function onClick() {
-        return props.onRowClick(room.id);
-      },
-      className: rowClassName
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("th", null, room.id), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("td", null, room.numPlayers), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("td", null, room.players.map(userToElement)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("td", null, room.invitedPlayers.map(userToElement)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("td", null, timeString)));
-  };
+        this.doResetTurn(this.getCurrentState().turn);
+      }
+    }, {
+      key: "render",
+      value: function render() {
+        var _this3 = this;
 
-  for (var i = 0; i < list.length; i++) {
-    _loop(i);
-  }
+        var current = this.getCurrentState();
+        var winBanner = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+          className: "alert alert-primary lead"
+        }, "Game over, " + (current.winner ? current.winner + " has won!" : "the game is a draw!"));
+        var starMapStyle = {
+          // make there be a border, but it is invisible
+          borderColor: "rgba(0,0,0,0)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderRadius: "4px"
+        }; // Modify the look based on if you can currently interact...
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("table", {
-    className: "table table-striped table-hover table-sm"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("caption", null, "Invited column shows players who were invited but did not actually join yet. Time control: m,s = minutes and seconds of initial time. D = delay, I = increment, both in seconds."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("thead", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tr", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("th", null, "Room #"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("th", null, "Player Count"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("th", null, "Joined"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("th", null, "Invited"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("th", null, "Time Control"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tbody", null, trows));
+        var canInteract = events.canInteract ? events.canInteract.call(this, current) : true;
+
+        if (canInteract) {
+          starMapStyle.borderColor = "#ccc";
+        } else {// nothing
+        } // very very simple heuristic that scales the board down based on the number of pieces that are on the board
+
+
+        var numPiecesOnBoard = 0;
+
+        for (var serial in current.map) {
+          if (current.map[serial] !== null) {
+            numPiecesOnBoard++;
+          }
+        }
+
+        var boardScale = this.state.scaleFactor * Math.min(1, 1.15 - numPiecesOnBoard / 60);
+        var stashScale = window.innerHeight / 1800 * Math.min(1, 0.75 + numPiecesOnBoard / 60); // I am not sure if sending the entire state object is "correct"
+
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(WrappedComponent, {
+          reactState: this.state,
+          gameState: current
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "game row no-gutters"
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "star-map-wrapper col"
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "star-map",
+          style: starMapStyle,
+          ref: this.starMapRef
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_starmap_jsx__WEBPACK_IMPORTED_MODULE_2__["default"], {
+          map: current.map,
+          homeworldData: current.homeworldData,
+          scaleFactor: boardScale,
+          viewer: this.state.viewer,
+          handleBoardClick: function handleBoardClick(piece, event) {
+            return _this3.handleBoardClick(piece, event);
+          }
+        }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_action_popup_jsx__WEBPACK_IMPORTED_MODULE_4__["default"], {
+          popup: this.state.popup,
+          handleButtonClick: function handleButtonClick(acData) {
+            return _this3.handleButtonClick(acData);
+          }
+        })), current.phase === "end" ? winBanner : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+          className: "info"
+        }, "Turn: ", current.turn, " \u2022 Actions left: ", current.actions.number), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
+          actionInProgress: this.state.actionInProgress
+        })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "stash col-auto",
+          align: "right"
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", {
+          align: "center"
+        }, "Stash"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_stash_jsx__WEBPACK_IMPORTED_MODULE_5__["default"], {
+          scaleFactor: stashScale,
+          data: current.map,
+          handleClick: function handleClick(serial) {
+            return _this3.handleStashClick(serial);
+          }
+        }), canInteract && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          onClick: function onClick() {
+            return _this3.handleResetClick();
+          },
+          className: "btn btn-danger mt-1"
+        }, "Reset Turn"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), canInteract &&
+        /*#__PURE__*/
+
+        /* todo: clicking "end turn" should check for warnings like overpopulations */
+        react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          className: "btn btn-lg btn-info mt-1",
+          onClick: function onClick() {
+            return _this3.doEndTurn(current.turn);
+          }
+        }, "End Turn"))));
+      }
+    }]);
+
+    return _class;
+  }(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
 }
 
-/* harmony default export */ __webpack_exports__["default"] = (GameRooms);
+/* harmony default export */ __webpack_exports__["default"] = (withGame);
 
 /***/ }),
 
-/***/ "./scripts/lobby/lobbySocket.js":
-/*!**************************************!*\
-  !*** ./scripts/lobby/lobbySocket.js ***!
-  \**************************************/
+/***/ "./scripts/game/gameSocket.js":
+/*!************************************!*\
+  !*** ./scripts/game/gameSocket.js ***!
+  \************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -39674,26 +40185,1591 @@ function GameRooms(props) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! socket.io-client */ "./node_modules/socket.io-client/lib/index.js");
 /* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(socket_io_client__WEBPACK_IMPORTED_MODULE_0__);
-// lobbySocket.js
+// gameSocket.js
 //
-// this is a bit simpler than the one for games
+// Creates the socket.io connection object for the games.
 
 
 
-const socket = socket_io_client__WEBPACK_IMPORTED_MODULE_0___default()("/lobby");
+const socket = socket_io_client__WEBPACK_IMPORTED_MODULE_0___default()("/game", {
+	// If it fails to reconnect after 10 attempts then something is wrong
+	// we should probably just reload the page
+	reconnectionAttempts: 10,
+	reconnectionDelayMax: 20000,
+});
+console.log(location.pathname);
+socket.emit("getGame", GAME_ID);
 socket.on("disconnect", function(args) {
 	console.error("SOCKET DISCONNECTED", arguments);
 });
 
 /* harmony default export */ __webpack_exports__["default"] = (socket);
 
+/***/ }),
+
+/***/ "./scripts/game/gameState.mjs":
+/*!************************************!*\
+  !*** ./scripts/game/gameState.mjs ***!
+  \************************************/
+/*! exports provided: default */
+/***/ (function(__webpack_module__, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+// gameState.mjs
+//
+// Generic immutable single game state.
+// Designed to work with both client and server. No React code here!
+
+
+class GameState {
+	// Call as (map, phase, hwData, nextSystemID, turnOrder, turn, actions, winner)
+	// or just as (players)
+	// note: phase is string, either "setup" or "playing" or "end"
+	constructor(mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner) {
+		if (arguments.length <= 1) {
+			// just an array of players
+			const players = mapOrPlayers || ["south", "north"];
+			this.map = GameState.createEmptyMap(players.length);
+			this.homeworldData = {}; // will initialize soon
+			this.nextSystemID = 1;
+			this.turnOrder = players;
+			this.turn = players[0]; // first element is first turn
+			this.actions = {
+				sacrifice: null,
+				number: 1
+			}
+			this.phase = "setup";
+			this.winner = null;
+		} else {
+			// the whole thing
+			// because the methods return new GameState()s
+			// (GameState is immutable)
+			this.map = mapOrPlayers;
+			this.phase = phase;
+			this.homeworldData = hwData;
+			this.nextSystemID = nextSystemID;
+			this.turnOrder = turnOrder;
+			this.turn = turn;
+			this.actions = actions;
+			this.winner = winner; // or still null, to indicate no-winner
+		}
+	}
+	
+	// Static function for constructing a GameState's map from scratch.
+	static createEmptyMap(numPlayers) {
+		const colors = ['b', 'g', 'r', 'y'];
+		const sizes = 3;
+		const specifiers = 'ABCDE';
+		const numOfEachType = numPlayers + 1;
+		
+		let map = {};
+		for (let i = 0; i < colors.length; i++) {
+			for (let s = 1; s <= sizes; s++) {
+				for (let j = 0; j < numOfEachType; j++) {
+					const serial = colors[i] + String(s) + specifiers[j];
+					map[serial] = null;
+				}
+			}
+		}
+		
+		return map;
+	}
+	
+	// Static function for recovering a GameState from a JSON-ified object.
+	static recoverFromJSON(jsonOrObject) {
+		let obj = jsonOrObject;
+		if (typeof obj === "string") {
+			obj = JSON.parse(obj);
+		}
+		
+		return new GameState(
+			obj.map,
+			obj.phase,
+			obj.homeworldData,
+			obj.nextSystemID,
+			obj.turnOrder,
+			obj.turn,
+			obj.actions,
+			obj.winner
+		);
+	}
+	
+	static copyObject(obj) {
+		const newObject = {};
+		for (let prop in obj) {
+			if (obj.hasOwnProperty(prop)) {
+				newObject[prop] = obj[prop];
+			}
+		}
+		return newObject;
+	}
+	
+	/*
+	I now divide the methods into categories.
+	The methods below are basic queries.
+	*/
+	
+	// Checks if otherState is equal to this state.
+	// Note that "equal" here means they match exactly.
+	// Switching the positions of b2A and b2C returns false, for example.
+	// (This is because otherwise "move b2A to system 3" would act differently.)
+	equals(other) {
+		// the biggest checks are the map, actions left, HW data, and turn
+		// turn is easy
+		if (this.turn !== other.turn) {
+			return false;
+		}
+		
+		// phase is also easy
+		if (this.phase !== other.phase) {
+			return false;
+		}
+		
+		if (this.nextSystemID !== other.nextSystemID) {
+			return false;
+		}
+		
+		if (this.winner !== other.winner) {
+			return false;
+		}
+		
+		// actions is a bit more complicated
+		if (this.actions.number    !== other.actions.number ||
+		    this.actions.sacrifice !== other.actions.sacrifice) {
+			return false;
+		}
+		
+		// check the map next
+		for (let serial in this.map) {
+			// Does that piece exist in the other map?
+			if (!(serial in other.map)) {
+				return false;
+			}
+			// Is one null, but the other not?
+			const ourData = this.map[serial];
+			const theirData = other.map[serial];
+			if (ourData === null && theirData !== null) {
+				return false;
+			}
+			if (theirData === null && ourData === null) {
+				return false;
+			}
+			// Do they match?
+			if (ourData.at !== theirData.at || ourData.owner !== theirData.owner) {
+				return false;
+			}
+			// this piece is good, repeat for the others
+		}
+		
+		// this probably is not needed but is good to check
+		for (let serial in other.map) {
+			if (!(serial in this.map)) {
+				return false;
+			}
+		}
+		
+		// check the homeworld data
+		for (let player in this.homeworldData) {
+			// again, does it have a counterpart...
+			if (!(player in other.homeworldData)) {
+				return false;
+			}
+			// ...and do they match?
+			if (this.homeworldData[player] !== other.homeworldData[player]) {
+				return false;
+			}
+		}
+		// and also check the other's data if we are missing any keys
+		for (let player in other.homeworldData) {
+			if (!(player in this.homeworldData)) {
+				return false;
+			}
+		}
+		
+		//
+		return true;
+	}
+	
+	// Basic method to get all pieces at a particular system.
+	// Returns array of {serial: "", owner: ""}. As usual, owner=null means star.
+	getAllPiecesAtSystem(systemID) {
+		var pieces = [];
+		for (let serial in this.map) {
+			let info = this.map[serial];
+			if (info && info.at === systemID) {
+				pieces.push({
+					serial: serial,
+					owner: info.owner
+				});
+			}
+		}
+		return pieces;
+	}
+	
+	// Gets the smallest piece of a specific color. Returns serial number.
+	// Returns null if no piece of the color is available.
+	getSmallestPieceInStash(color) {
+		const letters = "ABCDE";
+		for (let size = 1; size <= 3; size++) {
+			for (let i = 0; i < 3; i++) {
+				let serial = color + size.toString() + letters[i];
+				if (this.map[serial] === null) {
+					return serial;
+				}
+			}
+		}
+		return null;
+	}
+	
+	// Like the above, but also uses a size.
+	// You can pass either ('b', 2) or ('b2').
+	// Returns "null" if failed.
+	getPieceInStashByType(color, size) {
+		if (typeof size === "undefined") {
+			// they must have passed "b2" in the color string
+			size = Number(color[1]);
+			color = color[0];
+		}
+		
+		const letters = "ABCDE";
+		for (let i = 0; i < 3; i++) {
+			let serial = color + size.toString() + letters[i];
+			if (this.map[serial] === null) {
+				return serial;
+			}
+		}
+		return null;
+	}
+	
+	// Like the above, but a more intuitive version for yes/no answers.
+	// Returns a boolean for if the piece is in the stash.
+	pieceExistsInStash(color, size) {
+		if (arguments.length === 2) {
+			// they must have passed "b2" in the color string
+			size = Number(color[1]);
+			color = color[0];
+		}
+		
+		const letters = "ABCDE";
+		for (let i = 0; i < 3; i++) {
+			let serial = color + size.toString() + letters[i];
+			if (this.map[serial] === null) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	// Gets all the color powers a given player can have at a given system.
+	// Returns object with the colors as keys, e.g. {'b': true, 'r': true} if you can trade and attack.
+	// Returns empty object if the player has no ships there or the system does not exist.
+	getPowersAtSystem(player, systemID) {
+		let powers = {};
+		let playerHasAnyShipsThere = false;
+		for (let serial in this.map) {
+			// The piece must be at the system, and either unowned (i.e. a star) or the player's
+			const data = this.map[serial];
+			// if that piece is there
+			if (data && data.at === systemID) {
+				if (data.owner === null || data.owner === player) {
+					// Set the associated power to true.
+					powers[serial[0]] = true;
+				}
+				// Also check for the player having a ship there
+				if (data.owner === player) {
+					playerHasAnyShipsThere = true;
+				}
+			}
+		}
+		
+		if (playerHasAnyShipsThere) {
+			return powers;
+		} else {
+			return {};
+		}
+	}
+	
+	// Gets all stars at a system.
+	// Returns array of serial numbers.
+	getStarsAtSystem(systemID) {
+		let stars = [];
+		for (let serial in this.map) {
+			const data = this.map[serial];
+			// the piece must be in play, at that system, and be a star
+			if (data && data.at === systemID && data.owner === null) {
+				stars.push(serial);
+			}
+		}
+		return stars;
+	}
+	
+	// Pass in 2 parameters, each either a piece or an array of pieces.
+	// Returns true if all sizes in star1 are different from every size in star2.
+	static areStarsConnected(stars1, stars2) {
+		// Convert them both into arrays.
+		if (!(stars1 instanceof Array)) {
+			stars1 = [stars1];
+		}
+		if (!(stars2 instanceof Array)) {
+			stars2 = [stars2];
+		}
+		
+		// If either is empty, then return false (can't move to nonexistent system!)
+		if (stars1.length === 0 || stars2.length === 0) {
+			return false;
+		}
+		
+		for (let i = 0; i < stars1.length; i++) {
+			const a = stars1[i];
+			for (let j = 0; j < stars2.length; j++) {
+				const b = stars2[j];
+				// [1] on a serial number is the size (2 in b2C)
+				if (a[1] === b[1]) {
+					// Matching size between the 2 systems
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
+	// Checks if a system is overpopulated with the given color (4+ pieces there).
+	isSystemOverpopulated(color, systemID) {
+		let matches = 0;
+		for (let serial in this.map) {
+			const data = this.map[serial];
+			if (data && data.at === systemID) {
+				// Check if the color matches
+				if (serial[0] === color) {
+					// that is one extra ship there!
+					matches += 1;
+				}
+			}
+		}
+		// catastrophe begins at 4
+		return matches >= 4;
+	}
+	
+	// Checks if a player has color power in some system.
+	// Slightly cleaner than calling getPowersAtSystem plus checking sacrifice
+	hasPower(player, color, systemID) {
+		const hasDirect = this.getPowersAtSystem(player, systemID)[color];
+		// indirect access to color via sacrifice
+		const hasIndirect = this.actions.sacrifice === color;
+		const hasActions = this.actions.number > 0;
+		// you need an action, and either direct or indirect technology
+		return hasActions && (hasDirect || hasIndirect);
+	}
+	
+	// Gets the active player's homeworld system id.
+	activePlayerHomeworld() {
+		return this.homeworldData[this.turn];
+	}
+	
+	// Gets all pieces at the homeworld systems. Only the owner's pieces are concerned!
+	// Returns something like { "north": { stars: [], ships: [] }, ... }
+	getPiecesAtHomeworlds() {
+		let homeworlds = {};
+		for (let player in this.homeworldData) {
+			homeworlds[player] = {
+				stars: [],
+				ships: [],
+			};
+		}
+		
+		// Now loop over the map
+		for (let serial in this.map) {
+			const data = this.map[serial];
+			if (data) {
+				// Check if it is at any homeworld
+				// (if a player has not set up yet, they will not be included here)
+				for (let player in this.homeworldData) {
+					// homeworldData stores which systems are homeworld systems
+					// mapping is homeworldData[player] = systemID
+					if (data.at === this.homeworldData[player]) {
+						// final if statement: owner's ships go in one array, stars in the other
+						if (data.owner === player) {
+							// ship!
+							homeworlds[player].ships.push(serial);
+						} else if (data.owner === null) {
+							// star!
+							homeworlds[player].stars.push(serial);
+						}
+						// else, invader ship, do nothing.
+					}
+				}
+			}
+		}
+		
+		// we have our data
+		return homeworlds;
+	}
+	
+	/*
+	The next few methods check for availability of a standard action.
+	NONE of them actually check for color power in the system!
+	This is because we do not know if the player has sacrificed a ship.
+	So:
+	- Build only checks if there is an old ship of that color in the system,
+	and a new one in the bank.
+	- Trade only checks if the old ship exists and the new ship exists in the bank.
+	- Move only checks if the ship exists and the systems exist and are connected.
+	- Discover checks the above and if the new star exists in the bank.
+	- Attack checks if the enemy ship exists and the player has a strong enough ship there.
+	
+	Requires the full serial number (b2A) for the ship; partials (b2) do not work here.
+	*/
+	
+	// Checks if the given player can build the given color at the given system.
+	// NOTE: Does NOT check for access to green technology (due to sacrifices)!!
+	canBuildColor(player, color, systemID) {
+		// This can fail if there are no pieces in the stash,
+		// or you do not have that color there.
+		let hasThisColor = false;
+		let pieceInStash = false;
+		for (let serial in this.map) {
+			const data = this.map[serial];
+			// We actually are only concerned with pieces of one particular color
+			if (serial[0] === color) {
+				if (data === null) {
+					// We found something in the stash!
+					pieceInStash = true;
+				} else if (data.at === systemID && data.owner === player) {
+					// We found a ship of the right color!
+					hasThisColor = true;
+				}
+			}
+		}
+		
+		return hasThisColor && pieceInStash;
+	}
+	
+	// Checks if the given player can trade one ship for another.
+	// The latter can be either in the form 'b', 'b2', or 'b2C'.
+	// Returns false if the player does not own the old ship,
+	// or there is no appropriate piece in the bank.
+	// Calls pieceExistsInStash().
+	canTrade(player, oldSerial, newShip) {
+		const data = this.map[oldSerial];
+		// Is your old ship in the bank? Do you even own it?
+		if (!data || data.owner !== player) {
+			return false;
+		}
+		// Cannot trade a ship for its own color
+		if (oldSerial[0] === newShip[0]) {
+			return false;
+		}
+		// Varying procedure depending on how much info we have
+		if (newShip.length === 1) { // just a color
+			// Whew. Does something of the correct size and color exist? Return that answer.
+			return this.pieceExistsInStash(newShip, Number(oldSerial[1]));
+		} else if (newShip.length === 2) { // color & size, like on SDG
+			// Catch size mismatches right here!
+			if (oldSerial[1] !== newShip[1]) {
+				return false;
+			}
+			
+			return this.pieceExistsInStash(newShip[0], Number(newShip[1]));
+		} else { // full serial number
+			// we specified the entire piece we want
+			// just make sure it is not in use, and the size matches
+			return this.map[newShip] === null && oldSerial[1] === newShip[1];
+		}
+	}
+	
+	// Checks if the given player could possibly trade that ship for anything.
+	// If not, we do not want to give them a "Trade..." popup.
+	couldPossiblyTrade(player, oldSerial) {
+		for (let newSerial in this.map) {
+			// It needs to be in the stash
+			if (this.map[newSerial] === null) {
+				// Check if compatible (different color, same size)
+				if (oldSerial[0] !== newSerial[0] && oldSerial[1] === newSerial[1]) {
+					// Yep, this is tradeable
+					return true;
+				}
+			}
+		}
+		
+		// No ship found
+		return false;
+	}
+	
+	// Checks if the player can move the given ship to the given system.
+	// The destination system must exist. Use checkDiscover() otherwise.
+	// Returns false if the ship is not owned by the player,
+	// or the systems are not connected.
+	// Calls getStarsAtSystem() and areStarsConnected().
+	canMove(player, serial, destination) {
+		const data = this.map[serial];
+		// as usual, exit immediately if the ship is not owned by the player
+		if (!data || data.owner !== player) {
+			return false;
+		}
+		
+		// get the ship's system
+		const fromStars = this.getStarsAtSystem(data.at);
+		const toStars = this.getStarsAtSystem(destination);
+		return GameState.areStarsConnected(fromStars, toStars);
+	}
+	
+	// Checks if the player can use one piece to discover another as a system.
+	// Returns false if either:
+	// (1) The ship is not owned by the player.
+	// (2) The star piece is not in the bank.
+	// (3) The ship's system is not connected to the new star.
+	canDiscover(player, shipSerial, starSerial) {
+		const shipData = this.map[shipSerial];
+		// If the player does not own it:
+		if (!shipData || shipData.owner !== player) {
+			console.log("Not yours!", shipData);
+			return false;
+		}
+		// If the star piece is in use, this will be an object
+		if (this.map[starSerial]) {
+			console.log("Piece in use!", this.map[starSerial])
+			return false;
+		}
+		// I feel like people will hack and try to discover a g4 or something.
+		if (!this.map.hasOwnProperty(starSerial)) {
+			console.log("Piece does not exist. Piece never existed.", starSerial);
+			return false;
+		}
+		
+		// Get the player's system.
+		const fromStars = this.getStarsAtSystem( shipData.at);
+		console.log("From", fromStars, "to", starSerial);
+		// It needs to be connected to the new star!
+		return GameState.areStarsConnected(fromStars, starSerial);
+	}
+	
+	// Checks if the player can attack (steal) the given ship.
+	// Returns false if either:
+	// (1) The piece is in the bank, is a star, or is owned by the player already.
+	// (2) The ship is in a system where the player has no ships of that size or larger.
+	canSteal(player, targetSerial) {
+		const tData = this.map[targetSerial];
+		if (!tData || !tData.owner || tData.owner === player) {
+			// in bank, is a star, or already yours
+			console.log("Ship must belong to an opponent", tData);
+			return false;
+		}
+		
+		// Loop over all other pieces.
+		// Check for a ship owned by player in the same system.
+		for (let serial in this.map) {
+			const data2 = this.map[serial];
+			// must be on the board, at the given system, owned by the player
+			if (data2 && data2.at === tData.at && data2.owner === player) {
+				// The ship must also be larger than or equal to the target!
+				// remember [1] is the size.
+				if (Number(serial[1]) >= Number(targetSerial[1])) {
+					return true;
+				}
+			}
+		}
+		// noneFoundReturnFalse
+		return false;
+	}
+	
+	// There is no such thing as you "can't" end your turn.
+	// But there can be warnings.
+	
+	
+	/*
+	Action maps.
+	
+	WARNING: These do NOT update anything!
+	They ONLY return a new version of the map with the specified action, NOTHING else!
+	
+	WARNING: These also do NOT clean up the map (of abandoned ships/stars).
+	
+	I am not sure if I want these to check for non-damaging errors.
+	However, really bad errors (like building a b2F or discovering a y4) will throw.
+	*/
+	
+	// The state is immutable
+	copyMap(oldMap) {
+		let newMap = {};
+		for (let serial in oldMap) {
+			if (oldMap[serial] === null) {
+				newMap[serial] = null;
+			} else {
+				// deep copy
+				newMap[serial] = {
+					at: oldMap[serial].at,
+					owner: oldMap[serial].owner,
+				};
+			}
+		}
+		return newMap;
+	}
+	
+	// Builds the specified piece (by serial number) at the specified system to belong to player.
+	buildMap(player, piece, systemID) {
+		if (!this.map.hasOwnProperty(piece)) {
+			throw new Error("build: piece " + piece + " does not exist in the game.");
+		}
+		if (this.map[piece]) {
+			throw new Error("build: piece " + piece + " is already on the map");
+		}
+		
+		// that was surprisingly easy!
+		// of course we have to return a new map
+		let newMap = this.copyMap(this.map);
+		newMap[piece] = {
+			owner: player,
+			at: systemID
+		};
+		return newMap;
+	}
+	
+	// Trades oldPiece for newPiece. The former is returned to the bank.
+	// I think this one actually does a full error check.
+	// After all, being able to trade stars or create new pieces is a really bad thing.
+	tradeMap(player, oldPiece, newPiece) {
+		if (!this.map.hasOwnProperty(oldPiece) || !this.map.hasOwnProperty(newPiece)) {
+			throw new Error("trade: one or more pieces is illegal (must be a serial number)");
+		}
+		// being able to trade for a star marker could have dire consequences
+		if (this.map[newPiece]) {
+			throw new Error("trade: piece " + newPiece + " is already on the map");
+		}
+		// we need this because we reference oldPiece
+		if (!this.map[oldPiece]) {
+			throw new Error("trade: piece " + oldPiece + " is in the stash");
+		}
+		// ignoring this could cause serious problems
+		if (this.map[oldPiece] && this.map[oldPiece].owner !== player) {
+			throw new Error("trade: piece " + oldPiece + " does not belong to the player");
+		}
+		
+		// return a new map with one change
+		let newMap = this.copyMap(this.map);
+		newMap[oldPiece] = null; // return to stash
+		newMap[newPiece] = {
+			// put the new piece right where the old one was
+			at: this.map[oldPiece].at,
+			owner: this.map[oldPiece].owner,
+		};
+		return newMap;
+	}
+	
+	// Moves oldPiece to a new system.
+	// This method is quite dangerous.
+	moveMap(oldPiece, systemID) {
+		if (!this.map[oldPiece]) {
+			throw new Error("move: Piece Does Not Exist");
+		}
+		if (this.map[oldPiece].owner === null) {
+			throw new Error("move: Piece is a star. You cannot move stars.");
+		}
+		
+		let newMap = this.copyMap(this.map);
+		newMap[oldPiece].at = systemID;
+		return newMap;
+	}
+	
+	// Discovers a system and moves there. The ID of the new system must be provided.
+	discoverMap(newID, ship, star) {
+		if (!this.map[ship]) {
+			throw new Error("discover: Ship does not exist");
+		}
+		if (this.map[ship].owner === null) {
+			throw new Error("discover: So-called \"ship\" is a star.");
+		}
+		if (!this.map.hasOwnProperty(star)) {
+			throw new Error("discover: The star piece does not exist in the game.");
+		}
+		if (this.map[star]) {
+			throw new Error("discover: The star piece is in use already.");
+		}
+		
+		let newMap = this.copyMap(this.map);
+		// make it a star.
+		newMap[star] = {
+			at: newID,
+			owner: null,
+		};
+		newMap[ship].at = newID;
+		return newMap;
+	}
+	
+	// Sacrifices the ship. Returns the map with that ship gone.
+	sacrificeMap(serial) {
+		if (!this.map[serial]) {
+			throw new Error("sacrifice: Sacrifice piece is in the bank.");
+		}
+		if (this.map[serial].owner === null) {
+			throw new Error("sacrifice: Cannot sacrifice a star.");
+		}
+		
+		let newMap = this.copyMap(this.map);
+		newMap[serial] = null; // it's gone
+		return newMap;
+	}
+	
+	// Gets the number and type of actions you would have after sacrificing.
+	getSacrificeActions(serial) {
+		return {
+			number: Number(serial[1]),
+			sacrifice: serial[0],
+		};
+	}
+	
+	// Steals a ship, i.e. makes it belong to the given player.
+	stealMap(serial, player) {
+		if (!this.map[serial]) {
+			throw new Error("steal: Piece being stolen is in the bank.");
+		}
+		if (this.map[serial].owner === null) {
+			throw new Error("steal: So-called \"ship\" being stolen is a star.");
+		}
+		let newMap = this.copyMap(this.map);
+		newMap[serial].owner = player;
+		return newMap;
+	}
+	
+	// Returns the map after a catastrophe takes place of a color in a system.
+	catastropheMap(color, systemID) {
+		// Do nothing if the system is not overpopulated.
+		if (!this.isSystemOverpopulated(color, systemID)) {
+			return this.map;
+		}
+		
+		var newMap = {};
+		
+		// If a catastrophe takes out the star, the entire system is destroyed.
+		// But if it was half of a binary, the stuff not of the overpopulated color survives.
+		let shipsThere = []; // in case we have to destroy them
+		let foundSurvivingStar = false; // true if at least one star in the system survived
+		
+		for (let serial in this.map) {
+			const data = this.map[serial];
+			newMap[serial] = data; // copy over old data, at least for now
+			if (data && data.at === systemID) {
+				// Piece is at the system.
+				if (serial[0] === color) {
+					// Color matched! Return it to the stash!
+					newMap[serial] = null;
+				} else {
+					// We found a piece NOT of the same color there.
+					// If it is a star, then the other ships are safe.
+					if (data.owner === null) {
+						// Star.
+						foundSurvivingStar = true;
+					} else {
+						// Ship.
+						shipsThere.push(serial);
+					}
+					// Record it in the new map exactly as it was.
+					newMap[serial] = this.map[serial];
+				}
+			}
+		}
+		
+		// If no stars survived, delete all the ships that were at that system.
+		// The system will naturally cease to exist.
+		if (!foundSurvivingStar) {
+			for (let i = 0; i < shipsThere.length; i++) {
+				// set that ship's location data to null to move it into the stash
+				newMap[shipsThere[i]] = null;
+			}
+		}
+		return newMap;
+	}
+	
+	// I cannot think of how to do this without looping twice.
+	// This function finds systems with either ships or stars, but not both.
+	// Second optional parameter is one system you want to preserve.
+	
+	// NOTE: This function actually does require oldMap to be passed!
+	// This is because it is often called with the result of buildMap() or so.
+	static clearLonersMap(oldMap, preserveSystem) {
+		// Data will be organized as { systemID: { ships: true, stars: false }, ... }.
+		
+		// First, get all the systems
+		let systemStatus = {};
+		for (let serial in oldMap) {
+			// If it is in play, record it in the system data.
+			const data = oldMap[serial];
+			if (data) {
+				// It can either be a ship or a star.
+				// If we have not seen that system before, create a template.
+				if (!systemStatus[data.at]) {
+					systemStatus[data.at] = { ships: false, stars: false };
+				}
+				
+				// Now, update depending on what type this is
+				if (data.owner === null) {
+					// it is a star, so this system has a star
+					systemStatus[data.at].stars = true;
+				} else {
+					// it is a ship
+					systemStatus[data.at].ships = true;
+				}
+			}
+		}
+		
+		// Now, for any object (ship or star) at a system with nothing of the other type, delete it.
+		let newMap = {};
+		for (let serial in oldMap) {
+			const data = oldMap[serial];
+			newMap[serial] = data; // copy over either the null or the data.
+			if (data) {
+				// If they sent us 1 system to preserve, then ignore any ships there
+				if (data.at !== preserveSystem) {
+					// Now check if the ship or star is actually abandoned!
+					const hasShips = systemStatus[data.at].ships;
+					const hasStars = systemStatus[data.at].stars;
+					// If there are no stars OR no ships, then null.
+					if (!hasShips || !hasStars) {
+						newMap[serial] = null;
+					} else {
+						// Copy over the old stuff.
+						newMap[serial] = data;
+					}
+				}
+			}
+		}
+		
+		return newMap;
+	}
+	
+	/*
+	Doing actions.
+	
+	Since GameState objects are immutable, these return new GameState()s.
+	
+	Yeah, these need to check for legality.
+	If they are done illegitimately, an Error is thrown.
+	*/
+	
+	// So in this version updateState returns a new GameState() object,
+	// with the updates prescribed.
+	// Format: Object with (all optional) properies:
+	// map, hwData/homeworldData, nextSystemID, turn, actions
+	// e.g. { map: ..., turn: "north", actions: {...} } will make it north's turn
+	updateState(whatUpdated) {
+		return new GameState(
+			// order is map, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
+			whatUpdated.map || this.map,
+			whatUpdated.phase || this.phase,
+			// 2 different ways to pass homeworld data
+			whatUpdated.hwData || whatUpdated.homeworldData || this.homeworldData,
+			whatUpdated.nextSystemID || this.nextSystemID,
+			this.turnOrder, // turn order never changes
+			whatUpdated.turn || this.turn,
+			whatUpdated.actions || this.actions,
+			// Here we expect "null" as a draw, so we have to compare to "undefined"
+			(whatUpdated.winner === undefined ? this.winner : whatUpdated.winner)
+		);
+	}
+	
+	// Returns a copy of the actions object with 1 less action. Has no guards.
+	oneLessAction() {
+		return {
+			sacrifice: this.actions.sacrifice,
+			number: this.actions.number - 1,
+		};
+	}
+	
+	// Whether or not there is appropriate actions remaining.
+	hasActionsForColor(color) {
+		// you need to have some actions left, and either no sacrifice or the specified color
+		return this.actions.number > 0 && (this.actions.sacrifice === null || this.actions.sacrifice === color);
+	}
+	
+	// These all start with "do" because they return a new state!
+	// You can pass null for star2 to create a handicap homeworld
+	doHomeworld(player, star1, star2, ship) {
+		console.log("[GameState.doHomeworld]", player, star1, star2, ship);
+		// Fail if the game is not in setup mode
+		if (this.phase !== "setup") {
+			console.log(this.phase, "setup");
+			throw new Error("It is not time for homeworld setup.");
+		}
+		// Fail if it is not your turn
+		if (this.turn !== player) {
+			throw new Error("It is not your turn to set up your homeworld.");
+		}
+		// Fail if any of the pieces are taken
+		const pieces = [star1, ship];
+		// You can neglect one of your stars if you really want to
+		if (star2) {
+			pieces.push(star2);
+		}
+		for (let i = 0; i < pieces.length; i++) {
+			const freeToTake = this.map.hasOwnProperty(pieces[i]) && this.map[pieces[i]] === null;
+			if (!freeToTake) {
+				throw new Error("The piece " + pieces[i] + " is not available in the stash. If you have not been hacking, this is a bug.");
+			}
+		}
+		// We use the number of actions to determine if you have your HW set up or not
+		if (this.actions.number <= 0) {
+			throw new Error("Your turn is over.");
+		}
+		
+		// Do you already have a homeworld? (?!)
+		if (this.homeworldData.hasOwnProperty(player)) {
+			throw new Error("You already have a homeworld!");
+		}
+		
+		// All right, I think all systems are go
+		const newHomeworldData = {};
+		// Copy everything into newHomeworldData
+		for (let existingPlayer in this.homeworldData) {
+			newHomeworldData[existingPlayer] = this.homeworldData[existingPlayer];
+		}
+		// Set up the map
+		const newMap = this.copyMap(this.map);
+		const system = this.nextSystemID;
+		newHomeworldData[player] = system;
+		// Stars are not "owned" by anyone
+		newMap[star1] = {
+			at: system,
+			owner: null,
+		};
+		// You can legitimately enter a 1-star homeworld, hence the if statement
+		if (star2) {
+			newMap[star2] = {
+				at: system,
+				owner: null,
+			};
+		}
+		// Ships are, though
+		newMap[ship] = {
+			at: system,
+			owner: player
+		};
+		
+		// Return the new state!
+		return this.updateState({
+			map: newMap,
+			nextSystemID: system + 1,
+			homeworldData: newHomeworldData,
+			// consider that a spent action for better keeping of track
+			actions: this.oneLessAction(),
+		});
+	}
+	
+	// Player is passed because we like to check for errors
+	doBuild(player, buildWhat, system) {
+		if (this.turn !== player) {
+			throw new Error("It is not your turn");
+		}
+		// First check: player has actions left!
+		if (!this.hasActionsForColor('g')) {
+			throw new Error("You have no actions left, or you sacrificed a ship that is not green. You cannot build.");
+		}
+		
+		// If you only asked to build a color, find the serial number now.
+		// But I would recommend supplying exact serials directly.
+		let serial = buildWhat;
+		if (buildWhat.length === 1) {
+			// Only a color
+			serial = this.getSmallestPieceInStash(buildWhat);
+		} else if (buildWhat.length === 2) {
+			// Color and size
+			serial = this.getPieceInStashByType(buildWhat);
+		}
+		// If we do not find anything, slam the brakes!
+		if (serial === null) {
+			throw new Error("The piece or color you want to build was not found in the stash!")
+		}
+		
+		// If you have green (build) power OR sacrificed a green
+		if (this.hasPower(player, 'g', system)) {
+			// You have build power!
+			// Can you build that ship?
+			const colorToBuild = serial[0];
+			if (this.canBuildColor(player, colorToBuild, system)) {
+				// Is the ship requested the smallest available?
+				const smallestPiece = this.getSmallestPieceInStash(colorToBuild);
+				// Is the serial number requested compatible with the smallest piece in the stash?
+				// (don't complain about building a g1C if the smallest is a g1B)
+				// ...but DO complain if the piece requested is not in the stash!
+				if (smallestPiece.substring(0, 2) === serial.substring(0, 2) && 
+						this.map[serial] === null) {
+					// Congratulations! You can build!
+					const newMap = this.buildMap(player, serial, system);
+					// Standard cleanup
+					const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld())
+					// We have to return the new state. GameStates are immutable!
+					return this.updateState({
+						map: cleanMap,
+						actions: this.oneLessAction(),
+					});
+				} else {
+					throw new Error("You cannot build that piece because it is not the smallest available piece of that color.");
+				}
+			} else {
+				throw new Error("You cannot build that color in that system. You need a ship of the same color to also be there.");
+			}
+		} else {
+			throw new Error("You cannot build in that system. You need access to GREEN technology, either using the star or one of YOUR ships.");
+		}
+	}
+	
+	// The old ship MUST be a serial number, but the new ship can be 'r', 'r2', or 'r2A'
+	doTrade(player, oldSerial, newShip) {
+		if (this.turn !== player) {
+			throw new Error("It is not your turn");
+		}
+		if (!this.hasActionsForColor('b')) {
+			throw new Error("You have no actions left, or you sacrificed a ship that is not blue. You cannot trade.");
+		}
+		
+		// Check that the old serial is on the board
+		if (!this.map[oldSerial]) {
+			throw new Error("The \"ship\" you are trying to trade is not on the board! This could be a bug.");
+		}
+		
+		// If the powers-that-be are on your side...
+		if (this.hasPower(player, 'b', this.map[oldSerial].at)) {
+			// You have trade power, that is good.
+			if (this.canTrade(player, oldSerial, newShip)) {
+				// again depends on newShip
+				let newSerial;
+				if (newShip.length === 1) {
+					// e.g. convert (r2A, g) to g2
+					newSerial = this.getPieceInStashByType(newShip + oldSerial[1])
+				} else if (newShip.length === 2) {
+					// just find the first such piece
+					newSerial = this.getPieceInStashByType(newShip);
+				} else {
+					// we already have it
+					newSerial = newShip;
+				}
+				
+				if (!newSerial) {
+					// Core dump!
+					console.warn("[doTrade] Critical error happened with these parameters:", player, oldSerial, newShip);
+					console.warn("Map:", this.map)
+					throw new Error("Somehow that trade is invalid, and this is a bug because it should have been caught earlier!");
+				}
+				
+				// OK, so now please do the trade.
+				const newMap = this.tradeMap(player, oldSerial, newSerial);
+				const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld())
+				// update!
+				return this.updateState({
+					map: cleanMap,
+					actions: this.oneLessAction(),
+				});
+			} else {
+				// If you asked for a specific size...
+				if (newShip[1] && newShip[1] !== oldSerial[1]) {
+					throw new Error("You cannot make that trade. The sizes do not match.")
+				} else {
+					// some other issue
+					throw new Error("You cannot make that trade. Probably the piece you want is not in the stash.");
+				}
+			}
+		} else {
+			throw new Error("You do not have access to blue (trade) technology there. You must either have a blue ship there, be at a blue star, or have sacrificed a blue ship anywhere.")
+		}
+	}
+	
+	// Still wants a system number...
+	doMove(player, serial, system) {
+		if (this.turn !== player) {
+			throw new Error("It is not your turn");
+		}
+		if (!this.hasActionsForColor('y')) {
+			throw new Error("You have no actions left, or you sacrificed a ship that is not yellow. You cannot move.");
+		}
+		
+		// Check that the ship being moved is on the board
+		if (!this.map[serial]) {
+			throw new Error("The \"ship\" you are trying to move is not on the board! This could be a bug.");
+		}
+		// Check if the ship does not belong to you (including being a star)
+		if (this.map[serial].owner !== player) {
+			throw new Error("You do not own the ship. You can only move your own ships!");
+		}
+		
+		// Do you have movement power?
+		if (this.hasPower(player, 'y', this.map[serial].at)) {
+			if (this.canMove(player, serial, system)) {
+				// Nothing different to pick here
+				const newMap = this.moveMap(serial, system);
+				const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
+
+				return this.updateState({
+					map: cleanMap,
+					actions: this.oneLessAction(),
+				});
+			} else {
+				console.log(system);
+				throw new Error("You cannot move there, because (probably) the systems are not connected. Systems are connected if and only if the stars are DIFFERENT sizes.");
+			}
+		} else {
+			throw new Error("You do not have access to movement (yellow) technology in that system. You must have a yellow ship there, or be at a yellow star, or have sacrificed a yellow ship somewhere.");
+		}
+	}
+	
+	doDiscovery(player, ship, star) {
+		if (this.turn !== player) {
+			throw new Error("It is not your turn");
+		}
+		if (!this.hasActionsForColor('y')) {
+			throw new Error("You have no actions left, or you sacrificed a ship that is not yellow. You cannot move.");
+		}
+		
+		// The ship being moved is on the board...
+		if (!this.map[ship]) {
+			throw new Error("The \"ship\" you are trying to move is not on the board! This could be a bug.");
+		}
+		
+		// Do you have yellow power?
+		if (this.hasPower(player, 'y', this.map[ship].at)) {
+			let starSerial = star;
+			// If you only asked for a partial ('b2'), get the first available
+			if (star.length === 2) {
+				starSerial = this.getPieceInStashByType(this.map, star);
+				if (starSerial === null) {
+					throw new Error("No " + star + " piece exists in the stash to discover.");
+				}
+			}
+			if (this.canDiscover(player, ship, star)) {
+				// This has another effect: it increments the system counter by 1
+				const newMap = this.discoverMap(this.nextSystemID, ship, star);
+				const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
+				// we also have to update the system number!
+				return this.updateState({
+					map: cleanMap,
+					actions: this.oneLessAction(),
+					nextSystemID: this.nextSystemID + 1,
+				});
+			} else {
+				// If the piece is in use, put a more specific message 
+				if (this.map[starSerial]) {
+					throw new Error("The requested piece to discover is not in the stash.");
+				} else {
+					// some other error
+					throw new Error("You cannot discover that star. Either the systems are not connected, or you do not own the ship.")
+				}
+			}
+		} else {
+			throw new Error("You do not have access to movement (yellow) technology in that system. You must have a yellow ship there, or be at a yellow star, or have sacrificed a yellow ship somewhere.");
+		}
+	}
+	
+	// The procedure for "steal y2 at system #5" is too complicated
+	doSteal(player, ship) {
+		if (this.turn !== player) {
+			throw new Error("It is not your turn");
+		}
+		if (!this.hasActionsForColor('r')) {
+			throw new Error("You have no actions left, or you sacrificed a ship that is not red. You cannot capture.");
+		}
+		
+		// The ship being moved is on the board...
+		if (!this.map[ship]) {
+			throw new Error("The \"ship\" you are trying to capture is not on the board! This could be a bug.");
+		}
+		
+		if (this.hasPower(player, 'r', this.map[ship].at)) {
+			// OK, good.
+			if (this.canSteal(player, ship)) {
+				// Take over their ship!
+				const newMap = this.stealMap(ship, player);
+				// No need to clean up anything, I hope...
+				// ...but maybe a good idea just because
+				return this.updateState({
+					map: GameState.clearLonersMap(newMap, this.activePlayerHomeworld()),
+					actions: this.oneLessAction(),
+				});
+			} else {
+				throw new Error("You cannot capture that ship. You must have a ship of that size or larger in the same system.")
+			}
+		} else {
+			throw new Error("You do not have weapons technology there! You need to own a red ship there, be at a red star, or sacrifice a red ship somewhere.")
+		}
+	}
+	
+	// The other 2 special actions.
+	doSacrifice(player, ship) {
+		if (this.turn !== player) {
+			throw new Error("It is not your turn");
+		}
+		// Sacrifice is a little different
+		if (this.actions.sacrifice) {
+			throw new Error("You have already sacrificed a ship for this turn.");
+		}
+		if (this.actions.number <= 0) {
+			throw new Error("You have already done your action for this turn.");
+		}
+		
+		// As always, the ship must exist.
+		if (!this.map[ship]) {
+			throw new Error("The \"ship\" you are trying to sacrifice is not on the board! This could be a bug or a faulty game record.");
+		}
+		
+		// There is no power check here.
+		if (this.map[ship].owner !== player) {
+			throw new Error("You can only sacrifice YOUR SHIPS. That piece is either a star or an opponent's ship.");
+		}
+		
+		// There are no "canSacrifice" methods either.
+		const newMap = this.sacrificeMap(ship);
+		const newActions = this.getSacrificeActions(ship);
+		return this.updateState({
+			map: GameState.clearLonersMap(newMap, this.activePlayerHomeworld()),
+			actions: newActions
+		});
+	}
+	
+	doCatastrophe(color, system) {
+		// Requires the fewest checks
+		if (this.isSystemOverpopulated(color, system)) {
+			const newMap = this.catastropheMap(color, system);
+			const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
+			// this is truly all we need
+			return this.updateState({
+				map: cleanMap
+			});
+		} else {
+			throw new Error("That system is not overpopulated with that color so you cannot cause a catastrophe there.");
+		}
+	}
+	
+	// Checks players who may no longer be standing.
+	// Returns a new version of the homeworldData object.
+	getCleanHomeworldData() {
+		// If the current phase is setting up homeworlds, stop.
+		// First get all systems that are populated with both stars and ships.
+		if (this.phase === "setup") {
+			return this.homeworldData;
+		}
+		
+		const newHWData = {};
+		
+		const homeworldPieces = this.getPiecesAtHomeworlds();
+		for (let player in homeworldPieces) {
+			const data = homeworldPieces[player]; // { stars: [...], ships: [owner's ships only] }
+			// They must have a ship there and at least one star must survive
+			if (data.stars.length > 0 && data.ships.length > 0) {
+				// yay, you are still alive
+				newHWData[player] = this.homeworldData[player];
+			}
+			// else you are not included i.e. DEAD!
+		}
+		
+		return newHWData;
+	}
+	
+	// Function to generate warnings if you are about to end your turn dangerously.
+	// Should be called BEFORE endTurn() but after any actions are taken.
+	// (Game stores a history of all actions.)
+	getEndTurnWarnings() {
+		let warnings = [];
+		const you = this.turn;
+		const allHWs = this.getPiecesAtHomeworlds();
+		const yourData = allHWs[you];
+		const yourShips = yourData.ships;
+		const yourStars = yourData.stars;
+		const allPieces = yourShips.concat(yourStars);
+		// If we are setting up the game...
+		if (this.phase === "setup") {
+			// Check for your homeworld setup.
+			
+			// Warnings to check:
+			// (1) Ship is not large
+			// (2) Only 1 star (actually, this is currently impossible)
+			// (3) Stars are same size
+			// (4) Stars are same color
+			// (4) No Green
+			// (5) No Blue
+			
+			// OK...
+			// So yourShips[0] is your starting ship's serial; [1] is the size. Is it 3?
+			if (!yourShips[0] || yourShips[0][1] !== "3") {
+				warnings.push({
+					// levels are "note", caution", "warning", "danger"
+					level: "warning",
+					message: "You seem to have started without a large ship! It is very important that you have a large ship to defend your homeworld.",
+				});
+			}
+			// Do you only have 1 star?
+			if (yourStars.length <= 1) {
+				warnings.push({
+					level: "danger",
+					message: "You only have one star. You should start with a binary system (2 stars) so that it is much harder for your opponent to destroy your homeworld!",
+				});
+			} else {
+				// Are your 2 stars the same size?
+				if (yourStars[0][1] === yourStars[1][1]) {
+					warnings.push({
+						level: "caution",
+						message: "You seem to have picked 2 stars of the same size. Your homeworld will be connected to more systems, which can make it easier to be invaded.",
+					});
+				}
+				// Are they the same color?!
+				if (yourStars[0][0] === yourStars[1][0]) {
+					warnings.push({
+						level: "danger",
+						message: "Uh oh! You picked 2 stars of the same color. This is not good because your opponent only needs 2 ships of that color to destroy your homeworld. This is very bad!",
+					});
+				}
+			}
+			
+			// Check if you lack green or blue.
+			let hasGreen = false;
+			let hasBlue = false;
+			for (let i = 0; i < allPieces.length; i++) {
+				if (allPieces[i][0] === 'g') {
+					hasGreen = true;
+				}
+				if (allPieces[i][0] === 'b') {
+					hasBlue = true;
+				}
+			}
+			
+			if (!hasGreen) {
+				warnings.push({
+					level: "danger",
+					message: "You do not have construction (green) technology in your homeworld! You will not be able to build new ships! This is bad.",
+				});
+			}
+			if (!hasBlue) {
+				warnings.push({
+					level: "warning",
+					message: "You do not have trading (blue) technology in your homeworld! This can make it more difficult to diversify your fleet.",
+				});
+			}
+			
+			// 2-player games have additional warnings
+			if (this.turnOrder.length === 2) {
+				// Do your sizes match the opponent's?
+				console.warn("todo... I want to get something else working first");
+			}
+		} else {
+			// not setup
+			if (yourShips.length === 0) {
+				this.warnings.push({
+					level: "danger",
+					message: "You can't abandon your homeworld, or else you lose! You need to make sure you have a ship at home when your turn ends. (Reset Turn if you need to.)",
+				});
+			}
+			
+			// check bluebird and large defense
+			let colorFrequencies = {};
+			let hasLarge = false;
+			for (let i = 0; i < yourShips.length; i++) {
+				const color = yourShips[i][0];
+				if (!colorFrequencies[color]) {
+					colorFrequencies[color] = 1;
+				} else {
+					colorFrequencies[color]++;
+				}
+				// also check size while we are at it
+				if (yourShips[i][1] === '3') {
+					hasLarge = true;
+				}
+			}
+			
+			const colors = Object.keys(colorFrequencies)
+			if (colors.length === 1) {
+				// you only have 1 color
+				if (yourShips.length === 3) {
+					this.warnings.push({
+						level: "warning",
+						message: "You have 3 ships in your homeworld, and they are all the same color. If your opponent can move just one more in, you will lose!",
+					});
+				} else if (yourShips.length === 2) {
+					this.warnings.push({
+						level: "note",
+						message: "You have 2 ships in your homeworld, and they are the same color. Be careful if your opponent can move 2 more and catastrophe you."
+					})
+				}
+			}
+		}
+	}
+	
+	// Last and... kind of deserves to be last!
+	doEndTurn() {
+		// OK...
+		// Here we do NOT give special treatment to the active player's homeworld.
+		const cleanMap = GameState.clearLonersMap(this.map);
+		// TODO: Check for destroyed homeworld systems
+		// TODO: Check if all players are dead
+		const newActions = {
+			sacrifice: null,
+			number: 1,
+		};
+		
+		// OK, so in order to do this properly, we have to update the state twice.
+		// First we update map and actions...
+		const tempState = this.updateState({
+			map: cleanMap,
+			actions: newActions
+		});
+		// Now we figure out who is still standing
+		const newHWData = tempState.getCleanHomeworldData();
+		
+		// Are there only 0-1 players standing?
+		const playersLeft = Object.keys(newHWData);
+		if (playersLeft.length <= 1 && this.phase !== "setup") {
+			// only one player standing OR all players are dead. Game over!
+			const winner = playersLeft.length ? playersLeft[0] : null;
+			return this.updateState({
+				map: cleanMap,
+				phase: "end",
+				homeworldData: newHWData,
+				winner: winner
+			});
+		} else {
+			// Get the next turn.
+			// Ignore destroyed homeworld players.
+			const turnIndex = this.turnOrder.indexOf(this.turn);
+			let nextPlayer = this.turn;
+			const len = this.turnOrder.length;
+			for (let i = 1; i < len; i++) {
+				// Wrap around
+				const newTurn = this.turnOrder[(turnIndex + i) % len];
+				// If that player is still in the game OR has not set up yet
+				if (newHWData[newTurn] || this.phase === "setup") {
+					nextPlayer = newTurn;
+					// and we want to stop searching now!
+					break;
+				}
+			}
+			// If we are setting up homeworlds and wrap around to the first player...
+			let newPhase = this.phase;
+			if (this.phase === "setup" && this.homeworldData[nextPlayer]) {
+				// ...then it is no longer setup
+				newPhase = "playing";
+			}
+			// We have the new map, the next player, and their default actions object.
+			return this.updateState({
+				map: cleanMap,
+				phase: newPhase,
+				turn: nextPlayer,
+				actions: newActions,
+				homeworldData: newHWData,
+			});
+		}
+	}
+	
+	// OK, not last.
+	// Note: Players are automatically eliminated in doEndTurn() if their homeworld is destroyed. This only needs called if a player loses on time or resigns.
+	// Does not advance the turn or anything, so it is possible for a "zombie" player to do an action after they are manually eliminated, unless a second update is done.
+	manuallyEliminatePlayer(player) {
+		const newHWData = GameState.copyObject(this.homeworldData);
+		delete newHWData[player];
+		return this.updateState({
+			homeworldData: newHWData,
+		});
+	}
+	
+	/*
+	Clicking on a ship.
+	
+	The idea is that we show the user a pop-up with actions.
+	*/
+	
+	// Gets available actions.
+	// You click on:
+	// (1) An existing ship of yours of some color, to build that color.
+	// (2) A ship of yours, to trade it.
+	// (3) A ship of yours, to move it.
+	// (4) A ship of yours, to discover a new system.
+	// (5) An enemy ship, to steal it.
+	// (6) Any piece, to cause a catastrophe.
+	// (7) A ship of yours, to sacrifice it.
+	
+	// NOTE: Clicking a piece in the bank first will NOT let you build, trade for, or discover it.
+	getActionsAvailableForPiece(player, piece) {
+		const map = this.map;
+		// The piece must be on the board!
+		if (!map[piece]) {
+			return {};
+		}
+		let available = [];
+		
+		// Some common things
+		const isYourShip = (map[piece].owner === player);
+		const isStar = (map[piece].owner === null);
+		const isEnemyShip = (!isYourShip && !isStar); // it can only be one of 3 things
+		const system = map[piece].at;
+		
+		const actions = this.actions;
+		
+		if (isYourShip) {
+			// You build by clicking on a similarly colored ship in the target system
+			if (this.hasPower(player, 'g', system) && this.canBuildColor(player, piece[0], system)) {
+				available.push({
+					type: 'build',
+					// put which ship the button would build
+					newPiece: this.getSmallestPieceInStash(piece[0]),
+					// this one has to know what system it is being built in
+					system: system
+				})
+			}
+			// You trade by first clicking on the ship you want to trade.
+			// We do not yet know which piece you will trade it for.
+			if (this.hasPower(player, 'b', system) && this.couldPossiblyTrade(player, piece)) {
+				available.push({
+					type: 'trade',
+					oldPiece: piece
+				})
+			}
+			// You move and discover by first clicking on the ship you want to move
+			if (this.hasPower(player, 'y', system)) {
+				// TODO: Again, this does not guarantee there are actually stars to move to
+				available.push({
+					type: 'move',
+					oldPiece: piece
+				})
+				available.push({
+					type: 'discover',
+					oldPiece: piece
+				})
+			}
+			// Stealing is done by clicking on the enemy piece which does not apply here
+			// Sacrificing is done by clicking the piece you want to sacrifice
+			if (actions.sacrifice === null && actions.number > 0) {
+				available.push({
+					type: 'sacrifice',
+					oldPiece: piece
+				})
+			}
+		} // end if (isYourShip)
+		if (isEnemyShip) {
+			if (this.hasPower(player, 'r', system) && this.canSteal(player, piece)) {
+				available.push({
+					type: 'steal',
+					oldPiece: piece
+				})
+			}
+		}
+		// lastly, any piece can be involved in a catastrophe
+		if (this.isSystemOverpopulated(piece[0], system)) {
+			available.push({
+				type: 'catastrophe',
+				// not sure how I want to do this so for now I will be compatible
+				oldPiece: piece,
+				color: piece[0],
+				system: system
+			})
+		}
+		
+		return available;
+	}
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (GameState);
+
 
 /***/ }),
 
-/***/ "./scripts/lobby/mainLobby.jsx":
-/*!*************************************!*\
-  !*** ./scripts/lobby/mainLobby.jsx ***!
-  \*************************************/
+/***/ "./scripts/game/liveGame.jsx":
+/*!***********************************!*\
+  !*** ./scripts/game/liveGame.jsx ***!
+  \***********************************/
 /*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -39703,13 +41779,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
 /* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./lobbySocket.js */ "./scripts/lobby/lobbySocket.js");
-/* harmony import */ var _alerts_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./alerts.jsx */ "./scripts/lobby/alerts.jsx");
-/* harmony import */ var _gameRooms_jsx__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./gameRooms.jsx */ "./scripts/lobby/gameRooms.jsx");
-/* harmony import */ var _createGame_jsx__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./createGame.jsx */ "./scripts/lobby/createGame.jsx");
-/* harmony import */ var _specificRoom_jsx__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./specificRoom.jsx */ "./scripts/lobby/specificRoom.jsx");
-/* harmony import */ var _whosOnline_jsx__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./whosOnline.jsx */ "./scripts/lobby/whosOnline.jsx");
-/* harmony import */ var _whosPlaying_jsx__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./whosPlaying.jsx */ "./scripts/lobby/whosPlaying.jsx");
+/* harmony import */ var _game_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./game.jsx */ "./scripts/game/game.jsx");
+/* harmony import */ var _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./gameSocket.js */ "./scripts/game/gameSocket.js");
+/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -39732,318 +41804,533 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-// lobby.jsx
+// liveGame.jsx
 //
-// For the screen when you are deciding which game to play
-
- // Socket
-
- // React components
-// Yes, all of these are top level.
+// Higher order components really do work, albeit somewhat messily.
+// I still think inheritance (class LiveGame extends Game) would be slightly cleaner.
 
 
 
 
 
 
+var LiveGameDisplay = /*#__PURE__*/function (_React$Component) {
+  _inherits(LiveGameDisplay, _React$Component);
 
+  var _super = _createSuper(LiveGameDisplay);
 
-var MainLobby = /*#__PURE__*/function (_React$Component) {
-  _inherits(MainLobby, _React$Component);
-
-  var _super = _createSuper(MainLobby);
-
-  function MainLobby(props) {
+  function LiveGameDisplay(props) {
     var _this;
 
-    _classCallCheck(this, MainLobby);
+    _classCallCheck(this, LiveGameDisplay);
 
     _this = _super.call(this, props);
     _this.state = {
-      pingMs: "unknown",
-      whosOnline: [],
-      whosPlaying: [],
-      gameRooms: [],
-      view: "game-list",
-      roomID: null,
-      // id, not array index!
-      room: null,
-      updateIntervalID: null,
-      alerts: [],
-      alertKey: 1
+      isPlaying: false,
+      drawVotes: [],
+      confirmResign: false,
+      endGameInfo: null
     };
     return _this;
   }
 
-  _createClass(MainLobby, [{
-    key: "showCreateGame",
-    value: function showCreateGame() {
+  _createClass(LiveGameDisplay, [{
+    key: "handleClickOfferDraw",
+    value: function handleClickOfferDraw() {
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("offerDraw", GAME_ID);
+    }
+  }, {
+    key: "handleClickCancelDraw",
+    value: function handleClickCancelDraw() {
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("cancelDraw", GAME_ID);
+    }
+  }, {
+    key: "handleClickResign",
+    value: function handleClickResign() {
       this.setState({
-        view: "create-game",
-        // reset
-        roomID: null,
-        room: null
+        confirmResign: true
       });
     }
   }, {
-    key: "showGameList",
-    value: function showGameList() {
+    key: "handleClickCancelResign",
+    value: function handleClickCancelResign() {
       this.setState({
-        view: "game-list",
-        // reset
-        roomID: null,
-        room: null
+        confirmResign: false
       });
     }
   }, {
-    key: "showSpecificRoom",
-    value: function showSpecificRoom(newRoomID) {
-      console.warn("showSpecificRoom(".concat(newRoomID, ")"));
-      console.log(this.state.gameRooms);
-      var rooms = this.state.gameRooms;
-
-      for (var i = 0; i < rooms.length; i++) {
-        if (rooms[i].id === newRoomID) {
-          this.setState({
-            view: "specific-room",
-            roomID: newRoomID,
-            room: rooms[i]
-          });
-          return;
-        }
-      } // If we do not find the room, show the game list
-
-
-      this.showGameList();
+    key: "handleClickConfirmResign",
+    value: function handleClickConfirmResign() {
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("resign", GAME_ID);
     }
-  }, {
-    key: "handleServerUpdateResponse",
-    value: function handleServerUpdateResponse(data) {
-      this.setState({
-        whosOnline: data.whosOnline,
-        whosPlaying: data.whosPlaying,
-        gameRooms: data.gameRooms
-      });
-      console.log("Received server update response"); // If you are inside a room, watch for changes to that room
-
-      var foundRoom = false;
-
-      for (var i = 0; i < data.gameRooms.length; i++) {
-        if (data.gameRooms[i].id === this.state.roomID) {
-          console.log("Updating conditions of the room");
-          this.setState({
-            room: data.gameRooms[i]
-          });
-          foundRoom = true;
-        }
-      } // If the room dies while you are inside it, go back to the lobby
-
-
-      if (!foundRoom && this.state.room) {
-        this.showGameList();
-        this.addNewAlert("The room you were in was abandoned, so it closed.", "primary");
-      }
-    }
-  }, {
-    key: "addNewAlert",
-    value: function addNewAlert(message, type) {
-      // just in case we try to add 2+ alerts at once or something
-      this.setState(function (oldState) {
-        return {
-          // neat, a legitimate use for ([{...}]) in real code!
-          alerts: oldState.alerts.concat([{
-            message: message,
-            type: type,
-            key: oldState.alertKey
-          }]),
-          // increment so they are unique
-          alertKey: oldState.alertKey + 1
-        };
-      });
-    }
-  }, {
-    key: "closeAlert",
-    value: function closeAlert(index) {
-      var alerts = this.state.alerts;
-      this.setState({
-        // get 0...index-1 followed by index+1...end
-        alerts: alerts.slice(0, index).concat(alerts.slice(index + 1))
-      });
-    } // LifeCycleFunctions
-
   }, {
     key: "componentDidMount",
     value: function componentDidMount() {
-      var _this2 = this;
-
-      console.log("Component did mount");
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("pong", function (ms) {
-        _this2.setState({
-          pingMs: ms
-        });
-      }); // For the regular pings to update the list of games
-
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].emit("updatePlease");
-      var intervalID = setInterval(function () {
-        _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].emit("updatePlease");
-      }, 2000);
-      this.setState({
-        updateIntervalID: intervalID
-      }); // When you disconnect, stop pinging...
-
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("disconnect", function () {
-        clearInterval(this.state.updateIntervalID);
-      }.bind(this)); // ...and then when you reconnect, resume.
-
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("reconnect", function () {
-        var newIntervalID = setInterval(function () {
-          return _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].emit("updatePlease");
-        }, 3500);
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("drawOfferChange", function (data) {
+        console.log("change offer");
         this.setState({
-          updateIntervalID: newIntervalID
+          drawVotes: data.drawVotes
+        });
+      }.bind(this)); // test
+
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("gamePosition", function (data) {
+        this.setState({
+          isPlaying: data.isPlaying,
+          drawVotes: data.drawVotes
         });
       }.bind(this));
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("updateResponse", this.handleServerUpdateResponse.bind(this));
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("createGameSuccess", function () {
-        _this2.showGameList();
-      });
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("roomUpdate", function (roomData) {
-        if (roomData.id === this.state.roomID) {
-          this.setState({
-            room: roomData
-          });
-        } // update the room
-
-
-        var newRooms = [];
-
-        for (var i = 0; i < this.state.gameRooms.length; i++) {
-          var oldRoom = this.state.gameRooms[i];
-
-          if (oldRoom.id === roomData.id) {
-            newRooms.push(roomData); // if the room is starting the game, add an alert
-
-            if (!oldRoom.isStarting && roomData.isStarting) {
-              // check if you are playing
-              for (var j = 0; j < roomData.players.length; j++) {
-                if (roomData.players[j].username === YOUR_USERNAME) {
-                  // You are indeed on the list
-                  this.addNewAlert("Game #".concat(roomData.id, " is starting! Get in there and confirm that you are ready!"), "success");
-                  break;
-                }
-              }
-            }
-          } else {
-            newRooms.push(oldRoom);
-          }
-        }
-
-        this.setState({
-          gameRooms: newRooms
-        });
-      }.bind(this)); // The final event handler
-      // Seems so anti-climactic
-
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_2__["default"].on("gameStart", function (data) {
-        location = "/game/" + data.roomID;
-      });
-    }
-  }, {
-    key: "componentWillUnmount",
-    value: function componentWillUnmount() {
-      console.warn("Why is this being called?!");
-      clearInterval(this.state.intervalID);
     }
   }, {
     key: "render",
     value: function render() {
-      var _this3 = this;
+      var _this2 = this;
 
-      var mainScreen;
+      // get the state object of the game
+      var innerState = this.props.reactState;
+      var clocks = innerState.clocks; // somehow get these
 
-      if (this.state.view === "game-list") {
-        mainScreen = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "col-xs-12 col-lg-9"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", null, "Join a Game"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-secondary",
-          onClick: function onClick() {
-            return _this3.showCreateGame();
+      var clockElements = [];
+
+      if (clocks) {
+        for (var i = 0; i < clocks.length; i++) {
+          var clock = clocks[i];
+          var className = "clock text-right card";
+
+          if (clock.running) {
+            // text-light seems to actually be dark
+            className += " bg-primary text-light";
+          } // Work out how much time is really left.
+
+          /*
+          Clock is {
+          	username: username,
+          	running: Boolean,
+          	timeLeft: seconds,
+          	delayLeft: seconds,
+          	type: "delay" or "increment",
+          	bonus: seconds,
+          };
+          These values all reflect what was on the clock WHEN IT WAS SENT.
+          */
+          // How much time has passed since you started?
+
+
+          var timeElapsed = (Date.now() - innerState.clocksReceived) / 1000;
+
+          if (timeElapsed < 0) {
+            console.warn("Oh no! There has been a temporal distortion!", innerState.clocksReceived, timeElapsed);
           }
-        }, "Create a game instead"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_gameRooms_jsx__WEBPACK_IMPORTED_MODULE_4__["default"], {
-          list: this.state.gameRooms,
-          onRowClick: function onRowClick(room) {
-            return _this3.showSpecificRoom(room);
+
+          var timeLeft = clock.timeLeft;
+
+          if (clock.running) {
+            if (clock.delayLeft) {
+              // subtract only that portion after the delay time
+              timeLeft = Math.min(timeLeft, timeLeft - timeElapsed + clock.delayLeft);
+            } else {
+              // subtract what has been used
+              timeLeft -= timeElapsed;
+            }
+          } // Absolute value, to avoid weird renders like -1:0-2
+
+
+          var min = Math.floor(Math.abs(timeLeft) / 60); // floor both, so it is an integer
+
+          var sec = Math.floor(Math.abs(timeLeft) % 60);
+          var timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
+          var usernameClassName = "card-title clock-name d-md-inline-block mr-4 mr-lg-none";
+
+          if (clock.username.length > 12) {
+            usernameClassName += " h6"; // make it small to fit
+          } else if (clock.username.length > 6) {
+            usernameClassName += " h5";
+          } else {
+            usernameClassName += " h4"; // more room = bigger
           }
-        }));
-      } else if (this.state.view === "create-game") {
-        // whenDone is a prop function to switch back when you submit or click "back"
-        mainScreen = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "col-xs-12 col-lg-9"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", null, "Create a Game"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-secondary",
-          onClick: function onClick() {
-            return _this3.showGameList();
+
+          clockElements.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            key: clock.username,
+            className: className
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "card-body"
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+            className: usernameClassName
+          }, clock.username), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", {
+            className: "clock-value d-md-inline-block"
+          }, timeDisplay))));
+        }
+      } else {
+        // still show the player turn order
+        var current = this.props.gameState;
+        var players = current.turnOrder;
+
+        for (var _i = 0; _i < players.length; _i++) {
+          var _className = "clock card";
+
+          if (players[_i] === current.turn) {
+            _className += " bg-primary text-light";
           }
-        }, "Join an existing game instead"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_createGame_jsx__WEBPACK_IMPORTED_MODULE_5__["default"], {
-          whenDone: function whenDone() {
-            return _this3.showGameList();
-          },
-          activeUsers: this.state.whosOnline
-        }));
-      } else if (this.state.view === "specific-room") {
-        mainScreen = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "col-xs-12 col-lg-9"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-secondary",
-          onClick: function onClick() {
-            return _this3.showGameList();
-          }
-        }, "Go back to the lobby"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_specificRoom_jsx__WEBPACK_IMPORTED_MODULE_6__["default"], {
-          room: this.state.room
-        }));
+
+          clockElements.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            key: players[_i],
+            className: _className
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "card-body"
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h5", {
+            className: "card-title clock-name"
+          }, players[_i]))));
+        }
       }
 
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h2", null, "Main Lobby"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "lead"
-      }, "Welcome to Homeworlds Live! If you are new, check out the ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("a", {
+      var endGameBanner = null;
+
+      if (innerState.endGameInfo) {
+        var info = innerState.endGameInfo;
+        var winnerMessage = info.winner ? info.winner + " has won" : "it's a draw";
+        var ratingDisplay = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", null, "This game was not rated.");
+
+        if (info.ratingData) {
+          var ratingElements = [];
+
+          for (var player in info.ratingData) {
+            var playerData = info.ratingData[player]; // new rating minus old rating
+
+            var diff = playerData[1] - playerData[0];
+            var adjustmentString = player + ": " + playerData[1] + "(" + (diff > 0 ? "+" + diff : diff < 0 ? diff : "\u01770" // plus/minus sign: plus or minus 0
+            ) + ")";
+            ratingElements.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+              className: "col",
+              key: player
+            }, adjustmentString));
+          }
+
+          ratingDisplay = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "row"
+          }, ratingElements);
+        }
+
+        endGameBanner = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "col-12 alert alert-secondary"
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "float-right"
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("textarea", {
+          id: "game-log",
+          className: "float-right",
+          readOnly: true,
+          rows: "3",
+          value: info.summary
+        }, info.summary), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          onClick: function onClick() {
+            // copy the text into your clipboard
+            document.getElementById("game-log").select();
+            document.execCommand("copy");
+          },
+          className: "btn btn-secondary"
+        }, "Copy")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h3", {
+          className: "alert-heading text-center"
+        }, "Game over, ", winnerMessage, "!"), ratingDisplay, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", null, "If you wish, you can copy this log of the game for analysis (right)."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("a", {
+          href: "/lobby",
+          role: "button",
+          className: "btn btn-lg btn-primary text-black"
+        }, "Return to Lobby"));
+      }
+
+      var offerDraw = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "card"
+      }, innerState.isPlaying && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-secondary",
         onClick: function onClick() {
-          return alert("TODO");
-        },
-        href: "#"
-      }, "tutorial"), "."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_alerts_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
-        list: this.state.alerts,
-        onClick: this.closeAlert.bind(this)
-      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "row"
-      }, mainScreen, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col-xs-12 col-lg-3"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", null, "Who's Online"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          return _this2.handleClickOfferDraw();
+        }
+      }, "Offer a Draw"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+        className: "text-center"
+      }, "Draw votes: ", this.state.drawVotes.join(", ")), this.state.drawVotes.length > 0 && innerState.isPlaying && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-primary",
+        onClick: function onClick() {
+          return _this2.handleClickCancelDraw();
+        }
+      }, "Cancel Draw"));
+      var resignButtons = null;
+
+      if (innerState.isPlaying) {
+        if (this.state.confirmResign) {
+          resignButtons = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "card"
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+            className: "btn btn-success",
+            onClick: function onClick() {
+              return _this2.handleClickCancelResign();
+            }
+          }, "CANCEL!"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+            className: "btn btn-danger mt-2",
+            onClick: function onClick() {
+              return _this2.handleClickConfirmResign();
+            }
+          }, "Confirm", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), "RESIGN"));
+        } else {
+          resignButtons = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "card"
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+            className: "btn btn-warning",
+            onClick: function onClick() {
+              return _this2.handleClickResign();
+            }
+          }, "Resign"));
+        }
+      }
+
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, endGameBanner, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "row"
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col-6 col-lg-12"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_whosOnline_jsx__WEBPACK_IMPORTED_MODULE_7__["default"], {
-        list: this.state.whosOnline
-      })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-        className: "col-6 col-lg-12"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_whosPlaying_jsx__WEBPACK_IMPORTED_MODULE_8__["default"], {
-        list: this.state.whosPlaying
-      }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "small"
-      }, "Ping time: ", this.state.pingMs, " ms"))));
+        className: "col-12 d-flex flex-row justify-content-around col-lg-2 flex-lg-column justify-content-lg-start order-lg-12"
+      }, clockElements, offerDraw, resignButtons), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "col-12 col-lg-10 order-lg-1"
+      }, this.props.children)));
     }
   }]);
 
-  return MainLobby;
-}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
+  return LiveGameDisplay;
+}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component); // wrapper component, events, additional state
 
-react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(MainLobby, null), document.getElementById("lobby-container"));
+
+var LiveGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_2__["default"])(LiveGameDisplay, {
+  // These methods will be run on the wrapped component
+  onMount: function onMount() {
+    _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("gamePosition", function (data) {
+      console.log(data.viewer);
+      console.log(YOUR_USERNAME); // data contains the game and the viewer
+
+      var game = data.game;
+      var isYourTurn = game.currentState.turn === YOUR_USERNAME;
+      var isHomeworldSetup = game.currentState.phase === "setup";
+      this.setState({
+        // we want a GameState object, not a vanilla object
+        current: _gameState_mjs__WEBPACK_IMPORTED_MODULE_4__["default"].recoverFromJSON(game.currentState),
+        history: data.history,
+        // Start homeworld setup if and only if it is your turn
+        actionInProgress: isYourTurn && isHomeworldSetup ? {
+          type: "homeworld"
+        } : null,
+        viewer: data.viewer,
+        actionsThisTurn: data.actionsThisTurn,
+        turnResets: data.turnResets,
+        // clock functionality requires knowing when the clocks were received
+        clocks: game.clocks,
+        clocksReceived: Date.now(),
+        // flag for if you are playing and thus have access to draw offer and resign buttons
+        isPlaying: data.viewer === YOUR_USERNAME
+      });
+    }.bind(this)); // race conditions are going to seriously mess this up...
+    // Largely the same logic is used for action and endTurn.
+    // The only difference is that endTurn also calls doEndTurn.
+
+    var resolveActions = function (data) {
+      try {
+        // Which turn attempt is this?
+        var theirResets = data.turnResets;
+        var ourResets = this.state.turnResets;
+        var theirActions = data.actionsThisTurn;
+
+        if (theirResets > ourResets) {
+          console.log("Oops, we need to reset!"); // this is on a new iteration of the turn
+          // reset and try again
+
+          this.doResetTurn(data.player); // then do all their actions
+
+          for (var i = 0; i < theirActions.length; i++) {
+            this.doAction(theirActions[i], data.player);
+          }
+        } else if (theirResets === ourResets) {
+          // this is on the same turn
+          // do any actions above and beyond what we recorded
+          var ourActions = this.state.actionsThisTurn; // NOTE: Possible bug here if theirActions and ourActions do not line up
+          // but that shouldn't happen!
+
+          console.log("They have done", theirActions.length, "actions and we have registered", ourActions.length); // e.g. we have 2 actions and they send 5: loop from [2] to [4]
+
+          for (var _i2 = ourActions.length; _i2 < theirActions.length; _i2++) {
+            console.log("Doing action", theirActions[_i2]);
+            this.doAction(theirActions[_i2], data.player);
+          } // Update our action list to match theirs.
+
+
+          if (ourActions.length < theirActions.length) {
+            this.setState({
+              actionsThisTurn: theirActions
+            });
+          }
+        } // else, this message came from an outdated turn
+        // do nothing
+
+      } catch (error) {
+        // Uh oh, this is really bad. We are out of sync.
+        // Ask for the game state again.
+        console.error("\n\n\n\n[resolveActions] SYNC ERROR!!\n\n");
+        console.error(error);
+        console.log("\n\n\n");
+        _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("getGame", GAME_ID);
+      }
+    }.bind(this); // Actions are easy
+
+
+    _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("action", resolveActions); // Turn ending is more involved
+
+    _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("endTurn", function (data) {
+      resolveActions(data);
+
+      try {
+        this.doEndTurn(data.player);
+        this.setState({
+          turnResets: 0,
+          actionsThisTurn: []
+        });
+      } catch (error) {
+        console.error("\n\n\n\n[endTurn] SYNC ERROR!!\n\n");
+        console.error(error);
+        console.log("\n\n\n");
+        _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("getGame", GAME_ID);
+      }
+    }.bind(this)); // Turn resetting is less involved
+
+    _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("resetTurn", function (data) {
+      // this is very simple
+      console.warn("They Reset the Turn");
+      console.log(data);
+      console.log(this.state.turnResets);
+
+      if (data.turnResets > this.state.turnResets) {
+        this.doResetTurn(data.player);
+        this.setState({
+          turnResets: data.turnResets,
+          actionsThisTurn: []
+        });
+      }
+    }.bind(this)); // whenever you receive clock data
+
+    _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("clockUpdate", function (data) {
+      // data.clocks is currently the only thing it sends
+      if (data.clocks) {
+        this.setState({
+          clocks: data.clocks,
+          clocksReceived: Date.now()
+        });
+      }
+    }.bind(this));
+    _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].on("gameOver", function (data) {
+      var game = data.game;
+      this.setState({
+        current: _gameState_mjs__WEBPACK_IMPORTED_MODULE_4__["default"].recoverFromJSON(game.currentState),
+        history: data.history,
+        // we still have to display them
+        clocks: game.clocks,
+        clocksReceived: Date.now(),
+        endGameInfo: {
+          winner: data.winner,
+          summary: data.summary,
+          ratingData: data.ratingData
+        },
+        // things that need cleared
+        popup: null,
+        actionInProgress: null,
+        actionsThisTurn: [],
+        turnResets: 0
+      });
+
+      if (data.viewer) {
+        this.setState({
+          viewer: data.viewer
+        });
+      }
+    }.bind(this)); // TODO: Better way to handle the timers
+
+    setInterval(this.forceUpdate.bind(this), 250);
+  },
+  // this one just generically asks if you can do anything at all
+  canInteract: function canInteract(state) {
+    return state.turn === YOUR_USERNAME;
+  },
+  // I have to be a little bit careful here
+  // we call doAction when the other player moves, too
+  onBeforeAction: function onBeforeAction(action, player, oldState, newState) {
+    // hmmm... do we even need anything else?
+    return true;
+  },
+  onAfterAction: function onAfterAction(action, player, newState) {
+    console.warn("onAfterAction", player);
+
+    if (player === YOUR_USERNAME) {
+      // the action is yours
+      console.log("emitting"); // Append the newest action to your actions taken this turn
+
+      var actionsThisTurn = this.state.actionsThisTurn.concat([action]);
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("doAction", {
+        action: action,
+        gameID: GAME_ID,
+        // Race Condition Defenses, Inc.
+        actionsThisTurn: actionsThisTurn,
+        turnResets: this.state.turnResets
+      });
+      this.setState({
+        actionsThisTurn: actionsThisTurn
+      });
+    }
+  },
+  onAfterEndTurn: function onAfterEndTurn(player, newState) {
+    console.warn("onAfterEndTurn", arguments);
+
+    if (player === YOUR_USERNAME) {
+      console.log("emitting");
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("doEndTurn", {
+        gameID: GAME_ID,
+        // make sure we end the correct version of your turn
+        actionsThisTurn: this.state.actionsThisTurn,
+        turnResets: this.state.turnResets
+      });
+    } // All end turns reset the action counters
+
+
+    this.setState({
+      actionsThisTurn: [],
+      turnResets: 0
+    });
+  },
+  onAfterResetTurn: function onAfterResetTurn(player, newState) {
+    console.warn("onAfterResetTurn", arguments);
+
+    if (player === YOUR_USERNAME) {
+      console.log("emitting"); // Simple countermeasure to ensure an old turn reset does not surface later
+
+      var turnResets = this.state.turnResets + 1;
+      _gameSocket_js__WEBPACK_IMPORTED_MODULE_3__["default"].emit("doResetTurn", {
+        gameID: GAME_ID,
+        turnResets: turnResets
+      }); // update the state
+
+      this.setState({
+        turnResets: turnResets,
+        actionsThisTurn: []
+      });
+    }
+  }
+}, {
+  viewer: YOUR_USERNAME,
+  isPlaying: false,
+  clocks: [],
+  clocksReceived: Date.now(),
+  pingMS: 0,
+  // for race condition avoidance
+  actionsThisTurn: [],
+  turnResets: 0,
+  endGameInfo: null
+});
+react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(LiveGame, null), document.getElementById("game-container"));
 
 /***/ }),
 
-/***/ "./scripts/lobby/specificRoom.jsx":
-/*!****************************************!*\
-  !*** ./scripts/lobby/specificRoom.jsx ***!
-  \****************************************/
+/***/ "./scripts/game/piece.jsx":
+/*!********************************!*\
+  !*** ./scripts/game/piece.jsx ***!
+  \********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -40051,7 +42338,73 @@ react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEB
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./lobbySocket.js */ "./scripts/lobby/lobbySocket.js");
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+// piece.jsx
+//
+// One individual piece, could be a ship or a star
+ // Expected props: type ("ship" or "star"), serial (e.g. "b2C")
+// Optional props: scaleFactor (default 0.4), rotation, symbolMode (boolean, default false)
+
+function Piece(props) {
+  // add "-symbol" for use in symbol mode graphics; always use ".svg"
+  var extension = (props.symbolMode ? "-symbol" : "") + ".svg"; // e.g. "/images/ship-b3.svg" or "/images/star-r2-symbol.svg"
+
+  var imageSrc = "/images/" + props.type + "-" + props.serial.substring(0, 2) + extension; // Use to rotate 0, 90, 180, or 270 degrees for ships
+
+  var css = _objectSpread({
+    transform: "rotate(" + (props.rotation || 0) + "deg)"
+  }, props.style); // Size is always the second character e.g. 2 in b2C
+
+
+  var size = Number(props.serial[1]); // Get the height of a normal image.
+
+  var baseHeight;
+
+  if (props.type === "star") {
+    baseHeight = 28 + 20 * size;
+  } else if (props.type === "ship") {
+    baseHeight = 40 + 32 * size;
+  } else {
+    throw new Error("Unknown piece type " + props.type + ". This is a bug.");
+  } // Return the image element.
+
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("img", {
+    className: "piece",
+    piecetype: props.type,
+    src: imageSrc,
+    height: props.scaleFactor * baseHeight,
+    style: css,
+    title: props.serial,
+    highlight: props.highlight,
+    onClick: function onClick(evt) {
+      return props.handleClick(props.serial, evt);
+    }
+  });
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (Piece);
+
+/***/ }),
+
+/***/ "./scripts/game/starmap.jsx":
+/*!**********************************!*\
+  !*** ./scripts/game/starmap.jsx ***!
+  \**********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _system_jsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./system.jsx */ "./scripts/game/system.jsx");
+/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -40074,315 +42427,499 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-// specificRoom.jsx
+// starmap.js
 //
-// When you click on a room, it shows you this.
+// Probably could have called it the "board" but Homeworlds does not really have a board.
 
- // Props Wanted:
-// room
-// removePlayer(username), handleStartClick(), handle
-// 
+ // maybe "StarSystem" would have been better
 
-var SpecificRoom = /*#__PURE__*/function (_React$Component) {
-  _inherits(SpecificRoom, _React$Component);
 
-  var _super = _createSuper(SpecificRoom);
 
-  function SpecificRoom(props) {
+var StarMap = /*#__PURE__*/function (_React$Component) {
+  _inherits(StarMap, _React$Component);
+
+  var _super = _createSuper(StarMap);
+
+  function StarMap(props) {
     var _this;
 
-    _classCallCheck(this, SpecificRoom);
+    _classCallCheck(this, StarMap);
 
     _this = _super.call(this, props);
     _this.state = {
-      confirmRemoveUsername: null,
-      error: null
-    }; // I'm unsure so... betterSafeThanSorry();
+      // array of: {x, y, stars: [serials], numShips}
+      systemPositions: [],
+      scaleFactor: 0.5 // good baseline
 
-    _this.playerToLi = _this.playerToLi.bind(_assertThisInitialized(_this));
+    }; //this.handleResize = this.handleResize.bind(this);
+
+    _this.getSystemOwnershipScore = _this.getSystemOwnershipScore.bind(_assertThisInitialized(_this));
     return _this;
   }
+  /*componentDidMount() {
+  	window.addEventListener("resize", this.handleResize, {passive: true});
+  }
+  componentWillUnmount() {
+  	window.removeEventListener("resize", this.handleResize, {passive: true});
+  }
+  
+  handleResize() {
+  	
+  }*/
+  // Numeric score used for Array.sort
 
-  _createClass(SpecificRoom, [{
-    key: "getTimeControlString",
-    value: function getTimeControlString() {
-      var tcTime = "None";
-      var tcExtension = "";
-      var tc = this.props.room.options.timeControl;
 
-      if (tc) {
-        var minutes = Math.floor(tc.start / 60);
-        var seconds = tc.start % 60;
-        tcTime = "".concat(minutes, " minute").concat(minutes === 1 ? "" : "s");
+  _createClass(StarMap, [{
+    key: "getSystemOwnershipScore",
+    value: function getSystemOwnershipScore(reactSystemElement) {
+      var ships = reactSystemElement.props.ships; // to prevent logarithm errors
 
-        if (seconds > 0) {
-          tcTime += ", ".concat(seconds, " second").concat(seconds === 1 ? 's' : '');
+      var yourScore = 0;
+      var enemyScore = 0;
+
+      for (var i = 0; i < ships.length; i++) {
+        // size^3
+        // dunno why I added the 64
+        var shipScore = [0, 1, 8, 27, 64][ships[i].size];
+
+        if (ships[i].owner === this.props.viewer) {
+          yourScore += shipScore;
+        } else {
+          enemyScore += shipScore;
         }
+      } // Ties go to system ID, to preserve some semblance of order
 
-        if (tc.bonus > 0) {
-          tcExtension = " with a ".concat(tc.bonus, "-second ").concat(tc.type);
-        }
-      }
 
-      return tcTime + tcExtension;
+      return yourScore - enemyScore + reactSystemElement.props.id / 10000;
     }
   }, {
-    key: "confirmRemove",
-    value: function confirmRemove(playerOrUsername) {
-      this.setState({
-        confirmRemoveUsername: playerOrUsername.username || playerOrUsername
-      });
-    }
-  }, {
-    key: "cancelRemove",
-    value: function cancelRemove() {
-      this.setState({
-        confirmRemoveUsername: null
-      });
-    } // Returns an object with 3 booleans: joined, owner, invited
-
-  }, {
-    key: "getYourStatus",
-    value: function getYourStatus() {
-      var room = this.props.room;
-      var status = {
-        joined: false,
-        invited: false,
-        owner: false
-      };
-
-      for (var i = 0; i < room.players.length; i++) {
-        if (room.players[i].username === YOUR_USERNAME) {
-          status.joined = true;
-
-          if (i === 0) {
-            // owner is always first on the list
-            status.owner = true;
-          }
-        }
-      }
-
-      for (var _i = 0; _i < room.invitedPlayers.length; _i++) {
-        if (room.invitedPlayers[_i].username === YOUR_USERNAME) {
-          status.invited = true;
-        }
-      }
-
-      return status;
-    }
-  }, {
-    key: "playerToLi",
-    value: function playerToLi(player) {
-      var _this2 = this;
-
-      var removeButton = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-        className: "float-right btn btn-danger btn-sm",
-        onClick: function onClick() {
-          return _this2.confirmRemove(player.username);
-        }
-      }, "Remove");
-
-      if (this.state.confirmRemoveUsername === player.username) {
-        removeButton = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-          className: "float-right"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-danger btn-sm",
-          onClick: function onClick() {
-            return _this2.removePlayer(player.username);
-          }
-        }, "Confirm"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-secondary btn-sm",
-          onClick: this.cancelRemove.bind(this)
-        }, "CANCEL"));
-      } // show disconnected players in red
-
-
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("li", {
-        key: player.username,
-        className: (player.connected ? "" : "text-danger ") + "list-group-item"
-      }, player.username, player.connected ? null : " (offline)", this.getYourStatus().owner && removeButton);
-    }
-  }, {
-    key: "clearError",
-    value: function clearError() {
-      this.setState({
-        error: null
-      });
-    }
-    /* Button click methods */
-    // all rather simple
-
-  }, {
-    key: "startGame",
-    value: function startGame() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("prepareStartGame", this.props.room.id);
-      this.clearError();
-    }
-  }, {
-    key: "joinGame",
-    value: function joinGame() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("joinGame", this.props.room.id);
-      this.clearError();
-    }
-  }, {
-    key: "leaveGame",
-    value: function leaveGame() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("leaveGame", this.props.room.id);
-      this.clearError();
-    } // ok this needs more information
-
-  }, {
-    key: "removePlayer",
-    value: function removePlayer(username) {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("removePlayer", this.props.room.id, username);
-      this.clearError();
-    }
-  }, {
-    key: "confirmStart",
-    value: function confirmStart() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("confirmStart", this.props.room.id);
-      this.clearError();
-    }
-  }, {
-    key: "cancelStart",
-    value: function cancelStart() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].emit("cancelStart", this.props.room.id);
-      this.clearError();
-    } // Launch sequence
-
-  }, {
-    key: "haveYouConfirmed",
-    value: function haveYouConfirmed() {
-      var room = this.props.room;
-
-      for (var i = 0; i < room.confirmedStart.length; i++) {
-        var player = room.confirmedStart[i];
-
-        if (player.username === YOUR_USERNAME) {
-          return true;
-        }
-      }
-
-      return false;
-    } // some event listeners, and since SpecificRoom gets unmounted, we need a socket.off()
-
-  }, {
-    key: "componentDidMount",
-    value: function componentDidMount() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].on("gameRoomError", function (error) {
-        this.setState({
-          error: error.message
-        });
+    key: "sortContainer",
+    value: function sortContainer(container) {
+      // these are React system objects
+      return container.sort(function (sys1, sys2) {
+        return this.getSystemOwnershipScore(sys1) - this.getSystemOwnershipScore(sys2);
       }.bind(this));
+    } // gets the number of different sizes in a homeworld
+
+  }, {
+    key: "getUniqueSizes",
+    value: function getUniqueSizes(homeworld) {
+      var sizesFound = {};
+
+      for (var i = 0; i < homeworld.length; i++) {
+        // homeworld[i] is an object {serial, size, color}
+        var size = homeworld[i].size;
+
+        if (!sizesFound[size]) {
+          sizesFound[size] = true;
+        }
+      } // i.e. map(x => Number(x))
+
+
+      return Object.keys(sizesFound).map(Number);
+    } // Helper function for renderHTMLContainers().
+    // Renders a 3-column layout. The center array is rendered as is while the sides array is split based on star size for a slightly easier map.
+
+  }, {
+    key: "renderHTMLThreeColumns",
+    value: function renderHTMLThreeColumns(smallerSize, center, sides) {
+      var leftSide = [];
+      var rightSide = [];
+
+      for (var i = 0; i < sides.length; i++) {
+        var reactElement = sides[i]; // Read the "size" prop on the System element.
+        // If it is the smaller size it goes on the left, otherwise on the right.
+
+        if (reactElement.props.stars[0].size === smallerSize) {
+          leftSide.push(reactElement);
+        } else {
+          rightSide.push(reactElement);
+        }
+      }
+
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "row justify-content-around"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "col-auto",
+        align: "center"
+      }, leftSide), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "col-auto",
+        align: "center"
+      }, center), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "col-auto",
+        align: "center"
+      }, rightSide));
+    } // Given the containers and the 2 homeworlds, return a React element
+
+  }, {
+    key: "renderHTMLContainers",
+    value: function renderHTMLContainers(hw1, hw2, containers) {
+      /*
+      Possibilities:
+      (a) Homeworlds are both one size and connected (e.g. 1 vs 2).
+      (b) Homeworlds are connected but one has two sizes (e.g. 1-3 vs 2).
+      (c) Homeworlds are 2 steps apart and both one size (e.g. 1 vs 1, or 3 vs 3-3).
+      (d) Homeworlds are 2 steps apart and one has two sizes (e.g. 1-3 vs 1).
+      (e) Homeworlds are 2 steps apart and both are two sizes (e.g. 1-2 vs 1-2).
+      (f) Homeworlds are 3 steps apart (e.g. 1-2 vs 2-3).
+      (g) One homeworld is destroyed.
+      (h) Both homeworlds are destroyed.
+      
+      Render:
+      - If a, b, or f: Display stars in rows:
+      	- Put adjacent to enemy in row 1, adjacent to both or none in 2, and adjacent only to your HW in 3.
+      - If c: Display stars in columns:
+      	- Stars adjacent to HWs go in middle.
+      	- Stars not adjacent go in left/right edges.
+      - If d: Display stars in mixed format:
+      	- Left column displays stars adjacent to neither HW.
+      	- Right column is split, with stars adjacent to only one HW in a block closer to that HW.
+      	- Or maybe switch the left and right depending on who has the 2 sizes...
+      - If e: Display stars in columns:
+      	- Stars adjacent to HWs go in middle.
+      	- Stars of one size go to left, other size go to right.
+      - If g, then... I guess pretend it is (d) or (a) (as appropriate)
+      - If h... then who really cares? (This might be an argument for a stateful component?)
+      */
+      var sizes1 = this.getUniqueSizes(hw1);
+      var sizes2 = this.getUniqueSizes(hw2); // we will need this often
+
+      var rowDisplay = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "adj-north"
+      }, containers.adjNorth), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "adj-both adj-neither"
+      }, containers.adjBoth, containers.adjNeither), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "adj-south"
+      }, containers.adjSouth));
+
+      if (sizes1.length === 1 && sizes2.length === 1) {
+        console.log("[Starmap] cases C or A"); // both homeworlds are single stars or geminis
+
+        if (sizes1[0] === sizes2[0]) {
+          console.log("case c"); // identical sizes, type (c)
+          // put smaller sizes on the left
+
+          var smallerSize = sizes1[0] === 1 ? 2 : 1;
+          return this.renderHTMLThreeColumns(smallerSize, containers.adjNeither, containers.adjBoth);
+        } else {
+          console.log("case a"); // identical sizes, type (a)
+          // row format
+
+          return rowDisplay;
+        }
+      } else if (sizes1.length === 2 && sizes2.length === 2) {
+        //console.log("[Starmap] cases E or F");
+        // both homeworlds have 2 distinct sizes
+        var missingSize = 0; // Check if the same size is absent in both homeworlds.
+
+        for (var i = 1; i <= 3; i++) {
+          if (sizes1.indexOf(i) === -1 && sizes2.indexOf(i) === -1) {
+            missingSize = i;
+            break;
+          }
+        }
+
+        if (missingSize !== 0) {
+          //console.log("case e", missingSize);
+          // so they were 2 moves away, type (e)
+          var _smallerSize = missingSize === 1 ? 2 : 1;
+
+          return this.renderHTMLThreeColumns(_smallerSize, containers.adjBoth, containers.adjNeither);
+        } else {
+          //console.log("case f");
+          // standard 3 moves away, type (f)
+          return rowDisplay;
+        }
+      } else if (sizes1.length === 0 || sizes2.length === 0) {
+        //console.log("[Starmap] cases g/h");
+        // one of the homeworlds is gone
+        // there is really no hope for order here
+        return rowDisplay;
+      } else {
+        /*
+        There are 9 possibilitiesfor the number of different sizes at each homeworld:
+        0,0; 0,1; 0,2; 1,0; 1,1; 1,2; 2,0; 2,1; 2,2.
+        
+        The first and second if's knocked out 1,1 and 2,2.
+        The third knocked out all those with 0.
+          0 1 2
+        0 X X X
+        1 X X
+        2 X   X
+        
+        This leaves us with only (1,2) or (2,1).
+        */
+        // Are they connected?
+        var connected = true;
+
+        for (var _i = 0; _i < sizes1.length; _i++) {
+          if (sizes2.indexOf(sizes1[_i]) >= 0) {
+            // size match!
+            connected = false;
+          }
+        }
+
+        if (connected) {
+          console.log("case b"); // ok this is actually quite easy, type (b)
+
+          return rowDisplay;
+        } else {
+          console.log("case d"); // we do not want the left thing to take up half the space for 0-2 systems
+
+          var numLeft = containers.adjNeither.length;
+          var numRight = Math.max(containers.adjNorth.length, containers.adjBoth.length, containers.adjSouth.length);
+          var classLeft; // determine how big to make the left side
+
+          if (numLeft === 0) {
+            // nothing there
+            classLeft = "d-none";
+          } else if (numLeft === 1) {
+            // just one system, make it only wide enough to fit the system
+            classLeft = "col-auto px-1";
+          } else if (numLeft <= numRight * 2 / 3) {
+            // left is small
+            classLeft = "col-4 col-md-3 col-lg-2";
+          } else if (numLeft >= numRight * 3 / 2) {
+            // left is big
+            classLeft = "col-8 col-sm-7";
+          } else {
+            // roughly same size, make them equal
+            classLeft = "col-6";
+          }
+
+          if (numLeft > 0) {
+            classLeft += " d-flex flex-column justify-content-center";
+          } // case (d)
+          // return a mixed view, because we have Both *and* Neither *and* a north or south
+
+
+          return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "row flex-grow"
+          }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: classLeft
+          }, containers.adjNeither), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+            className: "col d-flex flex-column justify-content-around"
+          }, containers.adjNorth && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, containers.adjNorth), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, containers.adjBoth), containers.adjSouth && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, containers.adjSouth)));
+        }
+      }
     }
   }, {
-    key: "componentWillUnmount",
-    value: function componentWillUnmount() {
-      _lobbySocket_js__WEBPACK_IMPORTED_MODULE_1__["default"].off("gameRoomError");
+    key: "moveSVGSystems",
+    value: function moveSVGSystems() {
+      // react state is de jure immutable
+      var newPositions = []; // Loop over each pair of systems
+
+      var array = this.state.systemPositions;
+
+      for (var i = 0; i < array.length; i++) {
+        var sys1 = array[i];
+        var forceX = 0;
+        var forceY = 0; // attract/repel to all other systems
+
+        for (var j = 0; j < array.length; j++) {
+          // does not attract/repel itself!
+          if (j !== i) {
+            // Because we are in a 2-player game, x-direction is more liable to overlaps than y-direction
+            var sys2 = array[j];
+
+            if (_gameState_mjs__WEBPACK_IMPORTED_MODULE_2__["default"].areStarsConnected(sys1.stars, sys2.stars)) {
+              // move them together but not too close
+              forceX += sys2.x - sys1.x - 100;
+            } else {
+              // move them apart
+              forceX -= sys2.x - sys1.x;
+            }
+          }
+        }
+      }
     }
   }, {
     key: "render",
     value: function render() {
-      var _this3 = this;
+      var props = this.props; // need to get the array of systems.
+      // System wants objects of the form {size, color, serial, owner} for ships and {size, color, serial} for stars.
+      // Loop over all pieces in the game.
 
-      var room = this.props.room;
-      var options = room.options; // Are you the owner of this room? Are you in it? Have you been invited?
+      var map = props.map;
+      var systems = {}; // systems[3] will store system ID=3
 
-      var yourStatus = this.getYourStatus();
-      var stayConnectedWarning = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h6", {
-        className: "text-primary"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("strong", null, "Note: You must keep a tab open to the lobby, or you will be ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("u", null, "removed from the game"), "."), " When ", yourStatus.owner ? "you are" : "the owner is", " ready to play, ALL players must confirm they wish to play before the game starts."); // if you are the owner
+      var stash = {}; // stores a count of each g3
+      // map is an object, each property is a serial number (b2A)
 
-      var startGameButton = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-        className: "btn btn-lg btn-primary",
-        onClick: function onClick() {
-          return _this3.startGame();
-        }
-      }, "START GAME"); // if you are in the room
-      // "If you wish to" is so the join and leave buttons do not overlap
+      for (var serial in map) {
+        var data = map[serial]; // 3 cases: null, owner is null, or owner is not null
 
-      var leaveGameButton = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-        className: "ml-2 mr-2"
-      }, "If you wish to:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-        className: "btn btn-lg btn-danger",
-        onClick: function onClick() {
-          return _this3.leaveGame();
-        }
-      }, "LEAVE GAME"));
-      var joinGameButton = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-        className: "btn btn-lg btn-success",
-        onClick: function onClick() {
-          return _this3.joinGame();
-        }
-      }, "Join Game");
-      var roomControls = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, yourStatus.joined && stayConnectedWarning, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("hr", null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", null, yourStatus.owner && startGameButton, yourStatus.joined ? leaveGameButton : joinGameButton)); // UI for the launch sequence!
+        if (data === null) {
+          continue;
+        } else {
+          // get the system we are at
+          var system = systems[data.at];
 
-      var launchSequenceUI = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-        className: "lead"
-      }, this.haveYouConfirmed() ? " Waiting for all players to confirm..." : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, "You need to \xA0", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-        onClick: function onClick() {
-          return _this3.confirmStart();
-        },
-        className: "btn btn-primary"
-      }, "confirm you are ready!"), " ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), "Or, if you want, you can \xA0", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-        onClick: function onClick() {
-          return _this3.cancelStart();
-        },
-        className: "btn btn-danger"
-      }, "cancel"), " the game starting.")); // Render!
+          if (!system) {
+            // then create an empty system object
+            system = {
+              stars: [],
+              ships: [],
+              homeworld: null // we will find out later
 
-      if (room.isStarting) {
-        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "jumbotron"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h2", null, "Game Is Starting!"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-          className: "lead"
-        }, "Game #", room.id, "\u2022 Time control: ", this.getTimeControlString(), "\u2022 Players: ", room.players.map(function (player) {
-          return player.username;
-        }).join(", ")), launchSequenceUI);
-      } else {
-        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "container"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", null, "Game Room #", room.id), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h5", {
-          className: "text-muted"
-        }, "This table fits ", room.numPlayers, " players \u2022 Time control: ", this.getTimeControlString()),
-        /* Rendering the Error Message */
-        this.state.error && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
-          className: "text-danger"
-        }, this.state.error, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-secondary btn-small",
-          onClick: function onClick() {
-            return _this3.clearError();
+            };
+            systems[data.at] = system;
+          } // now add either a ship or a star
+
+
+          var pieceData = {
+            serial: serial,
+            size: Number(serial[1]),
+            color: serial[0]
+          };
+
+          if (data.owner === null) {
+            // is a star
+            pieceData.type = "star";
+            system.stars.push(pieceData);
+          } else {
+            // is a ship
+            // remember "data" is the entry in "map"
+            pieceData.owner = data.owner;
+            pieceData.type = "ship";
+            system.ships.push(pieceData);
           }
-        }, "OK")), roomControls, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "row"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "col"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h5", null, "Players Joined"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("ul", {
-          className: "list-group"
-        }, room.players.map(this.playerToLi))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-          className: "col"
-        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h5", null, "Players Invited"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("ul", {
-          className: "list-group"
-        },
-        /* Show the list of invited players, or the word "none" */
-        room.invitedPlayers.length > 0 ? room.invitedPlayers.map(this.playerToLi) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("li", {
-          className: "list-group-item"
-        }, "(none)")))));
+        }
+      } // let the homeworld systems know that they are such
+
+
+      var players = [];
+
+      for (var player in props.homeworldData) {
+        var hwid = props.homeworldData[player];
+
+        if (systems[hwid]) {
+          // set it to the owner
+          systems[hwid].homeworld = player;
+          players.push(player);
+        }
       }
+
+      if (true) {
+        var dataToSerial = function dataToSerial(data) {
+          return data.serial;
+        }; // Work out the connections between systems
+
+
+        var hws = [];
+
+        for (var i = 0; i < players.length; i++) {
+          var _hwid = props.homeworldData[players[i]];
+          hws.push(systems[_hwid].stars);
+        }
+
+        var containers = {
+          hwNorth: [],
+          // enemy
+          hwSouth: [],
+          // you
+          adjNorth: [],
+          adjSouth: [],
+          adjBoth: [],
+          adjNeither: []
+        }; // we need to convert the system object into an array of elements
+
+        var innerDisplay = null;
+
+        for (var id in systems) {
+          var _system = systems[id];
+
+          var myStars = _system.stars.map(dataToSerial);
+
+          var reactElement = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_system_jsx__WEBPACK_IMPORTED_MODULE_1__["default"], {
+            key: id,
+            id: id,
+            stars: _system.stars,
+            ships: _system.ships,
+            viewer: props.viewer,
+            homeworld: _system.homeworld,
+            scaleFactor: props.scaleFactor,
+            handleBoardClick: props.handleBoardClick
+          }); // Now work out which bin to put the system in!
+
+          if (_system.homeworld) {
+            if (_system.homeworld === props.viewer) {
+              containers.hwSouth.push(reactElement);
+            } else {
+              containers.hwNorth.push(reactElement);
+            }
+          } else {
+            if (hws.length === 1) {
+              // Only 1 homeworld!
+              if (_gameState_mjs__WEBPACK_IMPORTED_MODULE_2__["default"].areStarsConnected(myStars, hws[0].map(dataToSerial))) {
+                // this.viewer would be considered south
+                var which = players[0] === props.viewer ? "adjSouth" : "adjNorth";
+                containers[which].push(reactElement);
+              } else {
+                containers.adjNeither.push(reactElement);
+              }
+            } else if (hws.length === 2) {
+              // 2 homeworlds.
+              var adj0 = _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__["default"].areStarsConnected(myStars, hws[0].map(dataToSerial));
+              var adj1 = _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__["default"].areStarsConnected(myStars, hws[1].map(dataToSerial));
+              var adjNorth = void 0,
+                  adjSouth = void 0;
+
+              if (players[0] === props.viewer) {
+                // players[0] is south
+                adjSouth = adj0;
+                adjNorth = adj1;
+              } else {
+                adjSouth = adj1;
+                adjNorth = adj0;
+              } // put it in the proper bin
+
+
+              if (adjNorth) {
+                containers[adjSouth ? "adjBoth" : "adjNorth"].push(reactElement);
+              } else {
+                containers[adjSouth ? "adjSouth" : "adjNeither"].push(reactElement);
+              }
+            } else {
+              // no homeworlds?!?
+              console.log("No homeworlds exist!");
+              containers.adjNeither.push(reactElement);
+            }
+          }
+        } // end for loop
+        // sort them
+
+
+        for (var _which in containers) {
+          containers[_which] = this.sortContainer(containers[_which]);
+        }
+
+        if (hws.length === 2) {
+          innerDisplay = this.renderHTMLContainers(hws[0], hws[1], containers);
+        } else if (hws.length === 1) {
+          innerDisplay = this.renderHTMLContainers(hws[0], [], containers);
+        } else {
+          innerDisplay = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, containers.adjNeither);
+        }
+
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "systems"
+        }, containers.hwNorth, innerDisplay, containers.hwSouth);
+      } else {}
     }
   }]);
 
-  return SpecificRoom;
+  return StarMap;
 }(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
 
-/* harmony default export */ __webpack_exports__["default"] = (SpecificRoom);
+/* harmony default export */ __webpack_exports__["default"] = (StarMap);
 
 /***/ }),
 
-/***/ "./scripts/lobby/whosOnline.jsx":
-/*!**************************************!*\
-  !*** ./scripts/lobby/whosOnline.jsx ***!
-  \**************************************/
+/***/ "./scripts/game/stash.jsx":
+/*!********************************!*\
+  !*** ./scripts/game/stash.jsx ***!
+  \********************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -40390,76 +42927,233 @@ var SpecificRoom = /*#__PURE__*/function (_React$Component) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-// whosOnline.jsx
+/* harmony import */ var _piece_jsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./piece.jsx */ "./scripts/game/piece.jsx");
+// stash.jsx
 //
-// React component for displaying the list of all users connected in the lobby.
+// Component for holding the stash of unused pieces.
+
+ // can I do this as a function component?! Sure...
+
+function Stash(props) {
+  var colors = ["b", "g", "r", "y"];
+  var specifiers = "ABCDE"; // can't think of a better name!
+
+  var scaleFactor = props.scaleFactor || 0.4; // array of <tr> elements
+
+  var rows = [];
+
+  for (var i = 0; i < colors.length; i++) {
+    var color = colors[i]; // array of <td> elements
+
+    var cols = [];
+
+    for (var size = 1; size <= 3; size++) {
+      // array of ship images
+      var cell = []; // there are 3 of each piece
+
+      for (var which = 0; which < 3; which++) {
+        // serial number is color + size + specifier
+        var serial = color + size + specifiers[which];
+
+        if (props.data[serial] === null) {
+          // put that data into a <Piece>
+          var css = {
+            // height of a ship is 40 + 32*size
+            marginTop: scaleFactor * -(4 + 32 * size)
+          }; // This is a neat trick: put the props in, them map them to React elements
+
+          cell.push({
+            key: serial,
+            serial: serial,
+            type: "ship",
+            color: color,
+            size: size,
+            scaleFactor: scaleFactor,
+            style: css,
+            handleClick: props.handleClick
+          });
+        }
+      } // The last one loses its special marginTop
 
 
-function WhosOnline(props) {
-  var list = props.list;
-  var elements = [];
+      if (cell.length > 0) {
+        delete cell[cell.length - 1].style.marginTop;
+      } // Turn the props into a React Piece
 
-  for (var i = 0; i < list.length; i++) {
-    var user = list[i];
-    var connectedIcon = null;
 
-    if (user.connected) {
-      connectedIcon = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
-        className: "material-icons mr-2 text-success"
-      }, "star");
-    } else {
-      connectedIcon = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
-        className: "material-icons mr-2 text-danger"
-      }, "star_outline");
+      cell = cell.map(function (subProps) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_piece_jsx__WEBPACK_IMPORTED_MODULE_1__["default"], subProps);
+      }); // put that cell into a <td>
+
+      cols.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("td", {
+        key: color + size.toString()
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "flexxer"
+      }, cell)));
+    } // put that column into a <tr>
+
+
+    rows.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tr", {
+      key: color
+    }, cols));
+  } // put those rows into a <table>
+
+
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("table", {
+    className: "stash-table"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("tbody", null, rows));
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (Stash);
+
+/***/ }),
+
+/***/ "./scripts/game/system.jsx":
+/*!*********************************!*\
+  !*** ./scripts/game/system.jsx ***!
+  \*********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _piece_jsx__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./piece.jsx */ "./scripts/game/piece.jsx");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+// system.js
+// 
+// Holds one star system.
+
+
+
+var System = /*#__PURE__*/function (_React$Component) {
+  _inherits(System, _React$Component);
+
+  var _super = _createSuper(System);
+
+  function System(props) {
+    _classCallCheck(this, System);
+
+    return _super.call(this, props);
+  } // for use in .sort()
+
+
+  _createClass(System, [{
+    key: "getShipSortScore",
+    value: function getShipSortScore(reactElement) {
+      var props = reactElement.props; // size comes first, then color (alphabetical, blue comes first)
+      // enemy ships are sorted backwards
+
+      return (props.size * 1000 - props.color.charCodeAt(0)) * (props.rotation ? -1 : 1);
     }
+  }, {
+    key: "render",
+    value: function render() {
+      // Calculate opponent's ships and your ships
+      // TODO: change to implement SVG and then 3-4 players
+      var enemyShips = [];
+      var yourShips = [];
+      var stars = []; // do the ships first
 
-    elements.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("li", {
-      key: user.username
-    }, connectedIcon, user.username, "\xA0 (", user.elo, ")"));
-  }
+      var ships = this.props.ships;
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("ul", null, elements);
-}
+      for (var i = 0; i < ships.length; i++) {
+        var shipData = ships[i]; // Rotate enemy ships by 180 degrees
 
-/* harmony default export */ __webpack_exports__["default"] = (WhosOnline);
+        var rotation = 0;
 
-/***/ }),
+        if (shipData.owner !== this.props.viewer) {
+          rotation = 180;
+        }
 
-/***/ "./scripts/lobby/whosPlaying.jsx":
-/*!***************************************!*\
-  !*** ./scripts/lobby/whosPlaying.jsx ***!
-  \***************************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+        var shipElement = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_piece_jsx__WEBPACK_IMPORTED_MODULE_1__["default"], {
+          key: shipData.serial,
+          serial: shipData.serial,
+          type: "ship",
+          size: shipData.size,
+          color: shipData.color,
+          symbolMode: false,
+          rotation: rotation,
+          scaleFactor: this.props.scaleFactor,
+          handleClick: this.props.handleBoardClick
+        });
 
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-// whosPlaying.jsx
-//
-// Like whosOnline but displays who is playing currently
+        if (shipData.owner === this.props.viewer) {
+          yourShips.push(shipElement);
+        } else {
+          enemyShips.push(shipElement);
+        }
+      } // sort them
 
 
-function WhosPlaying(props) {
-  var list = props.list;
-  var elements = [];
+      var sortCompare = function (ship1, ship2) {
+        return this.getShipSortScore(ship2) - this.getShipSortScore(ship1);
+      }.bind(this);
 
-  for (var i = 0; i < list.length; i++) {
-    var user = list[i];
-    elements.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("li", {
-      key: user.username
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("a", {
-      href: "/game/" + user.gameID
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
-      className: "material-icons mr-2 text-info"
-    }, user.connected ? "pending" : "power_off"), user.username, "(", user.elo, ") game #", user.gameID)));
-  }
+      yourShips.sort(sortCompare);
+      enemyShips.sort(sortCompare); // now do stars
 
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("ul", null, elements);
-}
+      for (var _i = 0; _i < this.props.stars.length; _i++) {
+        var star = this.props.stars[_i]; // nothing fancy to do here
 
-/* harmony default export */ __webpack_exports__["default"] = (WhosPlaying);
+        stars.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_piece_jsx__WEBPACK_IMPORTED_MODULE_1__["default"], {
+          key: star.serial,
+          serial: star.serial,
+          type: "star",
+          size: star.size,
+          color: star.color,
+          symbolMode: false,
+          rotation: 0,
+          scaleFactor: this.props.scaleFactor,
+          handleClick: this.props.handleBoardClick
+        }));
+      } // if homeworld, apply appropriate class
+
+
+      var className = "system-container";
+
+      if (this.props.homeworld) {
+        // It could either be us or our opponent.
+        if (this.props.homeworld == this.props.viewer) {
+          className += " homeworld homeworld-yours";
+        } else {
+          className += " homeworld homeworld-enemy";
+        }
+      } // stars will be inserted in the middle of course
+
+
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: className
+      }, this.props.id, enemyShips, stars, yourShips);
+    }
+  }]);
+
+  return System;
+}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
+
+/* harmony default export */ __webpack_exports__["default"] = (System);
 
 /***/ }),
 
@@ -40475,4 +43169,4 @@ function WhosPlaying(props) {
 /***/ })
 
 /******/ });
-//# sourceMappingURL=lobby.js.map
+//# sourceMappingURL=liveGame.js.map

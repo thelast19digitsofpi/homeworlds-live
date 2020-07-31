@@ -46,11 +46,16 @@ app.use(express.urlencoded());
 // Static directories.
 app.use('/images', express.static("images"));
 app.use('/styles', express.static("styles"));
-app.use('/scripts', express.static("scripts"));
+app.use('/scripts', express.static("dist"));
 
 // Use EJS
+const ejs = require("ejs");
+ejs.fileLoader = function(filePath) {
+	return (fs.readFileSync(filePath)).toString()
+		.replace(/<script/g, `<script nonce="<%- nonce %>"`);
+}
 app.set('view engine', 'ejs');
-//app.set('views', path.join(__dirname, "/dist/views"));
+app.set('views', path.join(__dirname, "../dist"));
 
 app.use(function(req, res, next) {
 	res.locals.render = {};
@@ -60,7 +65,8 @@ app.use(function(req, res, next) {
 			throw err;
 		}
 		// base64 but made url-safe
-		res.locals.render.nonce = buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_");
+		res.locals.render.nonce = buf.toString("base64");
+		res.set("Content-Security-Policy", `script-src 'nonce-${res.locals.render.nonce}'`);
 		next();
 	});
 });

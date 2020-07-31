@@ -1,8 +1,8 @@
 {
 	"name": "homeworlds-live",
-	"version": "0.0.1",
+	"version": "0.1.1",
 	"description": "Real-time implementation of Homeworlds board game",
-	"license": "GPL-3.0-or-later",
+	"license": "MIT",
 	"dependencies": {
 		"argon2": "^0.26.2",
 		"babel-cli": "^6.26.0",
@@ -28,6 +28,7 @@
 		"@babel/preset-react": "^7.10.4",
 		"babel-loader": "^8.1.0",
 		"clean-webpack-plugin": "^3.0.0",
+		"copy-webpack-plugin": "^6.0.3",
 		"html-webpack-plugin": "^4.3.0",
 		"jquery": "^3.5.1",
 		"popper": "^1.0.1",
@@ -38,6 +39,8 @@
 	"scripts": {
 		"dev": "webpack --mode development",
 		"start": "webpack-dev-server --mode development --open",
-		"build": "webpack --mode production"
+		"build": "webpack --mode production",
+		"watch": "webpack --watch",
+		"watch-dev": "webpack --mode development --watch"
 	}
 }

@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/sandbox.jsx");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/archiveViewer.jsx");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -28876,6 +28876,200 @@ function ActionsPopup(props) {
 
 /***/ }),
 
+/***/ "./scripts/game/archiveViewer.jsx":
+/*!****************************************!*\
+  !*** ./scripts/game/archiveViewer.jsx ***!
+  \****************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
+/* harmony import */ var _game_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./game.jsx */ "./scripts/game/game.jsx");
+/* harmony import */ var _unpackSummary_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./unpackSummary.js */ "./scripts/game/unpackSummary.js");
+// archiveViewer.jsx
+//
+// Lets you look thru a past game
+
+
+
+
+ // this is definitely not "proper" React, right?
+// who cares?
+// they don't want me to use inheritance which would actually make sense here
+// and this is a module so they aren't even global scope pollutants
+
+function moveToIndex(t, a) {
+  // note this simply fails if either index is invalid
+  if (!this.state.history[t] || !this.state.history[t][a]) {
+    console.log("Bad indices", t, a);
+    return;
+  }
+
+  this.setState({
+    current: this.state.history[t][a],
+    turnIndex: t,
+    actionIndex: a
+  });
+}
+
+function moveToBeginning() {
+  // simple
+  moveToIndex.call(this, 0, 0);
+}
+
+function backTurn() {
+  if (this.state.turnIndex <= 0) {
+    moveToBeginning.call(this);
+  } else {
+    moveToIndex.call(this, this.state.turnIndex - 1, 0);
+  }
+}
+
+function backAction() {
+  console.log(this.state.actionIndex, this.state.turnIndex);
+
+  if (this.state.actionIndex <= 0) {
+    // go back to the last thing on the previous turn
+    if (this.state.turnIndex <= 0) {
+      // we are at (0, 0)
+      moveToBeginning.call(this);
+    } else {
+      // move from (n, 0) to (n-1, end)
+      var newTurnIndex = this.state.turnIndex - 1;
+      moveToIndex.call(this, newTurnIndex, this.state.history[newTurnIndex].length - 1);
+    }
+  } else {
+    moveToIndex.call(this, this.state.turnIndex, this.state.actionIndex - 1);
+  }
+} // the forward ones are a little tricky
+
+
+function forwardAction() {
+  if (this.state.actionIndex + 1 >= this.state.history[this.state.turnIndex].length) {
+    forwardTurn.call(this);
+  } else {
+    moveToIndex.call(this, this.state.turnIndex, this.state.actionIndex + 1);
+  }
+}
+
+function forwardTurn() {
+  if (this.state.turnIndex + 1 >= this.state.history.length) {
+    moveToEnd.call(this);
+  } else {
+    // we still start at the beginning of the turn
+    moveToIndex.call(this, this.state.turnIndex + 1, 0);
+  }
+}
+
+function moveToEnd() {
+  // all right I give in
+  var turnIndex = this.state.history.length - 1;
+  moveToIndex.call(this, turnIndex, this.state.history[turnIndex].length - 1);
+}
+
+function ArchiveWrapper(props) {
+  var methods = props.reactState.methods;
+
+  var iconify = function iconify(type) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+      className: "material-icons md-24 align-middle"
+    }, type);
+  };
+
+  var btnClass = "btn btn-secondary";
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+    className: "btn-group",
+    role: "group",
+    style: {
+      verticalAlign: "middle"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: btnClass,
+    onClick: methods.moveToBeginning
+  }, iconify("skip_previous"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "align-middle"
+  }, "Beginning")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: btnClass,
+    onClick: methods.backTurn
+  }, iconify("fast_rewind"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "align-middle"
+  }, "Turn")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: btnClass,
+    onClick: methods.backAction
+  }, iconify("chevron_left"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "align-middle"
+  }, "Action")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: btnClass,
+    onClick: methods.forwardAction
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "align-middle"
+  }, "Action"), iconify("chevron_right")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: btnClass,
+    onClick: methods.forwardTurn
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "align-middle"
+  }, "Turn"), iconify("fast_forward")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: btnClass,
+    onClick: methods.moveToEnd
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "align-middle"
+  }, "End"), iconify("skip_next"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, props.children));
+}
+
+var ArchiveGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(ArchiveWrapper, {
+  canInteract: function canInteract() {
+    return false;
+  },
+  onMount: function onMount() {
+    var results = Object(_unpackSummary_js__WEBPACK_IMPORTED_MODULE_4__["default"])(this.props.players, this.props.summary);
+    console.log(results);
+
+    if (results.error) {
+      console.error(results.error);
+    }
+
+    console.log("state");
+    this.setState({
+      viewer: this.props.players[0],
+      current: results.currentState,
+      history: results.history,
+      winner: results.winner,
+      // the last element from the array
+      turnIndex: results.history.length - 1,
+      // the last element from the last element from the array... yeah
+      // || [] just to prevent errors
+      actionIndex: (results.history[results.history.length - 1] || []).length - 1,
+      // ok this is serious abuse of the React model
+      // consider it my "revenge", served cold...
+      methods: {
+        moveToBeginning: moveToBeginning.bind(this),
+        backTurn: backTurn.bind(this),
+        backAction: backAction.bind(this),
+        forwardTurn: forwardTurn.bind(this),
+        forwardAction: forwardAction.bind(this),
+        moveToEnd: moveToEnd.bind(this)
+      }
+    });
+    window._a = this;
+  }
+}, {
+  turnIndex: 0,
+  actionIndex: 0,
+  methods: {}
+});
+react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(ArchiveGame, {
+  players: GAME_INFO.players,
+  summary: GAME_INFO.summary
+}), document.getElementById("game-container"));
+
+/***/ }),
+
 /***/ "./scripts/game/game.jsx":
 /*!*******************************!*\
   !*** ./scripts/game/game.jsx ***!
@@ -31262,44 +31456,6 @@ function Piece(props) {
 
 /***/ }),
 
-/***/ "./scripts/game/sandbox.jsx":
-/*!**********************************!*\
-  !*** ./scripts/game/sandbox.jsx ***!
-  \**********************************/
-/*! no exports provided */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _game_jsx__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./game.jsx */ "./scripts/game/game.jsx");
-// sandbox.jsx
-//
-// Allows you to move pieces around and do everything. Could be used to set up puzzles, if you can move the pieces to the right positions.
-
-
-
-
-function SandboxDisplay(props) {
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-    className: "sandbox"
-  }, props.children);
-} // the empty object is because we have no events
-
-
-var GameSandbox = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_2__["default"])(SandboxDisplay, {}, {
-  actionInProgress: {
-    type: "homeworld",
-    player: "south"
-  }
-});
-react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(GameSandbox, null), document.getElementById('game-container'));
-
-/***/ }),
-
 /***/ "./scripts/game/starmap.jsx":
 /*!**********************************!*\
   !*** ./scripts/game/starmap.jsx ***!
@@ -32063,7 +32219,124 @@ var System = /*#__PURE__*/function (_React$Component) {
 
 /* harmony default export */ __webpack_exports__["default"] = (System);
 
+/***/ }),
+
+/***/ "./scripts/game/unpackSummary.js":
+/*!***************************************!*\
+  !*** ./scripts/game/unpackSummary.js ***!
+  \***************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
+// unpackSummary.js
+//
+// as you would expect, it unpacks a game summary generated by my algorithm on the server
+
+
+
+function unpackSummary(players, summary) {
+	let currentState = new _gameState_mjs__WEBPACK_IMPORTED_MODULE_0__["default"](players);
+	let history = [[currentState]];
+	let winner = null;
+	// read from the summary
+	const lines = summary.split("\n");
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		// we already know the players
+		if (line.substring(0, 8) === "Players:") {
+			continue;
+		}
+		// the winner would be nice to know
+		if (line.substring(0, 7) === "Winner:") {
+			// get everything after the first space
+			// Winner: bob
+			winner = line.split(" ")[1];
+			continue;
+		}
+		// ignore blank lines
+		if (line.trim().length === 0) {
+			continue;
+		}
+		
+		// otherwise assume it is a turn
+		const turnActions = line.split(";");
+		for (let j = 0; j < turnActions.length; j++) {
+			const parts = turnActions[j].split(",");
+			// convert build/move/catastrophe systems to numbers
+			if (parts[0] === "b" || parts[0] === "m" || parts[0] === "c") {
+				parts[2] = Number(parts[2]);
+			}
+			
+			// it is already in the correct order for doAction()
+			const actionMethod = {
+				h: "doHomeworld",
+				b: "doBuild",
+				t: "doTrade",
+				m: "doMove",
+				d: "doDiscovery",
+				x: "doSteal",
+				s: "doSacrifice",
+				c: "doCatastrophe",
+				e: "manuallyEliminatePlayer",
+			}[parts[0]];
+			
+			if (!actionMethod) {
+				console.warn("Bad action!", parts, "\nline was:", line);
+			}
+			
+			const params = parts.slice(1);
+			// for some reason, catastrophe and eliminate do not ask for the current player's turn
+			if (parts[0] !== "c" && parts[0] !== "e") {
+				params.unshift(currentState.turn);
+			}
+			
+			try {
+				const newState = currentState[actionMethod].apply(currentState, params);
+				history[history.length - 1].push(newState);
+				currentState = newState;
+			} catch (error) {
+				// end it here and display the error
+				return {
+					// all the normal data
+					history: history,
+					currentState: currentState,
+					winner: winner,
+					
+					error: `There is a problem with that game archive! The action stuck was: ${actionMethod} ${params.join(", ")}. The error message was: ${error.message}. (This could be a bug.)`,
+				};
+			}
+		}
+		// now end the turn
+		try {
+			const endTurnState = currentState.doEndTurn();
+			history.push([endTurnState]);
+			currentState = endTurnState;
+		} catch (error) {
+			return {
+				history: history,
+				currentState: currentState,
+				winner: winner,
+				
+				error: `There is a problem with that game archive! Something happened at the end of ${currentState.turn}'s turn: ${error.message}. (This could be a bug.)`,
+			};
+		}
+	}
+	
+	// now return everything
+	return {
+		history: history,
+		currentState: currentState,
+		winner: winner,
+		error: null
+	};
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (unpackSummary);
+
 /***/ })
 
 /******/ });
-//# sourceMappingURL=sandbox.js.map
+//# sourceMappingURL=archiveGame.js.map
