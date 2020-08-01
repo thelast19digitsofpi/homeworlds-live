@@ -23,7 +23,7 @@ function Lobby() {
 	this.gameRooms = [];
 	// note: should I perhaps save this to the database?
 	this.gameRoomID = 0;
-	db.get("SELECT MAX(id) FROM gameArchive", [], function(err, data) {
+	db.get("SELECT MAX(id) as max FROM gameArchive", [], function(err, data) {
 		if (err || isNaN(data.max)) {
 			this.gameRoomID = 1;
 		} else {

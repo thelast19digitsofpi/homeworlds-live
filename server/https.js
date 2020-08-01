@@ -15,19 +15,59 @@ const ip = require("ip");
 
 const cookieParser = require('cookie-parser');
 
-// Load up HTTPS stuff.
-const options = {
-	key: fs.readFileSync("key.pem"),
-	cert: fs.readFileSync("cert.pem")
-};
-//console.warn("Options:", options);
-// Create the server.
+
 const app = express();
-const httpsServer = https.createServer(options, app);
+let server = null;
+
+// If running on glitch.com, use a different option
+if (process.env.MADE_WITH === "glitch.com") {
+	server = app; // just use default http server internally
+	// but use https here
+	app.use(function(req, res, next) {
+		// thanks to https://support.glitch.com/t/force-glitch-projects-to-use-https/5918
+		if (req.get('X-Forwarded-Proto').indexOf("https") !== -1) {
+			return next();
+		} else {
+			res.redirect('https://' + req.hostname + req.url);
+		}
+	});
+} else {
+	// running on local server
+	// Load up HTTPS stuff.
+	const options = {
+		key: fs.readFileSync("key.pem"),
+		cert: fs.readFileSync("cert.pem")
+	};
+	//console.warn("Options:", options);
+	// Create the server.
+	server = https.createServer(options, app);
+}
 
 // Get listening port.
 // if we are on Glitch, use process.env.PORT, otherwise use 3443
 const port = process.env.PORT || 8443;
+
+
+// For demo purposes
+const authHash = process.env.PASSWORD_HASH;
+console.log(authHash);
+if (authHash) {
+	app.use(async function(req, res, next) {
+		// parse login and password from headers
+		// https://stackoverflow.com/questions/23616371/
+		const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
+		const password = Buffer.from(b64auth, 'base64').toString().split(':')[1] || ''
+		console.log(password);
+		// Verify login and password are set and correct
+		if (await a2.verify(authHash, password)) {
+			// Access granted...
+			return next()
+		} else {
+			res.set('WWW-Authenticate', 'Basic realm="You need the password to view this demo (ignore the username)"');
+			res.status(401).send('You need the password to view this demo!');
+		}
+	})
+}
 
 
 
@@ -77,7 +117,7 @@ app.get(/favicon\.ico/, function(req, res, next) {
 })
 
 // launch the app!
-const listener = httpsServer.listen(port, function() {
+const listener = server.listen(port, function() {
 	console.log("Launching!!", listener.address().port);
 	// for testing purposes
 	console.log(ip.address());
@@ -86,7 +126,7 @@ const listener = httpsServer.listen(port, function() {
 
 module.exports = {
 	app: app,
-	httpsServer: httpsServer,
+	httpsServer: server,
 	// because Glitch hosting is unstable and turns off after 12 hours of constant running
 	launchTime: launchTime
 };

@@ -53,7 +53,7 @@ function Stash(props) {
 			// put that cell into a <td>
 			cols.push(
 				<td key={color + size.toString()}>
-					<div className="flexxer">{cell}</div>
+					<div className="d-flex flex-column-reverse">{cell}</div>
 				</td>
 			)
 		}
