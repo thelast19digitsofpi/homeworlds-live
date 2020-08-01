@@ -1,10 +1,11 @@
 # homeworlds-live
 
-This is going to be a real-time web implementation of the two-player strategy board game (Binary) [Homeworlds](https://www.looneylabs.com/games/homeworlds), published by Looney Labs. I am not affiliated with them (but I do like their games; you should check them out).
+This is going to be a real-time web implementation of the two-player strategy board game (Binary) [Homeworlds](https://www.looneylabs.com/games/homeworlds), published by Looney Labs. I am not affiliated with them (but I do like their games; you should perhaps check them out).
 
-It is still in progress. Actually, assuming I did not break anything, you can start and play games and it declares a winner, but it does not store anything or have a tutorial. I just resisted putting it on GitHub because I wanted to provide proper attribution for the game (and because I was unsure about licensing).
+It is still in progress. Actually, assuming I did not break anything, you can start and play games and it declares a winner, but it does not have a tutorial. I just resisted putting it on GitHub because I wanted to provide proper attribution for the game (and because I was unsure about licensing).
 
- 
+
+
 
 ### Star map implementation
 Should there be need for it, here is how I organized the star map (arrangement of pieces):
@@ -16,8 +17,8 @@ Should there be need for it, here is how I organized the star map (arrangement o
 - Homeworld data is a separate object: `{playerName: systemNumber}`.
 
 ### Licensing
-Before anyone runs off with this, I want to ask Looney Labs exactly what their stance is on projects like this. I did ask a while back and someone said it would be okay to make something like this but then I realized open source licenses are tricky... and I'm just a bit nervous because I don't know that much about copyright stuff.
 
-That being said, I did formerly state that this **implementation** of the game of Homeworlds was licensed under GPL 3.0. I do not own the **game**, though, so I'm not sure how exactly that plays in to the license.
+Ugh. This is the one thing I'm not entirely sure how to handle.
 
-Argh I'm just paranoid for no reason. If you are reading this, just... don't abuse this, all right?
+I am not a lawyer, but I don't know if I actually can give this e.g. the MIT license or the GPL, because I do not own the game itself.
+
