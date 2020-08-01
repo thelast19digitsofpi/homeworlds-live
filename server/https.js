@@ -7,11 +7,13 @@ const launchTime = Date.now();
 
 // Requirements.
 const https = require("https");
+const http = require("http");
 const fs = require("fs");
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
 const ip = require("ip");
+const a2 = require("argon2"); // only for demo authentication
 
 const cookieParser = require('cookie-parser');
 
@@ -21,7 +23,7 @@ let server = null;
 
 // If running on glitch.com, use a different option
 if (process.env.MADE_WITH === "glitch.com") {
-	server = app; // just use default http server internally
+	server = http.createServer(app); // just use default http server internally
 	// but use https here
 	app.use(function(req, res, next) {
 		// thanks to https://support.glitch.com/t/force-glitch-projects-to-use-https/5918
@@ -57,7 +59,7 @@ if (authHash) {
 		// https://stackoverflow.com/questions/23616371/
 		const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
 		const password = Buffer.from(b64auth, 'base64').toString().split(':')[1] || ''
-		console.log(password);
+		//console.log(password);
 		// Verify login and password are set and correct
 		if (await a2.verify(authHash, password)) {
 			// Access granted...

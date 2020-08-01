@@ -2,7 +2,10 @@
 	"name": "homeworlds-live",
 	"version": "0.1.1",
 	"description": "Real-time implementation of Homeworlds board game",
-	"license": "MIT",
+	"license": "GPL-3.0-or-later",
+	"engines": {
+		"node": "12.0.0"
+	},
 	"dependencies": {
 		"argon2": "^0.26.2",
 		"babel-cli": "^6.26.0",
@@ -38,7 +41,7 @@
 	},
 	"scripts": {
 		"dev": "webpack --mode development",
-		"start": "webpack-dev-server --mode development --open",
+		"start": "node --experimental-modules main.js",
 		"build": "webpack --mode production",
 		"watch": "webpack --watch",
 		"watch-dev": "webpack --mode development --watch"
