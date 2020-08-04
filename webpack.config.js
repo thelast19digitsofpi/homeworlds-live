@@ -27,7 +27,6 @@ module.exports = {
 				"views/headElement.ejs",
 				"views/header.ejs",
 				"views/footer.ejs",
-				"views/tutorial.ejs",
 				"views/archiveTable.ejs",
 			],
 		}),
@@ -54,6 +53,12 @@ module.exports = {
 			chunks: ["vendor", "archiveGame"],
 			filename: "./archiveViewer.ejs",
 			template: "./views/archiveViewer.ejs",
+		}),
+		new HtmlWebpackPlugin({
+			hash: true,
+			chunks: ["vendor", "tutorial"],
+			filename: "./tutorial.ejs",
+			template: "./views/tutorial.ejs",
 		}),
 	].concat(simplePages),
 	mode: "production",
@@ -91,6 +96,7 @@ module.exports = {
 		lobby: path.resolve(__dirname, "scripts", "lobby", "mainLobby.jsx"),
 		liveGame: path.resolve(__dirname, "scripts", "game", "liveGame.jsx"),
 		archiveGame: path.resolve(__dirname, "scripts", "game", "archiveViewer.jsx"),
+		tutorial: path.resolve(__dirname, "scripts", "game", "tutorialGame.jsx"),
 	},
 	output: {
 		publicPath: '/scripts',

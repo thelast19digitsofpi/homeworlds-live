@@ -103,3 +103,20 @@ body {
 #game-log {
 	min-height: 3.5em;
 }
+
+/* Tutorials */
+.tutorial-popup-wrapper {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: rgba(32, 32, 32, 0.5);
+}
+
+.tutorial-popup {
+	max-width: 75%;
+}

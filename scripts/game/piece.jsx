@@ -19,6 +19,7 @@ function Piece(props) {
 	// Size is always the second character e.g. 2 in b2C
 	const size = Number(props.serial[1]);
 	// Get the height of a normal image.
+	let baseWidth = 28 + 20*size;
 	let baseHeight;
 	if (props.type === "star") {
 		baseHeight = 28 + 20 * size;
@@ -32,6 +33,7 @@ function Piece(props) {
 	return <img className="piece"
 	            piecetype={props.type}
 	            src={imageSrc}
+	            width={props.scaleFactor * baseWidth}
 	            height={props.scaleFactor * baseHeight}
 	            style={css}
 	            title={props.serial}

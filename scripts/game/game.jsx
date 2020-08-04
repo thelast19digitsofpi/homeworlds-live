@@ -12,12 +12,14 @@ PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
 
 EVENTS:
 - [ ] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
-- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* counts as *true*, but console.log()s a warning.
+- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
 - [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
 - [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
 - [ ] onAfterEndTurn(player, newState): 
 - [?] onMount(): Called inside componentDidMount.
 - [?] onUnmount(): Called inside componentWillUnmount.
+- [ ] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
+- [ ] onComponentUpdate()
 */
 
 import React from 'react';
@@ -97,6 +99,13 @@ function withGame(WrappedComponent, events, additionalState) {
 				console.log("events.componentWillUnmount -> onUnmount, please");
 				// but do it anyway (this would be a very difficult bug to trace)
 				events.componentWillUnmount.call(this);
+			}
+		}
+		
+		componentDidUpdate() {
+			// call the corresponding method
+			if (events.onComponentUpdate) {
+				events.onComponentUpdate.call(this);
 			}
 		}
 		
@@ -359,7 +368,6 @@ function withGame(WrappedComponent, events, additionalState) {
 		
 		// Handles clicking on any piece on the board.
 		handleBoardClick(piece, event) {
-			console.error(event);
 			window.___lastE = event.nativeEvent;
 			const aip = this.state.actionInProgress;
 			const current = this.getCurrentState();
@@ -622,7 +630,11 @@ function withGame(WrappedComponent, events, additionalState) {
 			const stashScale = (window.innerHeight / 1800) * Math.min(1, 0.75 + numPiecesOnBoard/60);
 			
 			// I am not sure if sending the entire state object is "correct"
-			return <WrappedComponent reactState={this.state} gameState={current}>
+			const moreProps = events.getProps ? events.getProps.call(this) : {};
+			return <WrappedComponent
+					reactState={this.state}
+					gameState={current}
+					{...moreProps}>
 				<div className="game row no-gutters">
 					<div className="star-map-wrapper col">
 						<div className="star-map" style={starMapStyle} ref={this.starMapRef}>

@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<%- include("headElement") %>
-		<title>How to play on Homeworlds Live</title>
+		<title>Tutorial Modules</title>
 	</head>
 	<body>
 		<%- include("header") %>
@@ -10,10 +10,10 @@
 			<h2>Tutorial Page</h2>
 			
 			<p>I am currently working on an interactive tutorial feature. However, <a href="https://www.looneylabs.com">Looney Labs</a> (which I am not affiliated with) has a tutorial video that explains the mechanics of the game.</p>
-			<p>Please also check out <a href="/howThisWorks">How This Site Works</a> for more on the specifics of this website.</p>
 			<p>Seriously, if you haven't already, you should check them out. The pieces you see in the video are an entire game system.</p>
+			<p>Please also see <a href="/howThisWorks">How This Site Works</a> for more on the specifics of this website.</p>
 			
-			<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/Nz16s6oCIlQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen nonce="<%- nonce %>"></iframe>
+			<div id="game-container"></div>
 		</div>
 		
 		<%- include("footer") %>

@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/archiveViewer.jsx");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/tutorialGame.jsx");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -28876,200 +28876,6 @@ function ActionsPopup(props) {
 
 /***/ }),
 
-/***/ "./scripts/game/archiveViewer.jsx":
-/*!****************************************!*\
-  !*** ./scripts/game/archiveViewer.jsx ***!
-  \****************************************/
-/*! no exports provided */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
-/* harmony import */ var _game_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./game.jsx */ "./scripts/game/game.jsx");
-/* harmony import */ var _unpackSummary_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./unpackSummary.js */ "./scripts/game/unpackSummary.js");
-// archiveViewer.jsx
-//
-// Lets you look thru a past game
-
-
-
-
- // this is definitely not "proper" React, right?
-// who cares?
-// they don't want me to use inheritance which would actually make sense here
-// and this is a module so they aren't even global scope pollutants
-
-function moveToIndex(t, a) {
-  // note this simply fails if either index is invalid
-  if (!this.state.history[t] || !this.state.history[t][a]) {
-    console.log("Bad indices", t, a);
-    return;
-  }
-
-  this.setState({
-    current: this.state.history[t][a],
-    turnIndex: t,
-    actionIndex: a
-  });
-}
-
-function moveToBeginning() {
-  // simple
-  moveToIndex.call(this, 0, 0);
-}
-
-function backTurn() {
-  if (this.state.turnIndex <= 0) {
-    moveToBeginning.call(this);
-  } else {
-    moveToIndex.call(this, this.state.turnIndex - 1, 0);
-  }
-}
-
-function backAction() {
-  console.log(this.state.actionIndex, this.state.turnIndex);
-
-  if (this.state.actionIndex <= 0) {
-    // go back to the last thing on the previous turn
-    if (this.state.turnIndex <= 0) {
-      // we are at (0, 0)
-      moveToBeginning.call(this);
-    } else {
-      // move from (n, 0) to (n-1, end)
-      var newTurnIndex = this.state.turnIndex - 1;
-      moveToIndex.call(this, newTurnIndex, this.state.history[newTurnIndex].length - 1);
-    }
-  } else {
-    moveToIndex.call(this, this.state.turnIndex, this.state.actionIndex - 1);
-  }
-} // the forward ones are a little tricky
-
-
-function forwardAction() {
-  if (this.state.actionIndex + 1 >= this.state.history[this.state.turnIndex].length) {
-    forwardTurn.call(this);
-  } else {
-    moveToIndex.call(this, this.state.turnIndex, this.state.actionIndex + 1);
-  }
-}
-
-function forwardTurn() {
-  if (this.state.turnIndex + 1 >= this.state.history.length) {
-    moveToEnd.call(this);
-  } else {
-    // we still start at the beginning of the turn
-    moveToIndex.call(this, this.state.turnIndex + 1, 0);
-  }
-}
-
-function moveToEnd() {
-  // all right I give in
-  var turnIndex = this.state.history.length - 1;
-  moveToIndex.call(this, turnIndex, this.state.history[turnIndex].length - 1);
-}
-
-function ArchiveWrapper(props) {
-  var methods = props.reactState.methods;
-
-  var iconify = function iconify(type) {
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
-      className: "material-icons md-24 align-middle"
-    }, type);
-  };
-
-  var btnClass = "btn btn-secondary";
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
-    className: "btn-group",
-    role: "group",
-    style: {
-      verticalAlign: "middle"
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-    className: btnClass,
-    onClick: methods.moveToBeginning
-  }, iconify("skip_previous"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-    className: "align-middle"
-  }, "Beginning")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-    className: btnClass,
-    onClick: methods.backTurn
-  }, iconify("fast_rewind"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-    className: "align-middle"
-  }, "Turn")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-    className: btnClass,
-    onClick: methods.backAction
-  }, iconify("chevron_left"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-    className: "align-middle"
-  }, "Action")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-    className: btnClass,
-    onClick: methods.forwardAction
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-    className: "align-middle"
-  }, "Action"), iconify("chevron_right")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-    className: btnClass,
-    onClick: methods.forwardTurn
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-    className: "align-middle"
-  }, "Turn"), iconify("fast_forward")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-    className: btnClass,
-    onClick: methods.moveToEnd
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
-    className: "align-middle"
-  }, "End"), iconify("skip_next"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", null, props.children));
-}
-
-var ArchiveGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(ArchiveWrapper, {
-  canInteract: function canInteract() {
-    return false;
-  },
-  onMount: function onMount() {
-    var results = Object(_unpackSummary_js__WEBPACK_IMPORTED_MODULE_4__["default"])(this.props.players, this.props.summary);
-    console.log(results);
-
-    if (results.error) {
-      console.error(results.error);
-    }
-
-    console.log("state");
-    this.setState({
-      viewer: this.props.players[0],
-      current: results.currentState,
-      history: results.history,
-      winner: results.winner,
-      // the last element from the array
-      turnIndex: results.history.length - 1,
-      // the last element from the last element from the array... yeah
-      // || [] just to prevent errors
-      actionIndex: (results.history[results.history.length - 1] || []).length - 1,
-      // ok this is serious abuse of the React model
-      // consider it my "revenge", served cold...
-      methods: {
-        moveToBeginning: moveToBeginning.bind(this),
-        backTurn: backTurn.bind(this),
-        backAction: backAction.bind(this),
-        forwardTurn: forwardTurn.bind(this),
-        forwardAction: forwardAction.bind(this),
-        moveToEnd: moveToEnd.bind(this)
-      }
-    });
-    window._a = this;
-  }
-}, {
-  turnIndex: 0,
-  actionIndex: 0,
-  methods: {}
-});
-react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(ArchiveGame, {
-  players: GAME_INFO.players,
-  summary: GAME_INFO.summary
-}), document.getElementById("game-container"));
-
-/***/ }),
-
 /***/ "./scripts/game/game.jsx":
 /*!*******************************!*\
   !*** ./scripts/game/game.jsx ***!
@@ -32235,122 +32041,632 @@ var System = /*#__PURE__*/function (_React$Component) {
 
 /***/ }),
 
-/***/ "./scripts/game/unpackSummary.js":
+/***/ "./scripts/game/tutorialGame.jsx":
 /*!***************************************!*\
-  !*** ./scripts/game/unpackSummary.js ***!
+  !*** ./scripts/game/tutorialGame.jsx ***!
   \***************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
+/* harmony import */ var _game_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./game.jsx */ "./scripts/game/game.jsx");
+/* harmony import */ var _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../tutorials/tutorialList.js */ "./scripts/tutorials/tutorialList.js");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+
+
+console.log(_tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"]); // hmm could be a bad name
+
+var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
+  _inherits(TutorialWrapper, _React$Component);
+
+  var _super = _createSuper(TutorialWrapper);
+
+  function TutorialWrapper(props) {
+    _classCallCheck(this, TutorialWrapper);
+
+    return _super.call(this, props);
+  }
+
+  _createClass(TutorialWrapper, [{
+    key: "render",
+    value: function render() {
+      var _this = this;
+
+      var parent = this.props.reactState;
+      var tutorial = parent.tutorial;
+      var currentStep = tutorial.steps[parent.stepID];
+      var showPopup = parent.messages && parent.messages.length > 0;
+      var popup = showPopup ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "tutorial-popup-wrapper"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "tutorial-popup card bg-light text-dark border border-primary"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "card-body"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h5", {
+        className: "card-title text-center"
+      }, parent.messageTitle || tutorial.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+        style: {
+          whiteSpace: "pre-line"
+        }
+      }, parent.messages[parent.messageNumber - 1]
+      /* -1 because array index */
+      )), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "card-footer align-center btn-group"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-secondary btn-sm",
+        disabled: parent.messageNumber <= 1,
+        onClick: function onClick() {
+          return _this.props.prevMessage();
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+        className: "material-icons md-24 align-middle"
+      }, "chevron_left")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-secondary",
+        disabled: true
+      }, parent.messageNumber, "/", parent.messages.length), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-secondary btn-sm",
+        onClick: function onClick() {
+          return _this.props.nextMessage();
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+        className: "material-icons md-24 align-middle"
+      }, parent.messageNumber >= parent.messages.length ? "check" : "chevron_right"))))) : null; // ooh this is interesting
+
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "position-relative"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h2", null, tutorial.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+        className: "btn-group"
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-secondary",
+        onClick: function onClick() {
+          return _this.props.displayStartMessage();
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+        className: "material-icons md-18 mr-1 align-middle"
+      }, "restore"), "Show Intro"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-secondary",
+        onClick: function onClick() {
+          return _this.props.displayHint();
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+        className: "material-icons md-18 mr-1 align-middle"
+      }, "help_outline"), "Show Hint")), this.props.children, popup);
+    }
+  }]);
+
+  return TutorialWrapper;
+}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
+
+var methods = {};
+var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(TutorialWrapper, {
+  onMount: function onMount() {
+    var tutorial = _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"][0]; // mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
+
+    var maxSystem = 0;
+
+    for (var serial in tutorial.startMap) {
+      var data = tutorial.startMap[serial];
+
+      if (data && data.at > maxSystem) {
+        maxSystem = data.at;
+      }
+    }
+
+    var gameState = new _gameState_mjs__WEBPACK_IMPORTED_MODULE_2__["default"](tutorial.startMap, "playing", {
+      you: 1,
+      enemy: 2
+    }, // standard procedure
+    maxSystem + 1, ["you", "enemy"], "you", {
+      number: 1,
+      sacrifice: null
+    }, null);
+    this.setState({
+      current: gameState,
+      history: [[gameState]],
+      viewer: "you"
+    }); // some functions
+
+    this.addToActionQueue = function (action) {
+      this.setState(function (reactState) {
+        return {
+          enemyActionQueue: reactState.enemyActionQueue.concat([action])
+        };
+      });
+    }.bind(this); // has to be done one at a time
+
+
+    this.shiftActionQueue = function () {
+      var first = this.state.enemyActionQueue[0];
+      this.setState({
+        enemyActionQueue: this.state.enemyActionQueue.slice(1)
+      });
+      return first;
+    }.bind(this);
+
+    this.displayStartMessage = function () {
+      this.setState(function (reactState) {
+        var step = reactState.tutorial.steps[reactState.stepID];
+        return {
+          messages: step.startMessages,
+          messageTitle: step.title || reactState.tutorial.title,
+          messageNumber: 1,
+          showPopup: true
+        };
+      });
+    }.bind(this); // do it when we launch
+
+
+    this.displayStartMessage(); // more functions
+
+    this.displayHint = function () {
+      var step = this.state.tutorial.steps[this.state.stepID];
+
+      if (step.hint) {
+        this.setState({
+          messages: [step.hint],
+          messageTitle: "Hint",
+          messageNumber: 1
+        });
+      }
+    }.bind(this);
+
+    this.clearMessage = function () {
+      this.setState({
+        messages: null,
+        showPopup: false,
+        messageNumber: 1
+      });
+    }.bind(this); // to move to the next help message
+
+
+    this.nextMessage = function () {
+      if (this.state.messageType !== "start") {
+        this.clearMessage();
+      } else {
+        if (this.state.messageNumber >= this.state.messages.length) {
+          this.clearMessage();
+
+          if (this.state.enemyActionQueue.length > 0) {
+            this.nextEnemyAction();
+          }
+        } else {
+          var step = this.state.tutorial.steps[this.state.stepID];
+          this.setState({
+            messageNumber: this.state.messageNumber + 1
+          });
+        }
+      }
+    }.bind(this);
+
+    this.prevMessage = function () {
+      if (this.state.messageNumber > 1) {
+        var step = this.state.tutorial.steps[this.state.stepID];
+        this.setState({
+          messageNumber: this.state.messageNumber - 1
+        });
+      }
+    }.bind(this);
+
+    this.advanceStep = function () {
+      if (this.state.stepID < this.state.tutorial.steps.length - 1) {
+        this.setState({
+          stepID: this.state.stepID + 1
+        });
+        this.displayStartMessage();
+      } else {
+        this.setState({
+          messageTitle: "Scenario Complete",
+          messages: this.state.tutorial.endMessages,
+          messageNumber: 1
+        });
+      }
+    }.bind(this);
+
+    this.nextEnemyAction = function () {
+      if (this.state.enemyActionQueue.length > 0) {
+        setTimeout(function () {
+          var action = this.shiftActionQueue();
+
+          if (action) {
+            if (action.type === "end-turn") {
+              this.doEndTurn("enemy");
+              this.advanceStep();
+            } else {
+              this.doAction(action, "enemy"); // loop it
+
+              this.nextEnemyAction();
+            }
+          }
+        }.bind(this), 1500); // will adjust
+      }
+    }.bind(this);
+  },
+  getProps: function getProps() {
+    return {
+      setParentState: this.setState.bind(this),
+      nextMessage: this.nextMessage,
+      prevMessage: this.prevMessage,
+      clearMessage: this.clearMessage,
+      displayStartMessage: this.displayStartMessage,
+      displayHint: this.displayHint
+    };
+  },
+  canInteract: function canInteract(gameState) {
+    return gameState.turn === "you";
+  },
+  onBeforeAction: function onBeforeAction(action, player, oldState, newState) {
+    console.log("onBeforeAction", arguments); // don't complain about enemy moves
+
+    if (oldState.turn !== "you") {
+      return true;
+    }
+
+    var step = this.state.tutorial.steps[this.state.stepID];
+
+    if (step.checkAction) {
+      var result = step.checkAction(action, oldState);
+
+      if (result[1]) {
+        this.setState({
+          message: result[1],
+          messageTitle: result[0] ? "Good Choice" : "Try Again!",
+          messageNumber: 1
+        });
+      }
+
+      return result[0];
+    }
+  },
+  onBeforeEndTurn: function onBeforeEndTurn(player, oldState) {
+    if (player !== "you") {
+      return true;
+    }
+
+    var step = this.state.tutorial.steps[this.state.stepID];
+
+    if (step.checkEndTurn) {
+      var result = step.checkEndTurn(this.state.current);
+
+      if (result[1]) {
+        // show a message if they made a wrong decision
+        var resetNote = result[0] ? "" : "\n\n(Click \"Reset Turn\" to try again.)";
+        this.setState({
+          messages: [result[1] + resetNote],
+          messageTitle: result[0] ? "Good Turn" : "Try Again",
+          messageNumber: 1
+        });
+      }
+
+      return result[0];
+    } else {
+      return true;
+    }
+  },
+  onAfterEndTurn: function onAfterEndTurn(player, newState) {
+    // don't call this when the opponent ends their turn.
+    if (player === "enemy") {
+      return true;
+    } // unfortunately I have to do all the same stuff
+
+
+    var step = this.state.tutorial.steps[this.state.stepID];
+
+    if (step.checkEndTurn) {
+      var result = step.checkEndTurn(this.state.current); // do any actions specified
+
+      for (var i = 0; i < result.length; i++) {
+        var maybeAction = result[i];
+        var current = this.getCurrentState();
+
+        if (_typeof(maybeAction) === "object") {
+          this.addToActionQueue(result[i]);
+        }
+      }
+
+      this.addToActionQueue({
+        // not a real action type
+        // just a signifier (see onComponentUpdate)
+        type: "end-turn"
+      });
+    }
+  },
+  onComponentUpdate: function onComponentUpdate() {}
+}, {
+  tutorial: _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"][0],
+  stepID: 0,
+  // these things really belong on TutorialWrapper
+  // but I also need to update them from e.g. onBeforeEndTurn
+  showPopup: true,
+  // Lifting all the state
+  messages: null,
+  messageTitle: null,
+  messageType: "start",
+  messageNumber: 1,
+  // we pass this to the wrapper component which is rendered inside i.e. is the child
+  setParentState: null,
+  // the opponent may need to do several actions at once
+  // I think this is the only way to do it
+  enemyActionQueue: []
+});
+react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(TutorialGame, null), document.getElementById("game-container"));
+
+/***/ }),
+
+/***/ "./scripts/tutorials/tutorialList.js":
+/*!*******************************************!*\
+  !*** ./scripts/tutorials/tutorialList.js ***!
+  \*******************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _gameState_mjs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./gameState.mjs */ "./scripts/game/gameState.mjs");
-// unpackSummary.js
+// tutorialData.js
 //
-// as you would expect, it unpacks a game summary generated by my algorithm on the server
+// just trying to get a sense for what tutorials would look like
+// this is *not* the React component
 
+// import nothing from null;
+// ...right?
 
-
-function unpackSummary(players, summary) {
-	let currentState = new _gameState_mjs__WEBPACK_IMPORTED_MODULE_0__["default"](players);
-	let history = [[currentState]];
-	let winner = null;
-	// read from the summary
-	const lines = summary.split("\n");
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-		// we already know the players
-		if (line.substring(0, 8) === "Players:") {
-			continue;
-		}
-		// the winner would be nice to know
-		if (line.substring(0, 7) === "Winner:") {
-			// get everything after the first space
-			// Winner: bob
-			winner = line.split(" ")[1];
-			continue;
-		}
-		// ignore blank lines
-		if (line.trim().length === 0) {
-			continue;
-		}
-		
-		// otherwise assume it is a turn
-		const turnActions = line.split(";");
-		for (let j = 0; j < turnActions.length; j++) {
-			const parts = turnActions[j].split(",");
-			// convert build/move/catastrophe systems to numbers
-			if (parts[0] === "b" || parts[0] === "m" || parts[0] === "c") {
-				parts[2] = Number(parts[2]);
-			}
-			
-			// it is already in the correct order for doAction()
-			const actionMethod = {
-				h: "doHomeworld",
-				b: "doBuild",
-				t: "doTrade",
-				m: "doMove",
-				d: "doDiscovery",
-				x: "doSteal",
-				s: "doSacrifice",
-				c: "doCatastrophe",
-				e: "manuallyEliminatePlayer",
-			}[parts[0]];
-			
-			if (!actionMethod) {
-				console.warn("Bad action!", parts, "\nline was:", line);
-			}
-			
-			const params = parts.slice(1);
-			// for some reason, catastrophe and eliminate do not ask for the current player's turn
-			if (parts[0] !== "c" && parts[0] !== "e") {
-				params.unshift(currentState.turn);
-			}
-			
-			try {
-				const newState = currentState[actionMethod].apply(currentState, params);
-				history[history.length - 1].push(newState);
-				currentState = newState;
-			} catch (error) {
-				// end it here and display the error
-				return {
-					// all the normal data
-					history: history,
-					currentState: currentState,
-					winner: winner,
-					
-					error: `There is a problem with that game archive! The action stuck was: ${actionMethod} ${params.join(", ")}. The error message was: ${error.message}. (This could be a bug.)`,
-				};
-			}
-		}
-		// now end the turn
-		try {
-			const endTurnState = currentState.doEndTurn();
-			history.push([endTurnState]);
-			currentState = endTurnState;
-		} catch (error) {
-			return {
-				history: history,
-				currentState: currentState,
-				winner: winner,
-				
-				error: `There is a problem with that game archive! Something happened at the end of ${currentState.turn}'s turn: ${error.message}. (This could be a bug.)`,
-			};
-		}
-	}
-	
-	// now return everything
-	return {
-		history: history,
-		currentState: currentState,
-		winner: winner,
-		error: null
-	};
+function Tutorial(data) {
+	this.title = data.title;
+	// the second "t" is important!
+	this.startMap = data.startMap;
+	this.steps = data.steps;
 }
 
-/* harmony default export */ __webpack_exports__["default"] = (unpackSummary);
+const tutorialList = [
+	new Tutorial({
+		title: "Star Connections",
+		startMap: {
+			/*
+			2 (enemy): enemy has b3,g3; stars r1,y3
+			
+			7: enemy has b3,r2; stars y2
+			6: enemy has b2,r1; stars y2
+			
+			8: enemy has b2,r2; stars y3
+			
+			3 (foreign HW): enemy has b3; stars y1,g2
+			
+			5: enemy has b1,b1; stars y1
+			4: enemy has b1,r1; stars y1
+			
+			1 (you): stars y2,y3; you have r2,b2
+			*/
+			
+			b1A: {at: 4, owner: "enemy"},
+			b1B: {at: 5, owner: "enemy"},
+			b1C: {at: 5, owner: "enemy"},
+			b2A: {at: 1, owner: "you"},
+			b2B: {at: 8, owner: "enemy"},
+			b2C: {at: 6, owner: "enemy"},
+			b3A: {at: 4, owner: "enemy"},
+			b3B: {at: 4, owner: "enemy"},
+			b3C: {at: 4, owner: "enemy"},
+		},
+		steps: [
+			{
+				startMessages: [
+					"In Homeworlds, two star systems are connected if and only if they do not share any size stars.",
+					"If you find that a bit confusing, here is a scenario where you move all around the board and get a better grasp for what is going on.",
+					"The enemy will NOT act in this scenario, and I have disabled the trade, sacrifice, and discover actions.\n\nCan you capture all the ships?",
+				],
+				hint: "Just move your red ship out.",
+				checkAction: function(action) {
+					if (action.type !== "move") {
+						return [false, "I'd prefer you stick to movement and capturing for now."];
+					}
+					if (action.oldPiece !== "r2A") {
+						return [false, "I'd prefer you move the red ship, so you can directly capture other ships."];
+					}
+				},
+			},
+			{
+				id: "loop",
+				startMessages: [],
+				hint: "Systems are connected if they are DIFFERENT sizes. It may take you two turns to get where you want to go...",
+				
+				// undefined/null => go to next
+				// number => offset (e.g. 2 = go ahead 2 steps), can be negative, if overflows then we finish
+				// "end" => finish tutorial (Infinity also works)
+				// other string => step with matching "id" property
+				nextStep: function(state) {
+					if ("condition") {
+						return "loop";
+					}
+				},
+			}
+		],
+	}),
+	
+	new Tutorial({
+		title: "Direct Assault",
+		startMap: {
+			/*
+			2 (enemy): enemy has g2,g1,y1; stars b2,r3; 
+			
+			3: enemy has b2,y2,r2; stars g1
+			4: stars b1, you have r3,y2
+			
+			5: enemy has y3, stars g3, you have b2,r1
+			
+			1 (you): stars b1,r2; you have y3,g1,g2
+			*/
+			
+			b1A: {at: 1, owner: null},
+			b1B: {at: 4, owner: null},
+			b1C: null,
+			b2A: {at: 5, owner: "you"},
+			b2B: {at: 2, owner: null},
+			b2C: {at: 3, owner: "enemy"},
+			b3A: null,
+			b3B: null,
+			b3C: null,
+			
+			g1A: {at: 1, owner: "you"},
+			g1B: {at: 3, owner: null},
+			g1C: {at: 2, owner: "enemy"},
+			g2A: {at: 1, owner: "you"},
+			g2B: {at: 2, owner: "enemy"},
+			g2C: null,
+			g3A: {at: 5, owner: "you"},
+			g3B: {at: 5, owner: null},
+			g3C: null,
+			
+			r1A: {at: 5, owner: "you"},
+			r1B: {at: 3, owner: "enemy"},
+			r1C: null,
+			r2A: {at: 1, owner: null},
+			r2B: null,
+			r2C: null,
+			r3A: {at: 4, owner: "you"},
+			r3B: null,
+			r3C: {at: 2, owner: null},
+			
+			y1A: {at: 2, owner: "enemy"},
+			y1B: null,
+			y1C: null,
+			y2A: {at: 4, owner: "you"},
+			y2B: {at: 3, owner: "enemy"},
+			y2C: null,
+			y3A: {at: 1, owner: "you"},
+			y3B: {at: 5, owner: "enemy"},
+			y3C: null,
+		},
+		steps: [
+			{
+				startMessages: [
+					// dunno if the \n's will do anything
+					"Now, let's learn how to actually win a game!\nAs we have said, you lose the game if you ever have zero ships at your homeworld.",
+					"One way to win is to use the red (steal) ability to capture all your opponent's ships.",
+					"Here is an example. Can you invade the opponent's homeworld?"
+				],
+				hint: "There's a nice big ship you have right next to their homeworld...",
+				checkAction: function(action, oldState) {
+					console.log(action);
+					if (action.type === "sacrifice") {
+						return [false, "You don't need to sacrifice anything. A simple movement will do."];
+					}
+					if (action.type === "discover") {
+						return [false, "You don't need to discover a *new* system, just invade their homeworld!"];
+					}
+					if (action.type !== "move") {
+						return [false, "You need to move a ship to invade!"];
+					}
+					// 2 is the enemy's homeworld
+					if (action.system !== 2) {
+						return [false, "Let's try moving a ship directly into their homeworld."];
+					}
+					// r3A is the red you have to invade with
+					if (action.oldPiece !== "r3A") {
+						return [false, "Almost there! A medium won't do, because your opponent has a medium as well and can just capture yours. But do you have something stronger?"];
+					}
+					return [true, "You got it! Remember to end your turn..."];
+				},
+				checkEndTurn: function(oldState) {
+					return [true, "Great! Now, let's see what your opponent does...", {
+						// opponent response(s)
+						type: "discover",
+						oldPiece: "b2C",
+						newPiece: "g2C",
+					}];
+				}
+			},
+			{
+				startMessages: [
+					"Fortunately for you, they don't have any large ships and can't attack you first!",
+					"Let's raid their homeworld! To capture a ship, click on the enemy's ship first.",
+				],
+				hint: "All you need to do is capture one of their ships.",
+				checkAction: function(action, oldState) {
+					if (action.type !== "steal") {
+						return [false, "You need to capture ships at the enemy's homeworld to win!"];
+					}
+					return [true, null];
+				},
+				checkEndTurn: function(oldState) {
+					return [true, "One down, two to go... wait, what's this?!", {
+						type: "build",
+						newPiece: "g3C",
+						system: 2,
+					}];
+				}
+			},
+			{
+				title: "Problem... or not?",
+				startMessages: [
+					"Looks like your opponent has built a large ship now! But it's your turn...",
+				],
+				hint: "The biggest obstacle should be dealt with first.",
+				checkAction: function(action, oldState) {
+					// sacrifice green to cause catastrophe or sacrifice yellow to move G3 in
+					if (action.type === "sacrifice") {
+						if (action.oldPiece[0] === "g" || action.oldPiece[0] === "y") {
+							return [true]; // if they have an idea let them use it
+						} else if (action.oldPiece[0] === "r3A") {
+							return [false, "Trying to be efficient, eh?\nYou can't have your ship and sacrifice it too...\n\n(you can't capture the large green if you don't have a large anymore)"];
+						}
+					}
+					if (action.type === "steal") {
+						return [true]; // let them make the mistake if it's not the G3
+					}
+					
+					return [false, "You need to capture ALL of the ships at the enemy's homeworld to win!"]
+				},
+				checkEndTurn: function(oldState) {
+					// did you find a way to destroy the g3?
+					if (oldState.map.g3C === null) {
+						return [true, "Clever! You could have just attacked the large green, but it's good to think creatively on things like this!"]
+					} else if (oldState.map.g3C.owner === "you") {
+						return [true, "Good. As soon as they build anything, you just take it."];
+					}
+				}
+			}
+		],
+		endMessages: [
+			"Nice work. Keep in mind this only worked because your opponent did not have a large ship at their home.",
+			"If they had, they could have attacked you when you came in...",
+			"In the next two modules we will look at a few other ways to win."
+		],
+	}),
+]
+
+/* harmony default export */ __webpack_exports__["default"] = (tutorialList);
+
 
 /***/ })
 
 /******/ });
-//# sourceMappingURL=archiveGame.js.map
+//# sourceMappingURL=tutorial.js.map
