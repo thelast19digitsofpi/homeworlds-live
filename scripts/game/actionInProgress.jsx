@@ -8,6 +8,7 @@ import Piece from './piece.jsx';
 
 function ActionInProgress(props) {
 	const aip = props.actionInProgress;
+	const turnActions = props.turnActions;
 	if (aip) {
 		const message = "Click on " + (
 			aip.type === "trade" ? "a piece in the stash to TRADE for" :
@@ -41,6 +42,22 @@ function ActionInProgress(props) {
 		return <p className="alert alert-secondary">
 			{stars || <i className="material-icons mr-1">{icon}</i>}
 			{message}
+		</p>;
+	} else if (turnActions && turnActions.sacrifice) {
+		const color = {
+			'b': "blue",
+			'g': "green",
+			'r': "red",
+			'y': "yellow",
+		}[turnActions.sacrifice];
+		const type = {
+			'b': "trade",
+			'g': "build",
+			'r': "capture",
+			'y': "move/discover",
+		}[turnActions.sacrifice];
+		return <p className="alert alert-light">
+			You have sacrificed a {color} ship. You have {turnActions.number} {type} {turnActions.number === 1 ? 'action' : 'actions'} left.
 		</p>;
 	} else {
 		return null;

@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/tutorialGame.jsx");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./scripts/game/tutorialManager.jsx");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -28724,6 +28724,7 @@ __webpack_require__.r(__webpack_exports__);
 
 function ActionInProgress(props) {
   var aip = props.actionInProgress;
+  var turnActions = props.turnActions;
 
   if (aip) {
     var message = "Click on " + (aip.type === "trade" ? "a piece in the stash to TRADE for" : aip.type === "move" ? "any star on the board to MOVE there" : aip.type === "discover" ? "a piece in the stash to DISCOVER" : aip.type === "homeworld" ? !aip.star1 ? "a piece in the stash for your FIRST star" : !aip.star2 ? "a piece in the stash for your SECOND star" : !aip.ship ? "a piece in the stash for your SHIP" : "the END TURN button to finalize!" : "...something... [this is probably a bug!]"); // use the correct icon
@@ -28752,6 +28753,22 @@ function ActionInProgress(props) {
     }, stars || /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
       className: "material-icons mr-1"
     }, icon), message);
+  } else if (turnActions && turnActions.sacrifice) {
+    var color = {
+      'b': "blue",
+      'g': "green",
+      'r': "red",
+      'y': "yellow"
+    }[turnActions.sacrifice];
+    var type = {
+      'b': "trade",
+      'g': "build",
+      'r': "capture",
+      'y': "move/discover"
+    }[turnActions.sacrifice];
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+      className: "alert alert-light"
+    }, "You have sacrificed a ", color, " ship. You have ", turnActions.number, " ", type, " ", turnActions.number === 1 ? 'action' : 'actions', " left.");
   } else {
     return null;
   }
@@ -28928,15 +28945,16 @@ PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
 - [+] players: The array of players that are playing the game. I think only strings work.
 
 EVENTS:
-- [ ] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
-- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
-- [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
-- [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
-- [ ] onAfterEndTurn(player, newState): 
-- [?] onMount(): Called inside componentDidMount.
-- [?] onUnmount(): Called inside componentWillUnmount.
-- [ ] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
-- [ ] onComponentUpdate()
+- [+] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
+- [+] onBeforeButtonClick(actionType, oldState): Called when the player clicks an action button. Can be used to stop trades before they get the actionInProgress message.
+- [+] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
+- [+] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
+- [+] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
+- [+] onAfterEndTurn(player, newState): 
+- [+] onMount(): Called inside componentDidMount.
+- [+] onUnmount(): Called inside componentWillUnmount.
+- [+] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
+- [+] onComponentUpdate(): Called inside componentDidUpdate.
 */
 
 
@@ -29339,12 +29357,23 @@ function withGame(WrappedComponent, events, additionalState) {
           // If an action is in progress:
           try {
             if (aip.type === "move") {
-              this.doAction({
-                type: "move",
-                player: current.turn,
-                oldPiece: aip.oldPiece,
-                system: current.map[piece].at
-              }, current.turn);
+              // this is the only one that requires clicking on the board twice
+              // allow canceling the action by clicking the same piece twice
+              var newSystem = current.map[piece].at;
+              var oldSystem = current.map[aip.oldPiece].at;
+
+              if (newSystem !== oldSystem) {
+                // at least you're trying to move
+                this.doAction({
+                  type: "move",
+                  player: current.turn,
+                  oldPiece: aip.oldPiece,
+                  system: current.map[piece].at
+                }, current.turn);
+              } else {
+                // clicked the same system, don't alert about illegal moves
+                console.log("Canceling move action.");
+              }
             }
           } catch (error) {
             // TODO: Not alert()!
@@ -29422,6 +29451,15 @@ function withGame(WrappedComponent, events, additionalState) {
             popup: null
           });
           return;
+        } // Check if you can even begin that action.
+
+
+        if (events.onBeforeButtonClick && !events.onBeforeButtonClick.call(this, actionData.type, current)) {
+          console.warn("Action type is blocked.");
+          this.setState({
+            actionInProgress: null,
+            popup: null
+          });
         }
 
         try {
@@ -29581,8 +29619,10 @@ function withGame(WrappedComponent, events, additionalState) {
           }
         }
 
-        var boardScale = this.state.scaleFactor * Math.min(1, 1.15 - numPiecesOnBoard / 60);
-        var stashScale = window.innerHeight / 1800 * Math.min(1, 0.75 + numPiecesOnBoard / 60); // I am not sure if sending the entire state object is "correct"
+        var baseScale = Math.min(window.innerHeight / 1800, window.innerWidth / 2000);
+        var boardScale = baseScale * Math.min(1.1, 1.25 - 0.5 * numPiecesOnBoard / 36);
+        var stashScale = baseScale * Math.min(1, 0.75 + numPiecesOnBoard / 60);
+        var activePiece = this.state.actionInProgress ? this.state.actionInProgress.oldPiece : null; // I am not sure if sending the entire state object is "correct"
 
         var moreProps = events.getProps ? events.getProps.call(this) : {};
         return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(WrappedComponent, _extends({
@@ -29601,6 +29641,7 @@ function withGame(WrappedComponent, events, additionalState) {
           homeworldData: current.homeworldData,
           scaleFactor: boardScale,
           viewer: this.state.viewer,
+          activePiece: activePiece,
           handleBoardClick: function handleBoardClick(piece, event) {
             return _this3.handleBoardClick(piece, event);
           }
@@ -29612,7 +29653,8 @@ function withGame(WrappedComponent, events, additionalState) {
         })), current.phase === "end" ? winBanner : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
           className: "info"
         }, "Turn: ", current.turn, " \u2022 Actions left: ", current.actions.number), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
-          actionInProgress: this.state.actionInProgress
+          actionInProgress: this.state.actionInProgress,
+          turnActions: current.actions
         })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
           className: "stash col-auto",
           align: "right"
@@ -29624,20 +29666,31 @@ function withGame(WrappedComponent, events, additionalState) {
           handleClick: function handleClick(serial) {
             return _this3.handleStashClick(serial);
           }
-        }), canInteract && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        }), canInteract ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
           onClick: function onClick() {
             return _this3.handleResetClick();
           },
           className: "btn btn-danger mt-1"
-        }, "Reset Turn"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), canInteract &&
+        }, "Reset Turn") :
+        /*#__PURE__*/
+
+        /* this is to prevent the UI from changing too much
+        we make there still be a button but it is inert */
+        react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          className: "btn btn-outline-danger mt-1",
+          disabled: true
+        }, "Reset Turn"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), canInteract ?
         /*#__PURE__*/
 
         /* todo: clicking "end turn" should check for warnings like overpopulations */
         react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-lg btn-info mt-1",
+          className: "btn btn-lg btn-info mt-2",
           onClick: function onClick() {
             return _this3.doEndTurn(current.turn);
           }
+        }, "End Turn") : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          className: "btn btn-lg btn-outline-info mt-2",
+          disabled: true
         }, "End Turn"))));
       }
     }]);
@@ -31265,7 +31318,8 @@ function Piece(props) {
     height: props.scaleFactor * baseHeight,
     style: css,
     title: props.serial,
-    highlight: props.highlight,
+    highlight: // why can we not make our own boolean attributes?
+    props.highlight ? "yes" : undefined,
     onClick: function onClick(evt) {
       return props.handleClick(props.serial, evt);
     }
@@ -31356,25 +31410,40 @@ var StarMap = /*#__PURE__*/function (_React$Component) {
   _createClass(StarMap, [{
     key: "getSystemOwnershipScore",
     value: function getSystemOwnershipScore(reactSystemElement) {
-      var ships = reactSystemElement.props.ships; // to prevent logarithm errors
+      var ships = reactSystemElement.props.ships; // how much control (determined by size of largest ship) do you have?
 
-      var yourScore = 0;
-      var enemyScore = 0;
+      var yourControl = 0;
+      var enemyControl = 0;
 
       for (var i = 0; i < ships.length; i++) {
-        // size^3
-        // dunno why I added the 64
-        var shipScore = [0, 1, 8, 27, 64][ships[i].size];
+        var influence = ships[i].size;
 
         if (ships[i].owner === this.props.viewer) {
-          yourScore += shipScore;
+          yourControl = Math.max(yourControl, influence);
         } else {
-          enemyScore += shipScore;
+          enemyControl += Math.max(enemyControl, influence);
         }
-      } // Ties go to system ID, to preserve some semblance of order
+      }
 
+      var tiebreak = reactSystemElement.props.id / 1e4; // basically, move systems more dominated by you to your right
 
-      return yourScore - enemyScore + reactSystemElement.props.id / 10000;
+      if (enemyControl && !yourControl) {
+        // put their systems on the left
+        // use system id to make a stable sort
+        return -1 - tiebreak;
+      } else if (yourControl < enemyControl) {
+        // contested system but enemy has majority
+        return -0.5 - tiebreak;
+      } else if (yourControl === enemyControl) {
+        // perfectly contested
+        return tiebreak;
+      } else if (yourControl > enemyControl && enemyControl > 0) {
+        // contested system but you have majority
+        return 0.5 + tiebreak;
+      } else {
+        // only you occupy it
+        return 1 + tiebreak;
+      }
     }
   }, {
     key: "sortContainer",
@@ -31477,18 +31546,18 @@ var StarMap = /*#__PURE__*/function (_React$Component) {
       }, containers.adjSouth));
 
       if (sizes1.length === 1 && sizes2.length === 1) {
-        console.log("[Starmap] cases C or A"); // both homeworlds are single stars or geminis
-
+        //console.log("[Starmap] cases C or A");
+        // both homeworlds are single stars or geminis
         if (sizes1[0] === sizes2[0]) {
-          console.log("case c"); // identical sizes, type (c)
+          console.log("[Starmap] case c"); // identical sizes, type (c)
           // put smaller sizes on the left
 
           var smallerSize = sizes1[0] === 1 ? 2 : 1;
           return this.renderHTMLThreeColumns(smallerSize, containers.adjNeither, containers.adjBoth);
         } else {
-          console.log("case a"); // identical sizes, type (a)
+          //console.log("case a");
+          // identical sizes, type (a)
           // row format
-
           return rowDisplay;
         }
       } else if (sizes1.length === 2 && sizes2.length === 2) {
@@ -31723,6 +31792,7 @@ var StarMap = /*#__PURE__*/function (_React$Component) {
             viewer: props.viewer,
             homeworld: _system.homeworld,
             scaleFactor: props.scaleFactor,
+            activePiece: props.activePiece,
             handleBoardClick: props.handleBoardClick
           }); // Now work out which bin to put the system in!
 
@@ -31932,8 +32002,8 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
-var System = /*#__PURE__*/function (_React$Component) {
-  _inherits(System, _React$Component);
+var System = /*#__PURE__*/function (_React$PureComponent) {
+  _inherits(System, _React$PureComponent);
 
   var _super = _createSuper(System);
 
@@ -31981,6 +32051,7 @@ var System = /*#__PURE__*/function (_React$Component) {
           symbolMode: false,
           rotation: rotation,
           scaleFactor: this.props.scaleFactor,
+          highlight: shipData.serial === this.props.activePiece,
           handleClick: this.props.handleBoardClick
         });
 
@@ -32035,7 +32106,7 @@ var System = /*#__PURE__*/function (_React$Component) {
   }]);
 
   return System;
-}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
+}(react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent);
 
 /* harmony default export */ __webpack_exports__["default"] = (System);
 
@@ -32045,7 +32116,7 @@ var System = /*#__PURE__*/function (_React$Component) {
 /*!***************************************!*\
   !*** ./scripts/game/tutorialGame.jsx ***!
   \***************************************/
-/*! no exports provided */
+/*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -32084,7 +32155,7 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
-console.log(_tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"]); // hmm could be a bad name
+console.log(_tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"]); // handles tutorial UI
 
 var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
   _inherits(TutorialWrapper, _React$Component);
@@ -32103,7 +32174,7 @@ var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
       var _this = this;
 
       var parent = this.props.reactState;
-      var tutorial = parent.tutorial;
+      var tutorial = this.props.tutorial;
       var currentStep = tutorial.steps[parent.stepID];
       var showPopup = parent.messages && parent.messages.length > 0;
       var popup = showPopup ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
@@ -32117,7 +32188,8 @@ var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
       }, parent.messageTitle || tutorial.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
         style: {
           whiteSpace: "pre-line"
-        }
+        },
+        className: "mb-0"
       }, parent.messages[parent.messageNumber - 1]
       /* -1 because array index */
       )), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
@@ -32147,6 +32219,13 @@ var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h2", null, tutorial.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
         className: "btn-group"
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-danger",
+        onClick: function onClick() {
+          return _this.props.navMethods.returnToMenu();
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+        className: "material-icons md-18 mr-1 align-middle"
+      }, "undo"), "Go Back"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
         className: "btn btn-secondary",
         onClick: function onClick() {
           return _this.props.displayStartMessage();
@@ -32160,7 +32239,14 @@ var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
         }
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
         className: "material-icons md-18 mr-1 align-middle"
-      }, "help_outline"), "Show Hint")), this.props.children, popup);
+      }, "help_outline"), "Show Hint"), parent.complete && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        className: "btn btn-success",
+        onClick: function onClick() {
+          return _this.props.navMethods.nextTutorial();
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
+        className: "material-icons md-18 mr-1 align-middle"
+      }, "play_arrow"), "Next Module")), this.props.children, popup);
     }
   }]);
 
@@ -32170,7 +32256,7 @@ var TutorialWrapper = /*#__PURE__*/function (_React$Component) {
 var methods = {};
 var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(TutorialWrapper, {
   onMount: function onMount() {
-    var tutorial = _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"][0]; // mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
+    var tutorial = this.props.tutorial; // mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
 
     var maxSystem = 0;
 
@@ -32215,32 +32301,34 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
 
     this.displayStartMessage = function () {
       this.setState(function (reactState) {
-        var step = reactState.tutorial.steps[reactState.stepID];
+        var step = this.props.tutorial.steps[reactState.stepID];
         return {
           messages: step.startMessages,
-          messageTitle: step.title || reactState.tutorial.title,
+          messageTitle: step.title || this.props.tutorial.title,
           messageNumber: 1,
           showPopup: true
         };
-      });
+      }.bind(this));
     }.bind(this); // do it when we launch
 
 
     this.displayStartMessage(); // more functions
 
-    this.displayHint = function () {
-      var step = this.state.tutorial.steps[this.state.stepID];
+    this.displayHint = function displayHint() {
+      var step = this.props.tutorial.steps[this.state.stepID];
+      var hint = step.hint;
 
-      if (step.hint) {
+      if (hint) {
         this.setState({
-          messages: [step.hint],
+          // make it an array if it is not already
+          messages: hint instanceof Array ? hint : [hint],
           messageTitle: "Hint",
           messageNumber: 1
         });
       }
     }.bind(this);
 
-    this.clearMessage = function () {
+    this.clearMessage = function clearMessage() {
       this.setState({
         messages: null,
         showPopup: false,
@@ -32249,7 +32337,7 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
     }.bind(this); // to move to the next help message
 
 
-    this.nextMessage = function () {
+    this.nextMessage = function nextMessage() {
       if (this.state.messageType !== "start") {
         this.clearMessage();
       } else {
@@ -32260,7 +32348,7 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
             this.nextEnemyAction();
           }
         } else {
-          var step = this.state.tutorial.steps[this.state.stepID];
+          var step = this.props.tutorial.steps[this.state.stepID];
           this.setState({
             messageNumber: this.state.messageNumber + 1
           });
@@ -32268,52 +32356,91 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
       }
     }.bind(this);
 
-    this.prevMessage = function () {
+    this.prevMessage = function prevMessage() {
       if (this.state.messageNumber > 1) {
-        var step = this.state.tutorial.steps[this.state.stepID];
+        var step = this.props.tutorial.steps[this.state.stepID];
         this.setState({
           messageNumber: this.state.messageNumber - 1
         });
       }
     }.bind(this);
 
-    this.advanceStep = function () {
-      if (this.state.stepID < this.state.tutorial.steps.length - 1) {
+    this.advanceStep = function advanceStep() {
+      var currentStep = this.props.tutorial.steps[this.state.stepID];
+      var nextIndex = this.state.stepID + 1;
+
+      if (currentStep.nextStep) {
+        // nextStep uses the game state to decide which one is next
+        var result = currentStep.nextStep(this.getCurrentState());
+
+        if (typeof result === "number") {
+          // offset from the current state
+          nextIndex = this.state.stepID + result;
+        } else if (typeof result === "string") {
+          // loop thru all steps and find the one with the proper ID
+          for (var i = 0; i < this.props.tutorial.steps.length; i++) {
+            var otherStep = this.props.tutorial.steps[i];
+
+            if (otherStep.id === result) {
+              nextIndex = i;
+              break;
+            }
+          }
+        }
+      }
+
+      console.warn("Moving to step " + nextIndex);
+      if (nextIndex < 0) nextIndex = 0;
+
+      if (nextIndex < this.props.tutorial.steps.length) {
         this.setState({
-          stepID: this.state.stepID + 1
+          stepID: nextIndex
         });
         this.displayStartMessage();
       } else {
+        console.log("?!?");
         this.setState({
           messageTitle: "Scenario Complete",
-          messages: this.state.tutorial.endMessages,
-          messageNumber: 1
+          messages: this.props.tutorial.endMessages,
+          messageNumber: 1,
+          complete: true
         });
       }
     }.bind(this);
 
-    this.nextEnemyAction = function () {
-      if (this.state.enemyActionQueue.length > 0) {
-        setTimeout(function () {
-          var action = this.shiftActionQueue();
+    this.nextEnemyAction = function (delay) {
+      console.log(this.state.enemyActionQueue);
+      setTimeout(function () {
+        // get the state BEFORE shifting the queue
+        var queue = this.state.enemyActionQueue;
+        var action = this.shiftActionQueue();
 
-          if (action) {
-            if (action.type === "end-turn") {
-              this.doEndTurn("enemy");
-              this.advanceStep();
-            } else {
-              this.doAction(action, "enemy"); // loop it
+        if (action) {
+          if (action.type === "end-turn") {
+            this.doEndTurn("enemy");
+            this.advanceStep();
+          } else {
+            this.doAction(action, "enemy"); // loop it
+            // queue contains at least this action and possibly more
 
-              this.nextEnemyAction();
-            }
+            if (queue.length >= 3) {
+              this.nextEnemyAction(1500);
+            } else if (queue.length === 2) {
+              // shorter delay for just an end turn
+              this.nextEnemyAction(750);
+            } // else, do not request another action
+
           }
-        }.bind(this), 1500); // will adjust
-      }
+        } // below: the timer is 0.5s for end-turn and 1.5s for actions
+
+      }.bind(this), delay || 1500); // will adjust
     }.bind(this);
   },
   getProps: function getProps() {
     return {
       setParentState: this.setState.bind(this),
+      tutorial: this.props.tutorial,
+      navMethods: this.props.navMethods,
       nextMessage: this.nextMessage,
       prevMessage: this.prevMessage,
       clearMessage: this.clearMessage,
@@ -32324,6 +32451,32 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
   canInteract: function canInteract(gameState) {
     return gameState.turn === "you";
   },
+  onBeforeButtonClick: function onBeforeButtonClick(actionType, oldState) {
+    console.log("onBeforeButtonClick", arguments);
+    var step = this.props.tutorial.steps[this.state.stepID];
+    var banned = step.bannedActions; // Is the action on a simple list of banned actions?
+
+    if (banned instanceof Array && banned.indexOf(action.type) >= 0) {
+      this.setState({
+        messages: ["We aren't doing " + actionType + " actions right now."],
+        messageTitle: "Not Yet",
+        messageNumber: 1
+      });
+      return false;
+    }
+
+    if (banned instanceof Object && banned[actionType]) {
+      var msg = banned[actionType];
+      this.setState({
+        message: msg instanceof Array ? msg : [msg],
+        messageTitle: "Not Yet",
+        messageNumber: 1
+      });
+      return false;
+    }
+
+    return true;
+  },
   onBeforeAction: function onBeforeAction(action, player, oldState, newState) {
     console.log("onBeforeAction", arguments); // don't complain about enemy moves
 
@@ -32331,14 +32484,28 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
       return true;
     }
 
-    var step = this.state.tutorial.steps[this.state.stepID];
+    var step = this.props.tutorial.steps[this.state.stepID]; // bannedActions can accept array or object
+
+    if (step.bannedActions instanceof Array && step.bannedActions.indexOf(action.type) !== -1) {
+      return false;
+    } // object has the banned ones as keys (values are messages, which should be caught in onBeforeButtonClick)
+
+
+    if (step.bannedActions instanceof Object && step.bannedActions[action.type]) {
+      return false;
+    }
+
+    if (this.props.tutorial.bannedActions && this.props.tutorial.bannedActions.indexOf(action.type) !== -1) {
+      return false;
+    }
 
     if (step.checkAction) {
       var result = step.checkAction(action, oldState);
 
       if (result[1]) {
+        console.warn("Result", result[1]);
         this.setState({
-          message: result[1],
+          messages: result[1] instanceof Array ? result[1] : [result[1]],
           messageTitle: result[0] ? "Good Choice" : "Try Again!",
           messageNumber: 1
         });
@@ -32347,12 +32514,14 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
       return result[0];
     }
   },
+  // onAfterAction: function(action, newState) {
+  // },
   onBeforeEndTurn: function onBeforeEndTurn(player, oldState) {
     if (player !== "you") {
       return true;
     }
 
-    var step = this.state.tutorial.steps[this.state.stepID];
+    var step = this.props.tutorial.steps[this.state.stepID];
 
     if (step.checkEndTurn) {
       var result = step.checkEndTurn(this.state.current);
@@ -32360,11 +32529,22 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
       if (result[1]) {
         // show a message if they made a wrong decision
         var resetNote = result[0] ? "" : "\n\n(Click \"Reset Turn\" to try again.)";
+        var messages = result[1] instanceof Array ? result[1].slice() : [result[1]]; // put the reset note on the last message, if there is one
+
+        if (messages.length > 0) {
+          messages[messages.length - 1] += resetNote;
+        }
+
         this.setState({
-          messages: [result[1] + resetNote],
+          messages: messages,
           messageTitle: result[0] ? "Good Turn" : "Try Again",
           messageNumber: 1
         });
+      } else if (result[0]) {
+        // no message but we did pass
+        // we have to start the action queue
+        // (nextEnemyAction uses setTimeout already)
+        this.nextEnemyAction();
       }
 
       return result[0];
@@ -32379,7 +32559,7 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
     } // unfortunately I have to do all the same stuff
 
 
-    var step = this.state.tutorial.steps[this.state.stepID];
+    var step = this.props.tutorial.steps[this.state.stepID];
 
     if (step.checkEndTurn) {
       var result = step.checkEndTurn(this.state.current); // do any actions specified
@@ -32387,22 +32567,31 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
       for (var i = 0; i < result.length; i++) {
         var maybeAction = result[i];
         var current = this.getCurrentState();
+        console.log("possible action", i, maybeAction, _typeof(maybeAction)); // who at JS decided to make typeof not distinguish arrays?!
 
-        if (_typeof(maybeAction) === "object") {
+        if (_typeof(maybeAction) === "object" && !(maybeAction instanceof Array)) {
           this.addToActionQueue(result[i]);
         }
       }
 
-      this.addToActionQueue({
-        // not a real action type
-        // just a signifier (see onComponentUpdate)
-        type: "end-turn"
-      });
+      console.log(1);
+
+      if (!result[1]) {
+        // length 3 or more includes actions, so we use a longer timer
+        this.nextEnemyAction(result.length >= 3 ? 1500 : 500);
+      }
+    } else {
+      // nothing? so we just end the turn?
+      this.nextEnemyAction(500);
     }
-  },
-  onComponentUpdate: function onComponentUpdate() {}
+
+    this.addToActionQueue({
+      // not a real action type
+      // just a signifier (see nextEnemyAction)
+      type: "end-turn"
+    });
+  }
 }, {
-  tutorial: _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_4__["default"][0],
   stepID: 0,
   // these things really belong on TutorialWrapper
   // but I also need to update them from e.g. onBeforeEndTurn
@@ -32412,13 +32601,175 @@ var TutorialGame = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_3__["default"])(Tut
   messageTitle: null,
   messageType: "start",
   messageNumber: 1,
-  // we pass this to the wrapper component which is rendered inside i.e. is the child
+  complete: false,
+  // we pass this to the wrapped component which is rendered inside i.e. is the child
   setParentState: null,
   // the opponent may need to do several actions at once
   // I think this is the only way to do it
   enemyActionQueue: []
 });
-react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(TutorialGame, null), document.getElementById("game-container"));
+/* harmony default export */ __webpack_exports__["default"] = (TutorialGame);
+
+/***/ }),
+
+/***/ "./scripts/game/tutorialManager.jsx":
+/*!******************************************!*\
+  !*** ./scripts/game/tutorialManager.jsx ***!
+  \******************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_dom__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../tutorials/tutorialList.js */ "./scripts/tutorials/tutorialList.js");
+/* harmony import */ var _tutorialGame_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./tutorialGame.jsx */ "./scripts/game/tutorialGame.jsx");
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+// tutorialManager.jsx
+//
+// The component that lets you access the tutorials.
+
+
+
+
+
+var TutorialManager = /*#__PURE__*/function (_React$Component) {
+  _inherits(TutorialManager, _React$Component);
+
+  var _super = _createSuper(TutorialManager);
+
+  function TutorialManager(props) {
+    var _this;
+
+    _classCallCheck(this, TutorialManager);
+
+    _this = _super.call(this, props);
+    _this.state = {
+      tutorial: null
+    };
+    return _this;
+  }
+
+  _createClass(TutorialManager, [{
+    key: "startTutorial",
+    value: function startTutorial(tutorial) {
+      this.setState({
+        tutorial: tutorial
+      });
+    }
+  }, {
+    key: "returnToMenu",
+    value: function returnToMenu() {
+      this.setState({
+        tutorial: null
+      });
+    }
+  }, {
+    key: "nextTutorial",
+    value: function nextTutorial() {
+      this.setState(function (reactState) {
+        var i = _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"].indexOf(reactState.tutorial);
+        return {
+          // Default to null (menu) if they go out of bounds
+          tutorial: _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"][i + 1] || null
+        };
+      });
+    }
+  }, {
+    key: "previousTutorial",
+    value: function previousTutorial() {
+      this.setState(function (reactState) {
+        var i = _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"].indexOf(reactState.tutorial);
+        return {
+          // Default to null (menu) if they go out of bounds
+          tutorial: _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"][i - 1] || null
+        };
+      });
+    } // handles mostly the error of a null tutorial sent down
+
+  }, {
+    key: "componentDidCatch",
+    value: function componentDidCatch(something) {
+      console.error("ComponentDidCatch", arguments);
+      this.setState({
+        tutorial: null
+      });
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this2 = this;
+
+      if (!this.state.tutorial) {
+        // no active tutorial
+        // display menu
+        var listItems = [];
+
+        var _loop = function _loop(i) {
+          listItems.push( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("a", {
+            className: "list-group-item",
+            onClick: function onClick() {
+              return _this2.startTutorial(_tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"][i]);
+            },
+            key: i,
+            href: "#" + (i + 1)
+          }, _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"][i].title));
+        };
+
+        for (var i = 0; i < _tutorials_tutorialList_js__WEBPACK_IMPORTED_MODULE_2__["default"].length; i++) {
+          _loop(i);
+        }
+
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h3", null, "Interactive Tutorials"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+          className: "subtitle"
+        }, "If you prefer to learn by doing, here are my tutorial modules which cover the basics of gameplay."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+          className: "list-group"
+        }, listItems));
+      } else {
+        // display the active tutorial
+        var navMethods = {
+          returnToMenu: this.returnToMenu.bind(this),
+          nextTutorial: this.nextTutorial.bind(this),
+          previousTutorial: this.previousTutorial.bind(this)
+        }; // use a key to forcefully destroy the component when a new tutorial loads
+
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_tutorialGame_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
+          tutorial: this.state.tutorial,
+          key: this.state.tutorial.title,
+          navMethods: navMethods
+        });
+      }
+    }
+  }]);
+
+  return TutorialManager;
+}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
+
+react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(TutorialManager, null), document.getElementById("game-container"));
 
 /***/ }),
 
@@ -32444,14 +32795,917 @@ function Tutorial(data) {
 	// the second "t" is important!
 	this.startMap = data.startMap;
 	this.steps = data.steps;
+	this.endMessages = data.endMessages;
 }
 
+/*
+const template = {
+			b1A: null,
+			b1B: null,
+			b1C: null,
+			b2A: null,
+			b2B: null,
+			b2C: null,
+			b3A: null,
+			b3B: null,
+			b3C: null,
+			
+			g1A: null,
+			g1B: null,
+			g1C: null,
+			g2A: null,
+			g2B: null,
+			g2C: null,
+			g3A: null,
+			g3B: null,
+			g3C: null,
+			
+			r1A: null,
+			r1B: null,
+			r1C: null,
+			r2A: null,
+			r2B: null,
+			r2C: null,
+			r3A: null,
+			r3B: null,
+			r3C: null,
+			
+			y1A: null,
+			y1B: null,
+			y1C: null,
+			y2A: null,
+			y2B: null,
+			y2C: null,
+			y3A: null,
+			y3B: null,
+			y3C: null,
+};
+*/
+
 const tutorialList = [
+	new Tutorial({
+		title: "Building Ships",
+		startMap: {
+			"b1A": null,
+			"b1B": null,
+			"b1C": null,
+			"b2A": null,
+			"b2B": null,
+			"b2C": null,
+			"b3A": null,
+			"b3B": null,
+			"b3C": {"at": 5, "owner": null},
+
+			"g1A": {"at": 3, "owner": "you"},
+			"g1B": {"at": 5, "owner": "enemy"},
+			"g1C": null,
+			"g2A": null,
+			"g2B": {"at": 4, "owner": null},
+			"g2C": {"at": 2, "owner": null},
+			"g3A": null,
+			"g3B": null,
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": {"at": 4, "owner": "you"},
+			"r1B": null,
+			"r1C": null,
+			"r2A": null,
+			"r2B": null,
+			"r2C": {"at": 3, "owner": null},
+			"r3A": null,
+			"r3B": {"at": 2, "owner": "enemy"},
+			"r3C": {"at": 1, "owner": null},
+
+			"y1A": null,
+			"y1B": null,
+			"y1C": null,
+			"y2A": null,
+			"y2B": null,
+			"y2C": null,
+			"y3A": null,
+			"y3B": null,
+			"y3C": null,
+		},
+		steps: [
+			{
+				startMessages: [
+					"Welcome to the Homeworlds Tutorial! Here I will walk you through the fundamentals of gameplay. Please note you will have to learn by *doing*, so pay attention.",
+					"Homeworlds is typically played on a tabletop with colorful pyramids which represent stars (when vertical) or starships (when lying down, pointing away from the owner).",
+					"On this web version, ships are triangles and stars are squares. The ships next to the stars are considered at that star system.",
+					"The goal of the game is to destroy or conquer your opponent's homeworld. You do this by building and changing starships, discovering new systems, and eventually capturing or blowing up opponent's stuff.",
+					"Let's begin with building. Click one of the ships pointing upwards, and then click the \"Build\" button.",
+					"If you get stuck, there is Show Intro (which displays these messages again) and Show Hint in the upper right.",
+				],
+				hint: [
+					"Your ships are the three triangles on the bottom half of the screen.",
+					"If you have four, you have already built; just click End Turn.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice") {
+						return [false, "I'll get to sacrificing later. For now let's concentrate on building ships."];
+					}
+					const abbr = action.newPiece[0].toUpperCase();
+					const color = (abbr === "R" ? "red" : "green");
+					return [true, [
+						"Good job. Did you notice how it automatically gave you a small " + color + " ship at the same star?",
+						"You may have also noticed the " + abbr + "1 thing on the button. The " + abbr + " part is for " + color + ", and the 1 is for small (they come in 3 sizes). Similarly, B2 would be a medium blue, and so on.",
+						"Anyway, your turn is over now. Click the purple End Turn button on the lower right to continue. (You can also Reset Turn, if you want to change your mind.)",
+					]];
+				},
+				checkEndTurn: function(oldState) {
+					// make sure you used your build action
+					if (oldState.actions.number > 0) {
+						return [false, "Don't end your turn yet! Build a new ship first!"];
+					} else {
+						return [true, "All right. Now it's your opponent's turn. They are probably going to build something too...", {
+							type: "build",
+							// get an available R1
+							newPiece: oldState.getPieceInStashByType("r1"),
+							system: 2,
+						}]
+					}
+				},
+			},
+			{
+				startMessages: [
+					"They built a small red ship of their own!\nThis is actually interesting...",
+					"If you look at the Stash on the right, you will see that there are three of each piece total (some are on the board).",
+					"When you build, there are two main rules:\n" +
+						"(1) You can only build a ship of the *same color* as a ship you already have at that star, and\n" +
+						"(2) You can only build the smallest *available* piece (i.e. in the stash) of any given color.",
+					"It's important to note that you do NOT \"grow\" a ship. You only get bigger ones by building when the stash is out of smaller pieces of that color.",
+					"Given this, your challenge is to build a medium ship (two pips)!\n(Again, hint button is on the top left)",
+				],
+				hint: [
+					"Look at the stash. Which color does not have smalls available?",
+					"Remember you have to click an existing ship of yours first to build.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type !== "build") {
+						return [false, "I'll get to sacrificing in a later module."];
+					}
+					if (action.newPiece[1] !== "2") {
+						return [false, "Unfortunately, building that color only gives you a small ship, because there is one in the stash. See if you can build a medium (size-2) ship."];
+					}
+					return [true, "Remember to end your turn every time..."];
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "Don't end your turn yet!"];
+					} else {
+						return [true, "Good job. Let's see now what your opponent does...", {
+							type: "trade",
+							oldPiece: "g1B",
+							newPiece: "y1C",
+						}];
+					}
+				}
+			}
+		],
+		endMessages: [
+			"What was that? Their ship just changed color!",
+			"That's a subject for another module. Click the green \"Next Module\" button at the top to continue!",
+		],
+	}),
+	
+	// -----
+	new Tutorial({
+		title: "Trading Ships",
+		startMap: {
+			"b1A": {"at": 6, "owner": "you"},
+			"b1B": {"at": 3, "owner": null},
+			"b1C": {"at": 2, "owner": null},
+			"b2A": null,
+			"b2B": null,
+			"b2C": {"at": 6, "owner": "you"},
+			"b3A": null,
+			"b3B": {"at": 5, "owner": null},
+			"b3C": {"at": 1, "owner": null},
+
+			"g1A": {"at": 3, "owner": "you"},
+			"g1B": {"at": 6, "owner": null},
+			"g1C": {"at": 5, "owner": "enemy"},
+			"g2A": {"at": 9, "owner": "you"},
+			"g2B": {"at": 1, "owner": "you"},
+			"g2C": {"at": 2, "owner": null},
+			"g3A": {"at": 9, "owner": "you"},
+			"g3B": {"at": 4, "owner": null},
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": {"at": 2, "owner": "enemy"},
+			"r1B": {"at": 9, "owner": null},
+			"r1C": {"at": 8, "owner": "enemy"},
+			"r2A": null,
+			"r2B": null,
+			"r2C": {"at": 1, "owner": null},
+			"r3A": null,
+			"r3B": null,
+			"r3C": null,
+
+			"y1A": {"at": 4, "owner": "enemy"},
+			"y1B": {"at": 2, "owner": "enemy"},
+			"y1C": {"at": 5, "owner": "enemy"},
+			"y2A": {"at": 5, "owner": "enemy"},
+			"y2B": {"at": 4, "owner": "enemy"},
+			"y2C": {"at": 7, "owner": "enemy"},
+			"y3A": {"at": 8, "owner": null},
+			"y3B": {"at": 7, "owner": null},
+			"y3C": {"at": 2, "owner": "enemy"},
+		},
+		steps: [
+			{
+				startMessages: [
+					"Building ships is important, but you can only build colors you already have. The next color, blue, allows you to change colors of your ships.",
+					"When you trade, you first click on one of your ships, then click a piece from the Stash *of the same size*.",
+					"Also, you have to have access to blue technology there. Blue technology can come either from one of your ships (even if it isn't the one being traded) or from a star.",
+					"Your goal this turn is to obtain a red ship.",
+				],
+				hint: [
+					"Remember you have to have blue at the system AND there has to be a matching red in the stash.",
+					"You can only trade equal sizes (small for small, medium for medium, or large for large)!",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "build") {
+						return [false, "That's ok, but this lesson is about trading. Can you trade to get a red ship?"];
+					}
+					if (action.type === "sacrifice") {
+						return [false, "We will cover sacrifice actions later."];
+					}
+					if (action.type === "trade") {
+						if (action.newPiece[0] === "r") {
+							return [true, "Great job! Remember to end your turn!"];
+						} else {
+							return [false, "Good trade. However, I would like you to see if you can get a RED ship."];
+						}
+					}
+					return [false, "Not entirely sure what you did, but it doesn't look like a trade to me."];
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "Don't end your turn yet!"];
+					}
+					return [true, "Good work. Once again, let's see what your opponent does...", {
+						type: "trade",
+						oldPiece: "y2A",
+						newPiece: oldState.getPieceInStashByType('r2'),
+					}];
+				},
+			},
+			{
+				startMessages: [
+					"It looks like they also traded for a red.",
+					"Now that you have one red ship, you could build more.",
+					"But notice something else. All the yellow pieces were in play, but now that your opponent traded out their yellow, you can get your own.",
+					"Your challenge this turn: Obtain a yellow, but keep your red ship.",
+				],
+				objective: "Obtain a yellow ship (and also keep your red one)",
+				hint: [
+					"What size is the yellow in the stash?",
+					"Remember you can do a trade at any system with something blue there!",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "trade") {
+						if (action.oldPiece[0] === "r") {
+							return [false, "That's great, except you just traded away your only red ship!\nCan you get a yellow WITHOUT losing your red?"];
+						} else {
+							return [true, "Good. From now on you won't always see a message after every single action. Just end your turn."];
+						}
+					} else if (action.type === "sacrifice") {
+						return [false, "Patience! Sacrifices are a little tricky and I'll cover them later."];
+					} else {
+						return [false, "That doesn't get you a yellow ship."]
+					}
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "Don't end your turn yet!"];
+					}
+					// no message because this is the last slide
+					return [true];
+				}
+			}
+		],
+		endMessages: [
+			"Now, what's all the fuss about yellow and red ships? Well, each color is an ability. For that, it's time for a new module...",
+			"Oh, did you notice two of the star systems had 2 stars instead of 1? Those are your homeworld and your opponent's homeworld! We'll see more about that in a bit.",
+		],
+	}),
+	
+	// -----
+	new Tutorial({
+		title: "Movement",
+		startMap: {
+			"b1A": null,
+			"b1B": null,
+			"b1C": {"at": 1, "owner": null},
+			"b2A": null,
+			"b2B": null,
+			"b2C": null,
+			"b3A": null,
+			"b3B": null,
+			"b3C": {"at": 2, "owner": null},
+
+			"g1A": null,
+			"g1B": null,
+			"g1C": {"at": 2, "owner": null},
+			"g2A": null,
+			"g2B": null,
+			"g2C": null,
+			"g3A": null,
+			"g3B": {"at": 3, "owner": null},
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": null,
+			"r1B": null,
+			"r1C": null,
+			"r2A": null,
+			"r2B": null,
+			"r2C": {"at": 1, "owner": null},
+			"r3A": null,
+			"r3B": null,
+			"r3C": {"at": 2, "owner": "enemy"},
+
+			"y1A": {"at": 2, "owner": "enemy"},
+			"y1B": {"at": 2, "owner": "enemy"},
+			"y1C": {"at": 3, "owner": "you"},
+			"y2A": {"at": 3, "owner": "you"},
+			"y2B": {"at": 2, "owner": "enemy"},
+			"y2C": null,
+			"y3A": null,
+			"y3B": null,
+			"y3C": null,
+		},
+		steps: [
+			{
+				startMessages: [
+					"Ah, yellow. Probably the trickiest color in the game.",
+					"Yellow is the color of movement. Now, the stars have sizes just like ships (they actually use the same pool of pieces). The rule on movement is...",
+					"You can move between two star systems if they are *different sizes*.",
+					"Now, this website tries to smartly arrange the stars to help you visualize the connections. However, this is *only* a visual aid, and really all that matters is the star's size.",
+					"Anyway, to do a move, click the ship, then click the \"move\" button, then click the system you want to move to.",
+					"How about we get started with a simple move: Move one of your yellow ships to your homeworld.",
+				],
+				bannedActions: {
+					"discover": "Moving and discovering are slightly different. Let's stick to movement for now.",
+				},
+				hint: [
+					"Your homeworld is the system that has 2 stars and one large green ship.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "move") {
+						return [true];
+					} else {
+						return [false, "That's all well and good, but we're doing movement now."];
+					}
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "Whoops. Don't end your turn quite yet..."];
+					}
+					return [true, "Opponent moves...", {
+						type: "discover",
+						oldPiece: "y1B",
+						newPiece: "g2A",
+					}];
+				},
+			},
+			{
+				startMessages: [
+					"Oh neat, a new star just appeared on the map!",
+					"In fact, you can discover a star any time you have movement power. In the physical game, you just add a piece to the board, then move there.",
+					"Here, to discover a system, you first click the piece you want to move, then click the \"Discover a system...\" button in the popup.",
+					"Then you click a piece in the stash. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
+					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home. (That's a good habit for the real game...)",
+				],
+				hint: [
+					"First click the ship, then click a star in the stash.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "discover") {
+						return [true, "Good job. End your turn and I'll show you something interesting..."];
+					} else {
+						return [false, "That's legal, but I'd like you to discover a new star system instead."];
+					}
+				},
+				checkEndTurn: function(oldState) {
+					// oh dear
+					// they may have discovered any kind of star...
+					let newStar = null;
+					for (let serial in oldState.map) {
+						const data = oldState.map[serial];
+						// the new system should be number 5
+						if (data && data.owner === null && data.at === 5) {
+							newStar = serial;
+						}
+					}
+					
+					if (newStar) {
+						// If you discovered a medium, move move from the homeworld (which is y1A), otherwise move the existing y1B
+						const message = newStar[1] === "2" ? [
+							"Notice how the system is next to your opponent's homeworld?",
+							"That's because they are connected! Their home is a Small+Large, so it's connected to Medium systems (the only other size).",
+							"You're one move away from invading if you wanted! (But it wouldn't do much good with just your one ship.)"
+						] : null;
+						return [true, null, {
+							type: "move",
+							oldPiece: (newStar[1] === "2") ? "y1A" : "y1B",
+							system: 5
+						}];
+					} else {
+						return [false, "You forgot to discover a system, or else there is a bug. Please try again."];
+					}
+				}
+			}
+		],
+		endMessages: [
+			"Did you notice how the star system disappeared when it was abandoned? Stars get added to the map when a ship lands there, and go away when the last ship leaves.",
+			"Yeah, this game is a little weird. But keep that in mind, as you can use it to your advantage. (Similarly, you can discover a piece to stop your opponent from using it as a ship.)",
+			"Anyway, it looks like your opponent paid you a visit. That doesn't usually happen in Homeworlds, because of the last color ability...",
+		],
+	}),
+
+	// -----
+	new Tutorial({
+		title: "Offense and Defense",
+		startMap: {
+			"b1A": {"at": 5, "owner": "enemy"},
+			"b1B": {"at": 4, "owner": "you"},
+			"b1C": {"at": 2, "owner": null},
+			"b2A": null,
+			"b2B": {"at": 5, "owner": "enemy"},
+			"b2C": {"at": 1, "owner": null},
+			"b3A": null,
+			"b3B": null,
+			"b3C": null,
+
+			"g1A": null,
+			"g1B": null,
+			"g1C": null,
+			"g2A": {"at": 1, "owner": "you"},
+			"g2B": {"at": 5, "owner": null},
+			"g2C": {"at": 3, "owner": null},
+			"g3A": {"at": 4, "owner": null},
+			"g3B": {"at": 2, "owner": null},
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": {"at": 5, "owner": "enemy"},
+			"r1B": {"at": 4, "owner": "you"},
+			"r1C": {"at": 1, "owner": null},
+			"r2A": {"at": 4, "owner": "enemy"},
+			"r2B": null,
+			"r2C": null,
+			"r3A": null,
+			"r3B": {"at": 7, "owner": "you"},
+			"r3C": {"at": 2, "owner": "enemy"},
+
+			"y1A": null,
+			"y1B": {"at": 2, "owner": "enemy"},
+			"y1C": {"at": 1, "owner": "you"},
+			"y2A": {"at": 5, "owner": "enemy"},
+			"y2B": {"at": 4, "owner": "you"},
+			"y2C": {"at": 3, "owner": "enemy"},
+			"y3A": null,
+			"y3B": null,
+			"y3C": {"at": 7, "owner": null},
+		},
+		steps: [
+			{
+				startMessages: [
+					"The last ability, red, is probably the least commonly used ability in the game.",
+					"Red gives you the ability to capture (i.e. steal) enemy ships. But it only works at short range (i.e. in the same system).",
+					"To use red, you click on an enemy ship. If you have an equal or larger ship, and you have red technology, you can capture it, and it becomes yours.",
+					"Note that on this website I've arranged the ships so yours are on the right side, almost like cars on a highway (in the US). You may notice things move around unexpectedly; this is because of changing ownership.",
+					"Here, your opponent has moved a ship to one of your colonies. It seems they forgot that their turn is now over, so YOU get to strike first! Steal that invader ship!",
+				],
+				hint: [
+					"There's a lot more going on here, so don't panic. What ship doesn't belong? That's the one you want to capture.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "steal") {
+						return [true, [
+							"There you go. That'll teach them to be smarter about invasions...",
+						]];
+					} else {
+						return [false, "That's fine but we have an invader! You need to capture them before they steal your ships!"]
+					}
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "Don't end your turn yet, you haven't done anything!"];
+					}
+					
+					return [true, null, {
+						type: "build",
+						newPiece: "r2C",
+						system: 2,
+					}];
+				}
+			},
+			{
+				startMessages: [
+					"That raises an important point I want to emphasize.",
+					"You could steal the medium red because (1) you had a medium AND (2) you had red technology (from your small red).",
+					"Your ships can borrow each other's technology to perform actions, if they are at the same system. (Similarly, your blue could have moved, or your yellow could have changed color, if you wanted.)",
+					"You can also use the star's technology. You *cannot*, however, borrow technology from enemy ships. Either you capture the ship itself (and you can use it next turn) or you can't use it.",
+					"Anyway...",
+					"Let's do some raiding, the smart way. If you move a ship in that is BIGGER than all the enemy ships, they can't fight back!",
+					"See those four ships at the one system? Let's invade with a stronger ship...",
+				],
+				hint: [
+					"You have four ships that can move to system #5, but only one is stronger than the enemy fleet...",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "move") {
+						if (action.system === 3) {
+							// 3 only has a yellow
+							return [false, "If you move there, the Y2 (i.e. medium yellow) can just move away. Move somewhere with more ships."];
+						} else if (action.system !== 5) {
+							// where are you going?
+							return [false, "Where are you going? Invade the enemy now!"];
+						} else if (action.oldPiece !== "r3B") {
+							// ok at this point we are going to system 5
+							return [false, "That ship isn't strong enough! They'll just capture you right away..."];
+						} else {
+							return [true, "Resistance Is Futile!\n\n...right?"];
+						}
+					} else {
+						// not a move action
+						return [false, "That doesn't look like a move to me..."];
+					}
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "You haven't done anything yet."];
+					}
+					
+					return [
+						true,
+						"It's their turn now, but they can't fight you. They can only move out one ship... right?",
+						// first action
+						{
+							type: "sacrifice",
+							oldPiece: "y2A",
+						},
+						{
+							type: "discover",
+							oldPiece: "b2B",
+							newPiece: "g1A",
+						},
+						{
+							type: "move",
+							oldPiece: "r1A",
+							system: 8, // the newly discovered one
+						},
+					];
+				}
+			},
+			{
+				startMessages: [
+					"What in the galaxy was THAT?",
+					"That's something for a new module... BUT, I wanted to give you the chance to capture that last ship first, if you want to.",
+					"Do *whatever you want* (or nothing) this turn, then we'll start the next module after you End Turn."
+				],
+				hint: [
+					"Did you sacrifice and get stuck?",
+					"There's always Reset Turn, or you can End Turn and learn about sacrifices next module.",
+				],
+				checkAction: function() {
+					if (action.type === "catastrophe") {
+						return [true, ""]
+					}
+					return [true];
+				},
+				checkEndTurn: function() {
+					return [true];
+				}
+			},
+		],
+		endMessages: [
+			"Now let's learn about what they just did to you...",
+			"It's that pesky sacrifice action that I've been stopping you from doing all this time.",
+		],
+	}),
+	
+	new Tutorial({
+		title: "Sometimes You Have to Make Sacrifices",
+		startMap: {
+			"b1A": null,
+			"b1B": null,
+			"b1C": {"at": 6, "owner": null},
+			"b2A": null,
+			"b2B": null,
+			"b2C": {"at": 1, "owner": null},
+			"b3A": null,
+			"b3B": {"at": 5, "owner": null},
+			"b3C": {"at": 2, "owner": null},
+
+			"g1A": null,
+			"g1B": null,
+			"g1C": {"at": 4, "owner": null},
+			"g2A": null,
+			"g2B": null,
+			"g2C": null,
+			"g3A": {"at": 3, "owner": null},
+			"g3B": {"at": 2, "owner": "enemy"},
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": null,
+			"r1B": null,
+			"r1C": {"at": 1, "owner": null},
+			"r2A": null,
+			"r2B": null,
+			"r2C": {"at": 2, "owner": null},
+			"r3A": null,
+			"r3B": null,
+			"r3C": null,
+
+			"y1A": {"at": 5, "owner": "you"},
+			"y1B": {"at": 4, "owner": "enemy"},
+			"y1C": {"at": 3, "owner": "you"},
+			"y2A": {"at": 6, "owner": "enemy"},
+			"y2B": {"at": 1, "owner": "you"},
+			"y2C": {"at": 2, "owner": "enemy"},
+			"y3A": null,
+			"y3B": null,
+			"y3C": null,
+		},
+		steps: [
+			{
+				startMessages: [
+					"Actually, the sacrifice action is rather useful, and often you profit more than you spent.",
+					"The gist of it is this: you can return one of your ships to the Stash. You then get several actions of the ship's type, with the number depending on the size, that you can use anywhere you still have a ship.",
+					"What? OK: If you sacrifice a Small, you get 1 action; a Medium, 2; and a Large, 3.",
+					"The type of actions correspond to the ship's color: sacrificing a large yellow gives you 3 move actions, while a medium blue gives you 2 trades.",
+					"And you can do those actions ANYWHERE you still have a ship, even if it's not the system you sacrificed in! You can split them up among multiple systems or do them all in the same place.",
+					"Here's an interesting opening situation. Goal: Build all three large yellows!",
+				],
+				hint: [
+					"Normally, you can only build one ship per turn. How do you build 3 things in one turn?",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice") {
+						if (action.oldPiece === "g3C") {
+							return [true, "Good. Now you can do 3 build actions. (3 because it was a large, and build actions because it was green.)"];
+						} else {
+							return [false, "Nice try, but sacrificing a yellow gives you *move* actions, and you want to build."];
+						}
+					} else if (action.type === "build") {
+						if (oldState.actions.sacrifice) {
+							// sacrifice then build
+							
+							// give some helpful notices if they look like they have a misconception
+							const at1 = oldState.getAllPiecesAtSystem(1);
+							const at3 = oldState.getAllPiecesAtSystem(3);
+							// these include the star(s)
+							if (at1 === 4 && action.system === 1) {
+								// you're building twice at the homeworld
+								return [true, "Just saying, you don't *have* to build all your new ships where you sacrificed. You have build power EVERYWHERE you have a ship. That's the power of sacrifices!"];
+							} else if (at3 === 3 && action.system === 3) {
+								return [true, "Just saying, you don't *have* to build at green systems when you sacrifice. The sacrifice gives you build power EVERYWHERE you have a ship!"];
+							} else {
+								// no comment
+								return [true];
+							}
+							return [true];
+						} else {
+							return [false, "If you just build now, your turn will be over. Sacrifice something first!"];
+						}
+					}
+				},
+				checkEndTurn: function(oldState) {
+					if (oldState.actions.number > 0) {
+						return [false, "While you don't *have* to use all your actions (sometimes you can't), here you should."];
+					}
+					
+					// enemy move
+					// see if they can exploit catastrophes
+					let systemsToCheck = [1, 3, 5];
+					for (let i = 0; i < systemsToCheck.length; i++) {
+						const system = systemsToCheck[i];
+						// only one system can have 3+ ships
+						// system #1 is the homeworld, which has 2 stars
+						const ships = oldState.getAllPiecesAtSystem(system).length - (system === 1 ? 2 : 1);
+						if (ships === 4) {
+							return [true, [
+								"I see you've built all your ships at the same system. That's legal, but you could have (and, as we will see next module, should have) spread them out.",
+								"There's a non-slight problem with what you did..."
+							], {
+								// you have 4 ships, just immediately catastrophe
+								type: "catastrophe",
+								system: system,
+							}];
+						} else if (ships === 3) {
+							const enemyActions = system === 1 ? [
+								// sacrifice y2A for two moves
+								{
+									type: "sacrifice",
+									oldPiece: "y2A",
+								},
+								// move to your homeworld
+								{
+									type: "move",
+									oldPiece: "y1B",
+									system: 5,
+								},
+								{
+									type: "move",
+									oldPiece: "y1B",
+									system: 1,
+								},
+								// now blow up your 3 yellows
+								{
+									type: "catastrophe",
+									system: 1,
+									color: 'y'
+								},
+							] : [
+								// not at your homeworld so do a simple move
+								{
+									type: "move",
+									oldPiece: "y1B",
+									system: system,
+								},
+								{
+									type: "catastrophe",
+									system: system,
+									color: 'y',
+								},
+							];
+							return [true, "Interesting. I would have built one ship at each system, but this is nice because it's a good transition to the next module..."];
+						}
+					} // end for
+					// No system has 3+ pieces.
+					// Do a catastrophe anyway!
+					return [
+						true,
+						[
+							"That's actually what I would have done in the game, building one piece at each system.",
+							"As usual, I always tease the next rule in this module...",
+						], 
+						// sacrifice Y2 for 2 moves
+						{
+							type: "sacrifice",
+							oldPiece: "y2C",
+						},
+						{
+							type: "move",
+							oldPiece: "y2A",
+							system: 3,
+						},
+						{
+							type: "move",
+							oldPiece: "y1B",
+							system: 3,
+						},
+						{
+							type: "catastrophe",
+							system: 3,
+							color: 'y'
+						}
+					];
+				}, // end checkEndTurn
+			} // end step
+		], // end steps array
+		endMessages: [
+			"What? How did they destroy your ships?",
+			"Something about concentrations of color, apparently... well, time for the next module!",
+			"By the way, I just wanted to clarify something before we go: You can only sacrifice one piece per turn.",
+			"So even if you sacrifice, you might get multiple moves OR multiple captures, but never both in the same turn.",
+			"All right, let's learn about catastrophes!",
+		],
+	}),
+	
+	// -----
+	new Tutorial({
+		title: "Catastrophe!",
+		startMap: {
+			"b1A": null,
+			"b1B": {"at": 3, "owner": "you"},
+			"b1C": {"at": 4, "owner": null},
+			"b2A": {"at": 6, "owner": "enemy"},
+			"b2B": {"at": 9, "owner": "you"},
+			"b2C": {"at": 2, "owner": null},
+			"b3A": null,
+			"b3B": {"at": 6, "owner": null},
+			"b3C": {"at": 1, "owner": null},
+
+			"g1A": {"at": 4, "owner": "you"},
+			"g1B": {"at": 6, "owner": "enemy"},
+			"g1C": {"at": 3, "owner": null},
+			"g2A": null,
+			"g2B": {"at": 4, "owner": "you"},
+			"g2C": null,
+			"g3A": null,
+			"g3B": {"at": 2, "owner": "enemy"},
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": {"at": 1, "owner": "you"},
+			"r1B": {"at": 6, "owner": "enemy"},
+			"r1C": {"at": 3, "owner": "you"},
+			"r2A": {"at": 2, "owner": "enemy"},
+			"r2B": {"at": 3, "owner": "you"},
+			"r2C": null,
+			"r3A": {"at": 3, "owner": "enemy"},
+			"r3B": null,
+			"r3C": {"at": 6, "owner": "enemy"},
+
+			"y1A": {"at": 9, "owner": null},
+			"y1B": {"at": 2, "owner": "enemy"},
+			"y1C": {"at": 2, "owner": null},
+			"y2A": null,
+			"y2B": {"at": 4, "owner": "you"},
+			"y2C": {"at": 1, "owner": null},
+			"y3A": null,
+			"y3B": null,
+			"y3C": null,
+		},
+		steps: [
+			{
+				startMessages: [
+					"So what I didn't tell you about these four technologies was that they are somewhat unstable.",
+					"In fact, if you ever have 4 pieces (ships or stars) of the same color in the same system, that is called an Overpopulation.",
+					"And, on your turn, if there is an Overpopulated system, you have the option to invoke a Catastrophe, destroying all pieces of the Overpopulated color!",
+					"Let's see this in action. Your opponent just invaded one of your colonies, and you can't fight back. But there are 3 red pieces there, 1 shy of a catastrophe...",
+				],
+				hint: [
+					"You need 4 pieces of the same color (here, red) to make a catastrophe.",
+					"There are 3 reds at one of your systems. You'll need to figure out how to add a 4th.",
+				],
+				checkAction: function(action, oldState) {
+					// there are several promising tries
+					if (action.type === "sacrifice") {
+						if (action.oldPiece[0] === "y") {
+							return [false, "Trying to escape, eh? Interesting strategy, but here you can actually destroy the invader if you can create a catastrophe."];
+						} else if (action.oldPiece === "b1B") {
+							return [false, "Were you hoping to trade that small blue (and clicked sacrifice by mistake)? If so, good thinking, but I don't see a small red in the stash."];
+						} else if (action.oldPiece === "b2B") {
+							return [false, [
+								"Oh neat! I assume you're trying to trade out your red (in your homeworld), then trade the small blue for it?",
+								"That's really clever. Unfortunately, I can't let you do that here because you need those blue ships for the next turn...",
+								"But there *is* another clever way to make a nice profit off of this turn."
+							]];
+						} else if (action.oldPiece === "g3C" || action.oldPiece === "g2B") {
+							return [true]; // hold our breath
+						} else {
+							return [false, "Hmmm... I'm not sure what sacrificing *that* piece would do. Perhaps you mis-clicked?"]
+						}
+					} else if (action.type === "build") {
+						// Build.
+						// Give no message unless 
+						if (action.newPiece[0] === 'r' && action.system === 3) {
+							return [true, "Now that there are 4 reds, you still have to manually declare the catastrophe. Click any one of the four red ships, then click the catastrophe button (it's the last one)."];
+						} else {
+							return [true]; // no comment
+						}
+					} else if (action.type === "trade") {
+						return [false, "I'm not sure how that helps you... Try again."];
+					} else if (action.type === "move") {
+						if (action.oldPiece === "r1A") {
+							if (action.system === 3) {
+								return [true, [
+									"I'll let that go, but notice that when you do the catastrophe you will be totally out of red.",
+									"Now that there are 4 reds, you still have to manually declare the catastrophe. Click any one of the four red ships, then click the catastrophe button (it's the last one).",
+								]];
+							} else {
+								return [true, "Whoops, looks like you clicked the wrong system by mistake. Why don't you try out that Reset Turn button? That is designed to save you from these mistakes in a real game."];
+							}
+						} else if (action.type === "catastrophe") {
+							return [true, "There. Notice how your blue is still there? In a ship catastrophe, only the involved ships are destroyed."]
+						}
+					} else {
+						return [true];
+					}
+				},
+				checkEndTurn: function(oldState) {
+					// what I care about is that you destroyed the r3
+					if (oldState.map["r3A"]) {
+						if (oldState.isSystemOverpopulated('r', 3)) {
+							return [false, "Oh right. You actually have to invoke the catastrophe for it to happen. Click one of the overpopulated red ships, then click the catastrophe button."];
+						} else if (oldState.actions.number > 0) {
+							return [false, "Hmmm... It looks like you aren't quite finished. Don't end your turn just yet. (Perhaps you meant to reset?)"];
+						} else {
+							return [false, "Hmmm... It looks like you had a plan, but it didn't work out. That's why we have a Reset Turn button!"];
+						}
+					} else {
+						if (oldState.map["r3B"]) {
+							// you managed to build the other red
+							return [true, "Great! You even managed to build the large before declaring the catastrophe!"];
+						} else if (oldState.map["r1A"]) {
+							return [true, "Good. Now, there was a better way to do it; if you want to find it, come back to this tutorial."];
+						}
+					}
+				}
+			}
+		],
+		endMessages: [],
+	}),
+	
+	// -----
 	new Tutorial({
 		title: "Star Connections",
 		startMap: {
 			/*
-			2 (enemy): enemy has b3,g3; stars r1,y3
+			2 (enemy): enemy has b3,g3,r3; stars r1,y3
 			
 			7: enemy has b3,r2; stars y2
 			6: enemy has b2,r1; stars y2
@@ -32472,16 +33726,47 @@ const tutorialList = [
 			b2A: {at: 1, owner: "you"},
 			b2B: {at: 8, owner: "enemy"},
 			b2C: {at: 6, owner: "enemy"},
-			b3A: {at: 4, owner: "enemy"},
-			b3B: {at: 4, owner: "enemy"},
-			b3C: {at: 4, owner: "enemy"},
+			b3A: {at: 2, owner: "enemy"},
+			b3B: {at: 7, owner: "enemy"},
+			b3C: {at: 3, owner: "enemy"},
+			
+			g1A: null,
+			g1B: null,
+			g1C: null,
+			g2A: {at: 3, owner: null},
+			g2B: null,
+			g2C: null,
+			g3A: null,
+			g3B: {at: 2, owner: "enemy"},
+			g3C: null,
+			
+			r1A: {at: 4, owner: "enemy"},
+			r1B: {at: 6, owner: "enemy"},
+			r1C: {at: 2, owner: null},
+			r2A: {at: 1, owner: "you"},
+			r2B: {at: 8, owner: "enemy"},
+			r2C: {at: 7, owner: "enemy"},
+			r3A: null,
+			r3B: null,
+			r3C: {at: 2, owner: "enemy"},
+			
+			y1A: {at: 5, owner: null},
+			y1B: {at: 4, owner: null},
+			y1C: {at: 3, owner: null},
+			y2A: {at: 1, owner: null},
+			y2B: {at: 6, owner: null},
+			y2C: {at: 7, owner: null},
+			y3A: {at: 1, owner: null},
+			y3B: {at: 2, owner: null},
+			y3C: {at: 8, owner: null},
 		},
+		bannedActions: ["trade", "sacrifice", "catastrophe"],
 		steps: [
 			{
 				startMessages: [
 					"In Homeworlds, two star systems are connected if and only if they do not share any size stars.",
-					"If you find that a bit confusing, here is a scenario where you move all around the board and get a better grasp for what is going on.",
-					"The enemy will NOT act in this scenario, and I have disabled the trade, sacrifice, and discover actions.\n\nCan you capture all the ships?",
+					"If you find that a bit confusing, here is a scenario where you can move between lots of star systems.",
+					"The enemy will NOT act in this scenario (but you still have to end your turn), and I have disabled the trade, sacrifice, and catastrophe actions.\n\nCan you capture all the ships?",
 				],
 				hint: "Just move your red ship out.",
 				checkAction: function(action) {
@@ -32491,23 +33776,55 @@ const tutorialList = [
 					if (action.oldPiece !== "r2A") {
 						return [false, "I'd prefer you move the red ship, so you can directly capture other ships."];
 					}
+					return [true, "All right. Now, capture all the ships (but end your turn first)!"];
 				},
+				checkEndTurn: function() {
+					return [true, [
+						"You might have noticed the star map is arranged neatly to show the system connections.",
+						"However, *always* remember that the actual position of stars on the map is entirely irrevelant and is only done as a visual aid.",
+						"The sizes are all that matters.\nCapture those ships!"
+					]]
+				}
 			},
 			{
 				id: "loop",
-				startMessages: [],
-				hint: "Systems are connected if they are DIFFERENT sizes. It may take you two turns to get where you want to go...",
+				startMessages: [], // no annoying message every single turn
+				hint: [
+					"Systems are connected if they have NO sizes in common. It may take you two or three moves to get where you want to go...",
+					"You need a large ship to attack other larges. Where can you build one?",
+				],
+				
+				checkAction: function() {
+					if (action.type === "trade" || action.type === "catastrophe") {
+						return [false, "I've turned off those actions for now. "]
+					}
+					return [true];
+				},
+				checkEndTurn: function(oldState) {
+					// check if you have anything at home
+					const pieces = oldState.getPiecesAtHomeworlds();
+					if (!pieces["you"] || pieces["you"].ships.length <= 0) {
+						// oh no, you abandoned your homeworld!
+						// (this almost should be standard...)
+						return [false, "No! Don't abandon your homeworld, you will lose!"];
+					}
+					
+					return [true];
+				},
 				
 				// undefined/null => go to next
 				// number => offset (e.g. 2 = go ahead 2 steps), can be negative, if overflows then we finish
 				// "end" => finish tutorial (Infinity also works)
 				// other string => step with matching "id" property
-				nextStep: function(state) {
-					if ("condition") {
-						return "loop";
-					}
+				nextStep: function(gameState) {
+					return gameState.phase === "end" ? 1 : 0;
 				},
 			}
+		],
+		endMessages: [
+			"Well done! I'll admit system number 3, the green/yellow binary, may have been a bit confusing. (It tripped me up when I was testing this!)",
+			"This is part of why it is recommended to pick a different size combination than your opponent in homeworld setup.",
+			"If you both had picked, say, small+large homeworlds, the stars would "
 		],
 	}),
 	

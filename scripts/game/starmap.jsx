@@ -34,22 +34,37 @@ class StarMap extends React.Component {
 	// Numeric score used for Array.sort
 	getSystemOwnershipScore(reactSystemElement) {
 		const ships = reactSystemElement.props.ships;
-		// to prevent logarithm errors
-		let yourScore = 0;
-		let enemyScore = 0;
+		// how much control (determined by size of largest ship) do you have?
+		let yourControl = 0;
+		let enemyControl = 0;
 		for (let i = 0; i < ships.length; i++) {
-			// size^3
-			// dunno why I added the 64
-			const shipScore = [0, 1, 8, 27, 64][ships[i].size];
+			const influence = ships[i].size;
 			if (ships[i].owner === this.props.viewer) {
-				yourScore += shipScore;
+				yourControl = Math.max(yourControl, influence);
 			} else {
-				enemyScore += shipScore;
+				enemyControl += Math.max(enemyControl, influence);
 			}
 		}
 		
-		// Ties go to system ID, to preserve some semblance of order
-		return yourScore - enemyScore + reactSystemElement.props.id/10000;
+		const tiebreak = reactSystemElement.props.id / 1e4;
+		// basically, move systems more dominated by you to your right
+		if (enemyControl && !yourControl) {
+			// put their systems on the left
+			// use system id to make a stable sort
+			return -1 - tiebreak;
+		} else if (yourControl < enemyControl) {
+			// contested system but enemy has majority
+			return -0.5 - tiebreak;
+		} else if (yourControl === enemyControl) {
+			// perfectly contested
+			return tiebreak;
+		} else if (yourControl > enemyControl && enemyControl > 0) {
+			// contested system but you have majority
+			return 0.5 + tiebreak;
+		} else {
+			// only you occupy it
+			return 1 + tiebreak;
+		}
 	}
 	
 	sortContainer(container) {
@@ -140,16 +155,16 @@ class StarMap extends React.Component {
 		</React.Fragment>);
 		
 		if (sizes1.length === 1 && sizes2.length === 1) {
-			console.log("[Starmap] cases C or A");
+			//console.log("[Starmap] cases C or A");
 			// both homeworlds are single stars or geminis
 			if (sizes1[0] === sizes2[0]) {
-				console.log("case c");
+				console.log("[Starmap] case c");
 				// identical sizes, type (c)
 				// put smaller sizes on the left
 				const smallerSize = (sizes1[0] === 1) ? 2 : 1;
 				return this.renderHTMLThreeColumns(smallerSize, containers.adjNeither, containers.adjBoth);
 			} else {
-				console.log("case a");
+				//console.log("case a");
 				// identical sizes, type (a)
 				// row format
 				return rowDisplay;
@@ -375,6 +390,7 @@ class StarMap extends React.Component {
 						viewer={props.viewer}
 						homeworld={system.homeworld}
 						scaleFactor={props.scaleFactor}
+						activePiece={props.activePiece}
 						
 						handleBoardClick={props.handleBoardClick}
 					/>

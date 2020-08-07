@@ -28724,6 +28724,7 @@ __webpack_require__.r(__webpack_exports__);
 
 function ActionInProgress(props) {
   var aip = props.actionInProgress;
+  var turnActions = props.turnActions;
 
   if (aip) {
     var message = "Click on " + (aip.type === "trade" ? "a piece in the stash to TRADE for" : aip.type === "move" ? "any star on the board to MOVE there" : aip.type === "discover" ? "a piece in the stash to DISCOVER" : aip.type === "homeworld" ? !aip.star1 ? "a piece in the stash for your FIRST star" : !aip.star2 ? "a piece in the stash for your SECOND star" : !aip.ship ? "a piece in the stash for your SHIP" : "the END TURN button to finalize!" : "...something... [this is probably a bug!]"); // use the correct icon
@@ -28752,6 +28753,22 @@ function ActionInProgress(props) {
     }, stars || /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("i", {
       className: "material-icons mr-1"
     }, icon), message);
+  } else if (turnActions && turnActions.sacrifice) {
+    var color = {
+      'b': "blue",
+      'g': "green",
+      'r': "red",
+      'y': "yellow"
+    }[turnActions.sacrifice];
+    var type = {
+      'b': "trade",
+      'g': "build",
+      'r': "capture",
+      'y': "move/discover"
+    }[turnActions.sacrifice];
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+      className: "alert alert-light"
+    }, "You have sacrificed a ", color, " ship. You have ", turnActions.number, " ", type, " ", turnActions.number === 1 ? 'action' : 'actions', " left.");
   } else {
     return null;
   }
@@ -28928,15 +28945,16 @@ PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
 - [+] players: The array of players that are playing the game. I think only strings work.
 
 EVENTS:
-- [ ] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
-- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
-- [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
-- [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
-- [ ] onAfterEndTurn(player, newState): 
-- [?] onMount(): Called inside componentDidMount.
-- [?] onUnmount(): Called inside componentWillUnmount.
-- [ ] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
-- [ ] onComponentUpdate()
+- [+] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
+- [+] onBeforeButtonClick(actionType, oldState): Called when the player clicks an action button. Can be used to stop trades before they get the actionInProgress message.
+- [+] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
+- [+] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
+- [+] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
+- [+] onAfterEndTurn(player, newState): 
+- [+] onMount(): Called inside componentDidMount.
+- [+] onUnmount(): Called inside componentWillUnmount.
+- [+] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
+- [+] onComponentUpdate(): Called inside componentDidUpdate.
 */
 
 
@@ -29339,12 +29357,23 @@ function withGame(WrappedComponent, events, additionalState) {
           // If an action is in progress:
           try {
             if (aip.type === "move") {
-              this.doAction({
-                type: "move",
-                player: current.turn,
-                oldPiece: aip.oldPiece,
-                system: current.map[piece].at
-              }, current.turn);
+              // this is the only one that requires clicking on the board twice
+              // allow canceling the action by clicking the same piece twice
+              var newSystem = current.map[piece].at;
+              var oldSystem = current.map[aip.oldPiece].at;
+
+              if (newSystem !== oldSystem) {
+                // at least you're trying to move
+                this.doAction({
+                  type: "move",
+                  player: current.turn,
+                  oldPiece: aip.oldPiece,
+                  system: current.map[piece].at
+                }, current.turn);
+              } else {
+                // clicked the same system, don't alert about illegal moves
+                console.log("Canceling move action.");
+              }
             }
           } catch (error) {
             // TODO: Not alert()!
@@ -29422,6 +29451,15 @@ function withGame(WrappedComponent, events, additionalState) {
             popup: null
           });
           return;
+        } // Check if you can even begin that action.
+
+
+        if (events.onBeforeButtonClick && !events.onBeforeButtonClick.call(this, actionData.type, current)) {
+          console.warn("Action type is blocked.");
+          this.setState({
+            actionInProgress: null,
+            popup: null
+          });
         }
 
         try {
@@ -29581,8 +29619,10 @@ function withGame(WrappedComponent, events, additionalState) {
           }
         }
 
-        var boardScale = this.state.scaleFactor * Math.min(1, 1.15 - numPiecesOnBoard / 60);
-        var stashScale = window.innerHeight / 1800 * Math.min(1, 0.75 + numPiecesOnBoard / 60); // I am not sure if sending the entire state object is "correct"
+        var baseScale = Math.min(window.innerHeight / 1800, window.innerWidth / 2000);
+        var boardScale = baseScale * Math.min(1.1, 1.25 - 0.5 * numPiecesOnBoard / 36);
+        var stashScale = baseScale * Math.min(1, 0.75 + numPiecesOnBoard / 60);
+        var activePiece = this.state.actionInProgress ? this.state.actionInProgress.oldPiece : null; // I am not sure if sending the entire state object is "correct"
 
         var moreProps = events.getProps ? events.getProps.call(this) : {};
         return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(WrappedComponent, _extends({
@@ -29601,6 +29641,7 @@ function withGame(WrappedComponent, events, additionalState) {
           homeworldData: current.homeworldData,
           scaleFactor: boardScale,
           viewer: this.state.viewer,
+          activePiece: activePiece,
           handleBoardClick: function handleBoardClick(piece, event) {
             return _this3.handleBoardClick(piece, event);
           }
@@ -29612,7 +29653,8 @@ function withGame(WrappedComponent, events, additionalState) {
         })), current.phase === "end" ? winBanner : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
           className: "info"
         }, "Turn: ", current.turn, " \u2022 Actions left: ", current.actions.number), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
-          actionInProgress: this.state.actionInProgress
+          actionInProgress: this.state.actionInProgress,
+          turnActions: current.actions
         })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
           className: "stash col-auto",
           align: "right"
@@ -29624,20 +29666,31 @@ function withGame(WrappedComponent, events, additionalState) {
           handleClick: function handleClick(serial) {
             return _this3.handleStashClick(serial);
           }
-        }), canInteract && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+        }), canInteract ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
           onClick: function onClick() {
             return _this3.handleResetClick();
           },
           className: "btn btn-danger mt-1"
-        }, "Reset Turn"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), canInteract &&
+        }, "Reset Turn") :
+        /*#__PURE__*/
+
+        /* this is to prevent the UI from changing too much
+        we make there still be a button but it is inert */
+        react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          className: "btn btn-outline-danger mt-1",
+          disabled: true
+        }, "Reset Turn"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("br", null), canInteract ?
         /*#__PURE__*/
 
         /* todo: clicking "end turn" should check for warnings like overpopulations */
         react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-lg btn-info mt-1",
+          className: "btn btn-lg btn-info mt-2",
           onClick: function onClick() {
             return _this3.doEndTurn(current.turn);
           }
+        }, "End Turn") : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+          className: "btn btn-lg btn-outline-info mt-2",
+          disabled: true
         }, "End Turn"))));
       }
     }]);
@@ -31265,7 +31318,8 @@ function Piece(props) {
     height: props.scaleFactor * baseHeight,
     style: css,
     title: props.serial,
-    highlight: props.highlight,
+    highlight: // why can we not make our own boolean attributes?
+    props.highlight ? "yes" : undefined,
     onClick: function onClick(evt) {
       return props.handleClick(props.serial, evt);
     }
@@ -31295,20 +31349,84 @@ __webpack_require__.r(__webpack_exports__);
 // Allows you to move pieces around and do everything. Could be used to set up puzzles, if you can move the pieces to the right positions.
 
 
+ // gets the JSON for the map, specifically in a format I can use when building tutorials
 
+function getMapJSON() {
+  // JSON.stringify is not sufficient
+  // I want it formatted my way
+  var strings = ["{"];
+  var map = this.getCurrentState().map; // mult = multiplicity?
+
+  var colors = "bgry",
+      sizes = 3,
+      mult = "ABCDE";
+
+  for (var i = 0; i < colors.length; i++) {
+    for (var s = 1; s <= sizes; s++) {
+      for (var k = 0; k < 3; k++) {
+        var serial = "".concat(colors[i]).concat(s).concat(mult[k]);
+        var data = map[serial];
+
+        if (data) {
+          var ownerString = data.owner === null ? "null" : "\"".concat(data.owner, "\"");
+          strings.push("\t\"".concat(serial, "\": {\"at\": ").concat(data.at, ", \"owner\": ").concat(ownerString, "},"));
+        } else {
+          strings.push("\t\"".concat(serial, "\": null,"));
+        }
+      }
+    } // break line after each color
+
+
+    strings.push("");
+  } // the last newline becomes the closing brace
+
+
+  strings[strings.length - 1] = "}";
+  return strings.join("\n");
+}
 
 function SandboxDisplay(props) {
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
     className: "sandbox"
-  }, props.children);
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+    className: "upper-row"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    onClick: props.getMap,
+    className: "btn btn-secondary"
+  }, "Get Map"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    disabled: true,
+    className: "btn btn-secondary"
+  }, "Get Log"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("textarea", {
+    readOnly: true,
+    value: props.pasteContents,
+    placeholder: 'Map and log appear here'
+  })), props.children);
 } // the empty object is because we have no events
 
 
-var GameSandbox = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_2__["default"])(SandboxDisplay, {}, {
+var GameSandbox = Object(_game_jsx__WEBPACK_IMPORTED_MODULE_2__["default"])(SandboxDisplay, {
+  onMount: function onMount() {
+    this.getMap = function () {
+      // update the textarea contents
+      this.setState({
+        pasteContents: getMapJSON.call(this)
+      });
+    }.bind(this);
+  },
+  getProps: function getProps() {
+    return {
+      getMap: this.getMap,
+      pasteContents: this.state.pasteContents
+    };
+  }
+}, {
+  // this sets the existing state rather than adding new state
   actionInProgress: {
     type: "homeworld",
     player: "south"
-  }
+  },
+  // this adds new state
+  pasteContents: ""
 });
 react_dom__WEBPACK_IMPORTED_MODULE_1___default.a.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(GameSandbox, null), document.getElementById('game-container'));
 
@@ -31394,25 +31512,40 @@ var StarMap = /*#__PURE__*/function (_React$Component) {
   _createClass(StarMap, [{
     key: "getSystemOwnershipScore",
     value: function getSystemOwnershipScore(reactSystemElement) {
-      var ships = reactSystemElement.props.ships; // to prevent logarithm errors
+      var ships = reactSystemElement.props.ships; // how much control (determined by size of largest ship) do you have?
 
-      var yourScore = 0;
-      var enemyScore = 0;
+      var yourControl = 0;
+      var enemyControl = 0;
 
       for (var i = 0; i < ships.length; i++) {
-        // size^3
-        // dunno why I added the 64
-        var shipScore = [0, 1, 8, 27, 64][ships[i].size];
+        var influence = ships[i].size;
 
         if (ships[i].owner === this.props.viewer) {
-          yourScore += shipScore;
+          yourControl = Math.max(yourControl, influence);
         } else {
-          enemyScore += shipScore;
+          enemyControl += Math.max(enemyControl, influence);
         }
-      } // Ties go to system ID, to preserve some semblance of order
+      }
 
+      var tiebreak = reactSystemElement.props.id / 1e4; // basically, move systems more dominated by you to your right
 
-      return yourScore - enemyScore + reactSystemElement.props.id / 10000;
+      if (enemyControl && !yourControl) {
+        // put their systems on the left
+        // use system id to make a stable sort
+        return -1 - tiebreak;
+      } else if (yourControl < enemyControl) {
+        // contested system but enemy has majority
+        return -0.5 - tiebreak;
+      } else if (yourControl === enemyControl) {
+        // perfectly contested
+        return tiebreak;
+      } else if (yourControl > enemyControl && enemyControl > 0) {
+        // contested system but you have majority
+        return 0.5 + tiebreak;
+      } else {
+        // only you occupy it
+        return 1 + tiebreak;
+      }
     }
   }, {
     key: "sortContainer",
@@ -31515,18 +31648,18 @@ var StarMap = /*#__PURE__*/function (_React$Component) {
       }, containers.adjSouth));
 
       if (sizes1.length === 1 && sizes2.length === 1) {
-        console.log("[Starmap] cases C or A"); // both homeworlds are single stars or geminis
-
+        //console.log("[Starmap] cases C or A");
+        // both homeworlds are single stars or geminis
         if (sizes1[0] === sizes2[0]) {
-          console.log("case c"); // identical sizes, type (c)
+          console.log("[Starmap] case c"); // identical sizes, type (c)
           // put smaller sizes on the left
 
           var smallerSize = sizes1[0] === 1 ? 2 : 1;
           return this.renderHTMLThreeColumns(smallerSize, containers.adjNeither, containers.adjBoth);
         } else {
-          console.log("case a"); // identical sizes, type (a)
+          //console.log("case a");
+          // identical sizes, type (a)
           // row format
-
           return rowDisplay;
         }
       } else if (sizes1.length === 2 && sizes2.length === 2) {
@@ -31761,6 +31894,7 @@ var StarMap = /*#__PURE__*/function (_React$Component) {
             viewer: props.viewer,
             homeworld: _system.homeworld,
             scaleFactor: props.scaleFactor,
+            activePiece: props.activePiece,
             handleBoardClick: props.handleBoardClick
           }); // Now work out which bin to put the system in!
 
@@ -31970,8 +32104,8 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 
 
 
-var System = /*#__PURE__*/function (_React$Component) {
-  _inherits(System, _React$Component);
+var System = /*#__PURE__*/function (_React$PureComponent) {
+  _inherits(System, _React$PureComponent);
 
   var _super = _createSuper(System);
 
@@ -32019,6 +32153,7 @@ var System = /*#__PURE__*/function (_React$Component) {
           symbolMode: false,
           rotation: rotation,
           scaleFactor: this.props.scaleFactor,
+          highlight: shipData.serial === this.props.activePiece,
           handleClick: this.props.handleBoardClick
         });
 
@@ -32073,7 +32208,7 @@ var System = /*#__PURE__*/function (_React$Component) {
   }]);
 
   return System;
-}(react__WEBPACK_IMPORTED_MODULE_0___default.a.Component);
+}(react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent);
 
 /* harmony default export */ __webpack_exports__["default"] = (System);
 

@@ -26,7 +26,14 @@ const passwordOptions = {
 // 1 hour
 const COOKIE_LIFE = 1000 * 60 * 60;
 
+// these could cause confusion so we declare them as already taken
+const bannedUsernames = ["you", "player", "enemy", "north", "south", "east", "west"]
 async function isUsernameTaken(username) {
+	// these are mostly deceptive ones like "you"
+	if (bannedUsernames.indexOf(username.toLowerCase()) === -1) {
+		return false;
+	}
+	
 	try {
 		const userData = await myUtil.databaseCall(db, "get", "SELECT * FROM users WHERE username = ?", [username]);
 		return userData !== undefined;
@@ -35,6 +42,7 @@ async function isUsernameTaken(username) {
 		return true;
 	}
 }
+
 
 function isUsernameValid(username) {
 	if (typeof username !== "string") {
@@ -206,7 +214,7 @@ app.post("/createAccount", async function(req, res) {
 			type: "confirmPassword",
 			message: "Passwords do not match.",
 		};
-		return res.render("createAccount", res.locals.render);
+		return res.status(400).render("createAccount", res.locals.render);
 	}
 	if (password.length < 12 || password.length >= 100) {
 		res.locals.render.username = username;
@@ -217,12 +225,22 @@ app.post("/createAccount", async function(req, res) {
 		return res.render("createAccount", res.locals.render);
 	}
 	
+	// check if the username is reserved (like "north" or "you" or "player")
+	if (bannedUsernames.indexOf(username) >= 0) {
+		res.locals.render.username = username;
+		res.locals.render.error = {
+			type: "username",
+			message: "That username is reserved. Please pick another.",
+		};
+		return res.render("createAccount", res.locals.render);
+	}
+	
 	// check if the username is taken
 	if (await isUsernameTaken(username)) {
 		res.locals.render.username = username;
 		res.locals.render.error = {
-			type: "password",
-			message: "That username is already taken. Pick another.",
+			type: "username",
+			message: "That username is already taken. Please pick another.",
 		};
 		return res.render("createAccount", res.locals.render);
 	}

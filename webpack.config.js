@@ -96,7 +96,7 @@ module.exports = {
 		lobby: path.resolve(__dirname, "scripts", "lobby", "mainLobby.jsx"),
 		liveGame: path.resolve(__dirname, "scripts", "game", "liveGame.jsx"),
 		archiveGame: path.resolve(__dirname, "scripts", "game", "archiveViewer.jsx"),
-		tutorial: path.resolve(__dirname, "scripts", "game", "tutorialGame.jsx"),
+		tutorial: path.resolve(__dirname, "scripts", "game", "tutorialManager.jsx"),
 	},
 	output: {
 		publicPath: '/scripts',

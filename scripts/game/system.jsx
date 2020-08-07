@@ -5,7 +5,7 @@
 import React from 'react';
 import Piece from './piece.jsx';
 
-class System extends React.Component {
+class System extends React.PureComponent {
 	constructor(props) {
 		super(props);
 	}
@@ -44,6 +44,7 @@ class System extends React.Component {
 				symbolMode={false}
 				rotation={rotation}
 				scaleFactor={this.props.scaleFactor}
+				highlight={shipData.serial === this.props.activePiece}
 				
 				handleClick={this.props.handleBoardClick}
 			/>;

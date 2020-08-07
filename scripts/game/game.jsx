@@ -11,15 +11,16 @@ PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
 - [+] players: The array of players that are playing the game. I think only strings work.
 
 EVENTS:
-- [ ] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
-- [?] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
-- [?] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
-- [ ] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
-- [ ] onAfterEndTurn(player, newState): 
-- [?] onMount(): Called inside componentDidMount.
-- [?] onUnmount(): Called inside componentWillUnmount.
-- [ ] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
-- [ ] onComponentUpdate()
+- [+] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
+- [+] onBeforeButtonClick(actionType, oldState): Called when the player clicks an action button. Can be used to stop trades before they get the actionInProgress message.
+- [+] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
+- [+] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
+- [+] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
+- [+] onAfterEndTurn(player, newState): 
+- [+] onMount(): Called inside componentDidMount.
+- [+] onUnmount(): Called inside componentWillUnmount.
+- [+] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
+- [+] onComponentUpdate(): Called inside componentDidUpdate.
 */
 
 import React from 'react';
@@ -388,12 +389,22 @@ function withGame(WrappedComponent, events, additionalState) {
 				// If an action is in progress:
 				try {
 					if (aip.type === "move") {
-						this.doAction({
-							type: "move",
-							player: current.turn,
-							oldPiece: aip.oldPiece,
-							system: current.map[piece].at,
-						}, current.turn);
+						// this is the only one that requires clicking on the board twice
+						// allow canceling the action by clicking the same piece twice
+						const newSystem = current.map[piece].at;
+						const oldSystem = current.map[aip.oldPiece].at;
+						if (newSystem !== oldSystem) {
+							// at least you're trying to move
+							this.doAction({
+								type: "move",
+								player: current.turn,
+								oldPiece: aip.oldPiece,
+								system: current.map[piece].at,
+							}, current.turn);
+						} else {
+							// clicked the same system, don't alert about illegal moves
+							console.log("Canceling move action.");
+						}
 					}
 				} catch (error) {
 					// TODO: Not alert()!
@@ -471,6 +482,15 @@ function withGame(WrappedComponent, events, additionalState) {
 					popup: null,
 				});
 				return;
+			}
+			
+			// Check if you can even begin that action.
+			if (events.onBeforeButtonClick && !events.onBeforeButtonClick.call(this, actionData.type, current)) {
+				console.warn("Action type is blocked.");
+				this.setState({
+					actionInProgress: null,
+					popup: null,
+				});
 			}
 			
 			try {
@@ -626,9 +646,11 @@ function withGame(WrappedComponent, events, additionalState) {
 				}
 			}
 			
-			const boardScale = this.state.scaleFactor * Math.min(1, 1.15 - numPiecesOnBoard/60);
-			const stashScale = (window.innerHeight / 1800) * Math.min(1, 0.75 + numPiecesOnBoard/60);
+			const baseScale = Math.min(window.innerHeight / 1800, window.innerWidth / 2000);
+			const boardScale = baseScale * Math.min(1.1, 1.25 - 0.5 * numPiecesOnBoard/36);
+			const stashScale = baseScale * Math.min(1, 0.75 + numPiecesOnBoard/60);
 			
+			const activePiece = this.state.actionInProgress ? this.state.actionInProgress.oldPiece : null;
 			// I am not sure if sending the entire state object is "correct"
 			const moreProps = events.getProps ? events.getProps.call(this) : {};
 			return <WrappedComponent
@@ -644,6 +666,8 @@ function withGame(WrappedComponent, events, additionalState) {
 								scaleFactor={ boardScale }
 								viewer={this.state.viewer}
 								
+								activePiece={activePiece}
+								
 								handleBoardClick={(piece, event) => this.handleBoardClick(piece, event)}
 							/>
 							{/* Display the actions popup if applicable */}
@@ -657,7 +681,10 @@ function withGame(WrappedComponent, events, additionalState) {
 							Turn: {current.turn} &bull;
 							Actions left: {current.actions.number}
 						</p>
-						<ActionInProgress actionInProgress={this.state.actionInProgress} />
+						{/* Give the AIP indicator anything about your sacrifice actions */}
+						<ActionInProgress
+							actionInProgress={this.state.actionInProgress}
+							turnActions={current.actions} />
 					</div>
 					<div className="stash col-auto" align="right">
 						<h4 align="center">Stash</h4>
@@ -666,15 +693,21 @@ function withGame(WrappedComponent, events, additionalState) {
 							data={current.map}
 							handleClick={(serial) => this.handleStashClick(serial)}
 						/>
-						{canInteract && <button
+						{canInteract ? <button
 							onClick={() => this.handleResetClick()}
 							className="btn btn-danger mt-1">Reset Turn</button>
+							:
+							/* this is to prevent the UI from changing too much
+							we make there still be a button but it is inert */
+							<button className="btn btn-outline-danger mt-1" disabled>Reset Turn</button>
 						}
 						<br/>
-						{canInteract &&
+						{canInteract ?
 							/* todo: clicking "end turn" should check for warnings like overpopulations */
-						<button className="btn btn-lg btn-info mt-1"
+						<button className="btn btn-lg btn-info mt-2"
 						        onClick={() => this.doEndTurn(current.turn)}>End Turn</button>
+						        :
+						<button className="btn btn-lg btn-outline-info mt-2" disabled>End Turn</button>
 						}
 					</div>
 				</div>

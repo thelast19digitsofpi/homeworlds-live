@@ -37,7 +37,10 @@ function Piece(props) {
 	            height={props.scaleFactor * baseHeight}
 	            style={css}
 	            title={props.serial}
-	            highlight={props.highlight}
+	            highlight={
+	            	// why can we not make our own boolean attributes?
+	            	props.highlight ? "yes" : undefined
+	            }
 	            onClick={(evt) => props.handleClick(props.serial, evt)} />
 }
 

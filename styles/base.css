@@ -11,6 +11,7 @@ body {
 }
 
 /* Game styling */
+/* For the most part I put here only that which either (1) was done early on, (2) I cannot do with Bootstrap's classes, or (3) I want to be able to adjust more finely than bootstrap's. */
 
 .star-map-wrapper {
 }
@@ -29,8 +30,8 @@ body {
 }
 /* some extra breathing room */
 .system-container + .system-container {
-	margin-left: 0.5em;
-	margin-right: 0.5em;
+	margin-left: 0.5vw;
+	margin-right: 0.5vw;
 }
 
 .homeworld {
@@ -46,17 +47,17 @@ body {
 }
 
 .system-container:not(.homeworld) {
-	padding-top: 0.5em;
-	padding-bottom: 0.5em;
+	padding-top: 0.3vh;
+	padding-bottom: 0.3vh;
 }
 
 .piece[piecetype="star"] {
-	margin-left: 0.25em;
-	margin-right: 0.25em;
+	margin-left: 0.4vw;
+	margin-right: 0.4vw;
 }
 /* 2 stars in the same system go together */
 .piece[piecetype="star"] + .piece[piecetype="star"] {
-	margin-left: none;
+	margin-left: -0.2vw;
 }
 
 .stash {
@@ -79,13 +80,15 @@ body {
 
 /* Highlight pieces by making them fade out and in */
 @keyframes fade {
-	from { opacity: 1; }
-	to { opacity: 0.33; }
+	0% { opacity: 1; }
+	20% { opacity: 0.9; }
+	100% { opacity: 0.5; }
 }
 .piece[highlight] {
 	animation-name: fade;
 	animation-duration: 0.5s;
 	animation-direction: alternate;
+	animation-iteration-count: infinite;
 }
 
 /* Action popup */
