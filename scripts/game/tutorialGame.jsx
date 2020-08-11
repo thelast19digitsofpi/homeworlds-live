@@ -46,13 +46,13 @@ class TutorialWrapper extends React.Component {
 		
 		// ooh this is interesting
 		return <div className="position-relative">
-			<h2>{tutorial.title}</h2>
+			<h3>{tutorial.title}</h3>
 			{/* button group at top */}
 			<div className="btn-group">
 				<button className="btn btn-danger"
 					onClick={() => this.props.navMethods.returnToMenu()}>
 					<i className="material-icons md-18 mr-1 align-middle">undo</i>
-					Go Back
+					Back to Menu
 				</button>
 				<button className="btn btn-secondary" onClick={() => this.props.displayStartMessage()}>
 					<i className="material-icons md-18 mr-1 align-middle">restore</i>
@@ -94,21 +94,32 @@ const TutorialGame = withGame(TutorialWrapper, {
 			}
 		}
 		
+		let needsHomeworld = true;
+		for (let serial in tutorial.startMap) {
+			const data = tutorial.startMap[serial];
+			if (data && data.at === 1) {
+				// your homeworld.
+				needsHomeworld = false; // you have it
+				break; // stop searching
+			}
+		}
+		
 		const gameState = new GameState(
 			tutorial.startMap,
-			"playing",
-			{you: 1, enemy: 2}, // standard procedure
+			needsHomeworld ? "setup" : "playing",
+			needsHomeworld ? {} : {you: 1, enemy: 2}, // standard procedure
 			maxSystem + 1,
 			["you", "enemy"],
 			"you",
 			{number: 1, sacrifice: null},
-			null
+			null // winner
 		);
 		
 		this.setState({
 			current: gameState,
 			history: [[gameState]],
 			viewer: "you",
+			actionInProgress: needsHomeworld ? {type: "homeworld"} : null,
 		});
 		
 		// some functions
@@ -214,15 +225,20 @@ const TutorialGame = withGame(TutorialWrapper, {
 					}
 				}
 			}
+			// make things happen
 			console.warn("Moving to step " + nextIndex);
+			// don't go before the start
 			if (nextIndex < 0) nextIndex = 0;
 			if (nextIndex < this.props.tutorial.steps.length) {
+				// move to that index
 				this.setState({
 					stepID: nextIndex,
 				});
 				this.displayStartMessage();
 			} else {
-				console.log("?!?");
+				// you have finished the step
+				// disable the tutorial
+				console.log("End of Module");
 				this.setState({
 					messageTitle: "Scenario Complete",
 					messages: this.props.tutorial.endMessages,
@@ -232,16 +248,16 @@ const TutorialGame = withGame(TutorialWrapper, {
 			}
 		}.bind(this);
 		
-		this.nextEnemyAction = function(delay) {
+		this.nextEnemyAction = function nextEnemyAction(delay) {
 			console.log(this.state.enemyActionQueue);
-			setTimeout(function() {
+			const enemyActionTimeout = setTimeout(function() {
 				// get the state BEFORE shifting the queue
 				const queue = this.state.enemyActionQueue;
 				const action = this.shiftActionQueue();
 				if (action) {
 					if (action.type === "end-turn") {
-						this.doEndTurn("enemy");
-						this.advanceStep();
+						// call this.advanceStep after doing the end-turn
+						this.doEndTurn("enemy", this.advanceStep);
 					} else {
 						this.doAction(action, "enemy");
 						// loop it
@@ -257,7 +273,16 @@ const TutorialGame = withGame(TutorialWrapper, {
 				}
 				// below: the timer is 0.5s for end-turn and 1.5s for actions
 			}.bind(this), delay || 1500); // will adjust
+			
+			// put the timeout key in the state so we can clear it if needed
+			this.setState({
+				enemyActionTimeout: enemyActionTimeout,
+			});
 		}.bind(this);
+	},
+	
+	onUnmount: function() {
+		clearTimeout(this.enemyActionTimeout);
 	},
 	
 	getProps: function() {
@@ -276,7 +301,7 @@ const TutorialGame = withGame(TutorialWrapper, {
 	},
 	
 	canInteract: function(gameState) {
-		return gameState.turn === "you";
+		return gameState.turn === "you" && !(this.state.complete);
 	},
 	
 	onBeforeButtonClick: function(actionType, oldState) {
@@ -326,11 +351,17 @@ const TutorialGame = withGame(TutorialWrapper, {
 		}
 		if (step.checkAction) {
 			const result = step.checkAction(action, oldState);
+			if (!result) {
+				// no return!
+				console.error(new Error("This is bad. Function did not return! Assuming move is good..."));
+				return true;
+			}
+			
 			if (result[1]) {
 				console.warn("Result", result[1]);
 				this.setState({
 					messages: (result[1] instanceof Array) ? result[1] : [result[1]],
-					messageTitle: result[0] ? "Good Choice" : "Try Again!",
+					messageTitle: result[0] ? "Success" : "Try Again!",
 					messageNumber: 1,
 				});
 			}
@@ -430,6 +461,7 @@ const TutorialGame = withGame(TutorialWrapper, {
 	// the opponent may need to do several actions at once
 	// I think this is the only way to do it
 	enemyActionQueue: [],
+	enemyActionTimeout: null,
 });
 
 

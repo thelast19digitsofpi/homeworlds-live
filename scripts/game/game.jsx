@@ -29,6 +29,7 @@ import StarMap from './starmap.jsx';
 import ActionInProgress from './actionInProgress.jsx';
 import ActionsPopup from './action_popup.jsx';
 import Stash from './stash.jsx';
+import WarningIndicator from './warningIndicator.jsx';
 
 function withGame(WrappedComponent, events, additionalState) {
 	return class extends React.Component {
@@ -56,6 +57,9 @@ function withGame(WrappedComponent, events, additionalState) {
 				popup: null,
 				// For actions in progress. E.g. you click the "trade" button THEN a stash piece.
 				actionInProgress: null,
+				
+				// the warnings themselves are computed from the GameState
+				showWarnings: false,
 			};
 			this.state.current = GameState.recoverFromJSON(this.state.current);
 			// start with a state in the history list!
@@ -148,7 +152,8 @@ function withGame(WrappedComponent, events, additionalState) {
 		// Assumes (and ensures) 2 things:
 		// (1) The state at the start of a turn is index [0] in that turn's inner array.
 		// (2) The current state is the last item in the stack.
-		updateGameState(newState, isNewTurn) {
+		// Third parameter is a callback.
+		updateGameState(newState, isNewTurn, callback) {
 			// The safer method for calling React's setState()
 			this.setState(reactState => {
 				// Copy the history array
@@ -165,18 +170,20 @@ function withGame(WrappedComponent, events, additionalState) {
 					history: history,
 					current: newState
 				};
-			});
+			}, callback || (() => {})); // use the callback if provided
 		}
 		
 		// Appends the action to the list of actions taken so far
 		appendAction(action) {
 			// this is annoyingly difficult
-			const allActions = this.state.allActions.slice();
-			const thisTurn = allActions[allActions.length - 1].slice();
-			thisTurn.push(action);
-			allActions[allActions.length - 1] = thisTurn;
-			this.setState({
-				allActions: allActions,
+			this.setState(function(reactState) {
+				const newActions = reactState.allActions.slice();
+				const thisTurn = newActions[newActions.length - 1].slice();
+				thisTurn.push(action);
+				newActions[newActions.length - 1] = thisTurn;
+				return {
+					allActions: newActions,
+				};
 			});
 		}
 		
@@ -269,9 +276,11 @@ function withGame(WrappedComponent, events, additionalState) {
 				}
 				alert("Illegal action!\n" + error.message);
 			}
+			
+			this.dismissWarnings();
 		}
 		
-		doEndTurn(player) {
+		doEndTurn(player, callback) {
 			const current = this.getCurrentState();
 			const newState = current.doEndTurn();
 			// whoa there... check that you actually can end the turn
@@ -287,7 +296,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				return;
 			}
 			
-			this.updateGameState(newState, true);
+			this.updateGameState(newState, true, callback);
 			this.setState({
 				// append a single empty array to the end
 				allActions: this.state.allActions.concat([[]])
@@ -308,8 +317,13 @@ function withGame(WrappedComponent, events, additionalState) {
 				});
 			} else {
 				// just clear it totally
-				this.actionInProgress = null;
+				this.setState({
+					actionInProgress: null,
+				});
 			}
+			
+			// dismiss any warnings
+			this.dismissWarnings();
 		}
 		
 		// Undoes the actions you took this turn.
@@ -343,6 +357,12 @@ function withGame(WrappedComponent, events, additionalState) {
 		}
 		
 		
+		// Not sure where to put this
+		dismissWarnings() {
+			this.setState({
+				showWarnings: false,
+			});
+		}
 		
 		/*
 		Clicking on a ship.
@@ -552,6 +572,16 @@ function withGame(WrappedComponent, events, additionalState) {
 							newPiece: serial,
 						}, current.turn);
 					} else if (aip.type === "homeworld") {
+						// Check if the piece is already taken.
+						for (let key in aip) {
+							// "key" will be star1, star2, etc (and also type but we don't really care because that never matches a serial)
+							if (serial === aip[key]) {
+								// you have already used this piece
+								// (don't yell at them, they probably just double-clicked)
+								return;
+							}
+						}
+						
 						// Here we have to update the actionInProgress object itself
 						let newAIP = {};
 						if (!aip.star1) {
@@ -604,6 +634,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 		}
 		
+		// Handles clicking Reset Turn.
 		handleResetClick() {
 			if (events.canInteract && !events.canInteract.call(this, this.getCurrentState())) {
 				console.warn("Cannot Interact with the Board");
@@ -613,14 +644,33 @@ function withGame(WrappedComponent, events, additionalState) {
 			this.doResetTurn(this.getCurrentState().turn);
 		}
 		
+		// Handles clicking End Turn. Not for use by the warning component.
+		handleEndTurnClick() {
+			const current = this.getCurrentState();
+			const warnings = current.getEndTurnWarnings();
+			for (let i = 0; i < warnings.length; i++) {
+				if (warnings[i].level === "warning" || warnings[i].level === "danger") {
+					this.setState({
+						showWarnings: true,
+					});
+					return;
+				}
+			}
+			
+			// if nothing sufficiently serious was found...
+			this.doEndTurn(current.turn);
+		}
+		
+		// The grand finale method, as I call it
 		render() {
 			const current = this.getCurrentState();
 			const winBanner = <p className="alert alert-primary lead">
 				{"Game over, " +
 					(current.winner ? current.winner + " has won!" : "the game is a draw!")
 				}
-			</p>
+			</p>;
 			
+			const warnings = current.getEndTurnWarnings();
 			
 			let starMapStyle = {
 				// make there be a border, but it is invisible
@@ -631,17 +681,34 @@ function withGame(WrappedComponent, events, additionalState) {
 			};
 			// Modify the look based on if you can currently interact...
 			const canInteract = (events.canInteract ? events.canInteract.call(this, current) : true);
+			let endTurnClass = "success";
 			if (canInteract) {
 				starMapStyle.borderColor = "#ccc";
-			} else {
-				// nothing
+				// find the maximum level
+				const levels = {
+					note: 0,
+					caution: 1,
+					warning: 2,
+					danger: 3,
+				};
+				let maxLevel = 0;
+				for (let i = 0; i < warnings.length; i++) {
+					// use the lookup table
+					const newLevel = levels[warnings[i].level];
+					if (newLevel > maxLevel) {
+						maxLevel = newLevel;
+					}
+				}
+				
+				// there's no "caution" or "note" button class
+				endTurnClass = ["success text-light", "info", "warning text-white", "danger"][maxLevel];
 			}
 			
 			
 			// very very simple heuristic that scales the board down based on the number of pieces that are on the board
 			let numPiecesOnBoard = 0;
 			for (let serial in current.map) {
-				if (current.map[serial] !== null) {
+				if (current.map[serial]) {
 					numPiecesOnBoard++;
 				}
 			}
@@ -680,7 +747,19 @@ function withGame(WrappedComponent, events, additionalState) {
 						<p className="info">
 							Turn: {current.turn} &bull;
 							Actions left: {current.actions.number}
+							{ // let them know there are warnings if there are
+								(canInteract && warnings.length > 0) ?
+									<React.Fragment>&nbsp;&bull; hover over End Turn to see warnings</React.Fragment> :
+									null
+							}
 						</p>
+						
+						{/* Give the warning indicator if you try to end your turn dangerously */
+							this.state.showWarnings && <WarningIndicator
+								warnings={warnings}
+								onClose={() => this.dismissWarnings()}
+								onEndTurn={() => this.doEndTurn(current.turn)} />
+						}
 						{/* Give the AIP indicator anything about your sacrifice actions */}
 						<ActionInProgress
 							actionInProgress={this.state.actionInProgress}
@@ -698,14 +777,16 @@ function withGame(WrappedComponent, events, additionalState) {
 							className="btn btn-danger mt-1">Reset Turn</button>
 							:
 							/* this is to prevent the UI from changing too much
-							we make there still be a button but it is inert */
+							we make there still be a button, but it is inert */
 							<button className="btn btn-outline-danger mt-1" disabled>Reset Turn</button>
 						}
 						<br/>
 						{canInteract ?
 							/* todo: clicking "end turn" should check for warnings like overpopulations */
-						<button className="btn btn-lg btn-info mt-2"
-						        onClick={() => this.doEndTurn(current.turn)}>End Turn</button>
+							// use title for a tooltip...
+						<button className={"mt-2 btn btn-lg btn-" + endTurnClass}
+						        title={warnings.map(warn => warn.message).join("\n\n")}
+						        onClick={() => this.handleEndTurnClick()}>End Turn</button>
 						        :
 						<button className="btn btn-lg btn-outline-info mt-2" disabled>End Turn</button>
 						}

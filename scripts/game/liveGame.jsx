@@ -104,7 +104,7 @@ class LiveGameDisplay extends React.Component {
 				const min = Math.floor(Math.abs(timeLeft) / 60);
 				// floor both, so it is an integer
 				const sec = Math.floor(Math.abs(timeLeft) % 60);
-				
+				// put the sign on and put it all together!
 				const timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
 				
 				let usernameClassName = "card-title clock-name d-md-inline-block mr-4 mr-lg-none";
@@ -414,6 +414,16 @@ const LiveGame = withGame(LiveGameDisplay, {
 		// hmmm... do we even need anything else?
 		return true;
 	},
+	
+	// Warnings.
+	onBeforeEndTurn: function(player, oldState, newState) {
+		// Opponent's turns do not display warnings.
+		if (player !== YOUR_USERNAME) return true;
+		
+		// Get the warnings associated with oldState.
+		
+	},
+	
 	onAfterAction: function(action, player, newState) {
 		console.warn("onAfterAction", player);
 		if (player === YOUR_USERNAME) {

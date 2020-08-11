@@ -5,13 +5,13 @@
 		<line x1="1" y1="67" x2="67" y2="1" />
 	</g>
 	<g fill="#000000" opacity="0.75" stroke="none">
- 		<ellipse cx="34" cy="4" rx="5" ry="2" />
- 		<ellipse cx="34" cy="64" rx="5" ry="2" />
- 		<ellipse cx="4" cy="34" rx="2" ry="5" />
- 		<ellipse cx="64" cy="34" rx="2" ry="5" />
- 		<ellipse cx="47" cy="4" rx="5" ry="2" />
- 		<ellipse cx="21" cy="64" rx="5" ry="2" />
- 		<ellipse cx="4" cy="21" rx="2" ry="5" />
- 		<ellipse cx="64" cy="47" rx="2" ry="5" />
+ 		<ellipse cx="34" cy="5" rx="5" ry="3" />
+ 		<ellipse cx="34" cy="63" rx="5" ry="3" />
+ 		<ellipse cx="5" cy="34" rx="3" ry="5" />
+ 		<ellipse cx="63" cy="34" rx="3" ry="5" />
+ 		<ellipse cx="47" cy="5" rx="5" ry="3" />
+ 		<ellipse cx="21" cy="63" rx="5" ry="3" />
+ 		<ellipse cx="5" cy="21" rx="3" ry="5" />
+ 		<ellipse cx="63" cy="47" rx="3" ry="5" />
  	</g>
 </svg>

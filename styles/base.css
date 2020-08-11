@@ -27,6 +27,7 @@ body {
 	display: inline-block;
 	padding-left: 1em;
 	padding-right: 1em;
+	user-select: none;
 }
 /* some extra breathing room */
 .system-container + .system-container {
@@ -95,6 +96,7 @@ body {
 .action-popup {
 	position: absolute;
 	background-color: rgba(6, 6, 6, 0.5);
+	z-index: 10;
 }
 
 /* Clocks */

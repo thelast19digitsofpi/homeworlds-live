@@ -21,6 +21,7 @@ const ship_template = ejs.compile(`<% -%>
 </svg>`);
 
 // stars (image is square so width == height)
+const pipDistFromEdge = 5;
 const star_template = ejs.compile(`<% -%>
 <svg xmlns="http://www.w3.org/2000/svg" width="<%= width %>" height="<%= width %>">
 	<rect x="0" y="0" width="<%= width %>" height="<%= width %>" rx="4" ry="4" fill="<%= color %>" stroke="${pipColor}" stroke-width="1" />
@@ -30,10 +31,10 @@ const star_template = ejs.compile(`<% -%>
 	</g>
 	<g fill="${pipColor}" opacity="0.75" stroke="none">
 <%_ for (var i = 0; i < size; i++) { -%>
- 		<ellipse cx="<%= width/2 + 13*i %>" cy="4" rx="5" ry="2" />
- 		<ellipse cx="<%= width/2 - 13*i %>" cy="<%= width - 4 %>" rx="5" ry="2" />
- 		<ellipse cx="4" cy="<%= width/2 - 13*i %>" rx="2" ry="5" />
- 		<ellipse cx="<%= width - 4 %>" cy="<%= width/2 + 13*i %>" rx="2" ry="5" />
+ 		<ellipse cx="<%= width/2 + 13*i %>" cy="${pipDistFromEdge}" rx="5" ry="3" />
+ 		<ellipse cx="<%= width/2 - 13*i %>" cy="<%= width - ${pipDistFromEdge} %>" rx="5" ry="3" />
+ 		<ellipse cx="${pipDistFromEdge}" cy="<%= width/2 - 13*i %>" rx="3" ry="5" />
+ 		<ellipse cx="<%= width - ${pipDistFromEdge} %>" cy="<%= width/2 + 13*i %>" rx="3" ry="5" />
 <%_ } -%>
  	</g>
 </svg>`);

@@ -5,9 +5,9 @@
 		<line x1="1" y1="47" x2="47" y2="1" />
 	</g>
 	<g fill="#000000" opacity="0.75" stroke="none">
- 		<ellipse cx="24" cy="4" rx="5" ry="2" />
- 		<ellipse cx="24" cy="44" rx="5" ry="2" />
- 		<ellipse cx="4" cy="24" rx="2" ry="5" />
- 		<ellipse cx="44" cy="24" rx="2" ry="5" />
+ 		<ellipse cx="24" cy="5" rx="5" ry="3" />
+ 		<ellipse cx="24" cy="43" rx="5" ry="3" />
+ 		<ellipse cx="5" cy="24" rx="3" ry="5" />
+ 		<ellipse cx="43" cy="24" rx="3" ry="5" />
  	</g>
 </svg>

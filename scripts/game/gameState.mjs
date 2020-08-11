@@ -885,7 +885,14 @@ class GameState {
 		for (let i = 0; i < pieces.length; i++) {
 			const freeToTake = this.map.hasOwnProperty(pieces[i]) && this.map[pieces[i]] === null;
 			if (!freeToTake) {
-				throw new Error("The piece " + pieces[i] + " is not available in the stash. If you have not been hacking, this is a bug.");
+				throw new Error("The piece " + pieces[i] + " is not available in the stash. This is either a faulty load file or a bug.");
+			}
+			
+			// Also verify that you did not pick the same piece twice
+			for (let j = i+1; j < pieces.length; j++) {
+				if (pieces[i] === pieces[j]) {
+					throw new Error("You have duplicated piece " + pieces[i] + ". That is not allowed.");
+				}
 			}
 		}
 		// We use the number of actions to determine if you have your HW set up or not
@@ -1251,6 +1258,23 @@ class GameState {
 		const you = this.turn;
 		const allHWs = this.getPiecesAtHomeworlds();
 		const yourData = allHWs[you];
+		if (!yourData) {
+			return [
+				{
+					level: "danger",
+					message: "You haven't picked your homeworld yet, so don't end your turn!",
+				}
+			];
+		}
+		
+		// one easy one
+		if (this.actions.number > 0) {
+			warnings.push({
+				level: "caution",
+				message: "You haven't used all your actions this turn, so ending now could be a waste.",
+			});
+		}
+		
 		const yourShips = yourData.ships;
 		const yourStars = yourData.stars;
 		const allPieces = yourShips.concat(yourStars);
@@ -1313,7 +1337,7 @@ class GameState {
 			if (!hasGreen) {
 				warnings.push({
 					level: "danger",
-					message: "You do not have construction (green) technology in your homeworld! You will not be able to build new ships! This is bad.",
+					message: "You do not have building (green) technology in your homeworld! You will not be able to build new ships! This is bad.",
 				});
 			}
 			if (!hasBlue) {
@@ -1331,7 +1355,7 @@ class GameState {
 		} else {
 			// not setup
 			if (yourShips.length === 0) {
-				this.warnings.push({
+				warnings.push({
 					level: "danger",
 					message: "You can't abandon your homeworld, or else you lose! You need to make sure you have a ship at home when your turn ends. (Reset Turn if you need to.)",
 				});
@@ -1356,19 +1380,34 @@ class GameState {
 			const colors = Object.keys(colorFrequencies)
 			if (colors.length === 1) {
 				// you only have 1 color
-				if (yourShips.length === 3) {
-					this.warnings.push({
+				if (yourShips.length === 4) {
+					warnings.push({
+						level: "danger",
+						message: "You have 4 ships in your homeworld and they are all the same color! That's a catastrophe waiting to happen!",
+					});
+				} else if (yourShips.length === 3) {
+					warnings.push({
 						level: "warning",
-						message: "You have 3 ships in your homeworld, and they are all the same color. If your opponent can move just one more in, you will lose!",
+						message: "You have 3 ships in your homeworld, and they are all the same color. If your opponent can move just one more in, you would lose, so be careful!",
 					});
 				} else if (yourShips.length === 2) {
-					this.warnings.push({
-						level: "note",
-						message: "You have 2 ships in your homeworld, and they are the same color. Be careful if your opponent can move 2 more and catastrophe you."
-					})
+					// this is too common in legitimate games so I'm disabling it
+					// warnings.push({
+					// 	level: "note",
+					// 	message: "You have 2 ships in your homeworld, and they are the same color. Be careful if your opponent can move 2 more and catastrophe you."
+					// })
 				}
 			}
+			
+			if (!hasLarge) {
+				warnings.push({
+					level: "caution",
+					message: "You don't have a large ship at your homeworld. If your opponent gets a large in before you do, you won't be able to fight back!",
+				});
+			}
 		}
+		
+		return warnings;
 	}
 	
 	// Last and... kind of deserves to be last!

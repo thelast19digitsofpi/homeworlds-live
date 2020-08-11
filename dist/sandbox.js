@@ -28909,6 +28909,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./actionInProgress.jsx */ "./scripts/game/actionInProgress.jsx");
 /* harmony import */ var _action_popup_jsx__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./action_popup.jsx */ "./scripts/game/action_popup.jsx");
 /* harmony import */ var _stash_jsx__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./stash.jsx */ "./scripts/game/stash.jsx");
+/* harmony import */ var _warningIndicator_jsx__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./warningIndicator.jsx */ "./scripts/game/warningIndicator.jsx");
 function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -28963,6 +28964,7 @@ EVENTS:
 
 
 
+
 function withGame(WrappedComponent, events, additionalState) {
   return /*#__PURE__*/function (_React$Component) {
     _inherits(_class, _React$Component);
@@ -28991,7 +28993,9 @@ function withGame(WrappedComponent, events, additionalState) {
         // Popup data for clicking on a ship.
         popup: null,
         // For actions in progress. E.g. you click the "trade" button THEN a stash piece.
-        actionInProgress: null
+        actionInProgress: null,
+        // the warnings themselves are computed from the GameState
+        showWarnings: false
       };
       _this.state.current = _gameState_mjs__WEBPACK_IMPORTED_MODULE_1__["default"].recoverFromJSON(_this.state.current); // start with a state in the history list!
 
@@ -29097,10 +29101,11 @@ function withGame(WrappedComponent, events, additionalState) {
       // Assumes (and ensures) 2 things:
       // (1) The state at the start of a turn is index [0] in that turn's inner array.
       // (2) The current state is the last item in the stack.
+      // Third parameter is a callback.
 
     }, {
       key: "updateGameState",
-      value: function updateGameState(newState, isNewTurn) {
+      value: function updateGameState(newState, isNewTurn, callback) {
         // The safer method for calling React's setState()
         this.setState(function (reactState) {
           // Copy the history array
@@ -29117,19 +29122,21 @@ function withGame(WrappedComponent, events, additionalState) {
             history: history,
             current: newState
           };
-        });
+        }, callback || function () {}); // use the callback if provided
       } // Appends the action to the list of actions taken so far
 
     }, {
       key: "appendAction",
       value: function appendAction(action) {
         // this is annoyingly difficult
-        var allActions = this.state.allActions.slice();
-        var thisTurn = allActions[allActions.length - 1].slice();
-        thisTurn.push(action);
-        allActions[allActions.length - 1] = thisTurn;
-        this.setState({
-          allActions: allActions
+        this.setState(function (reactState) {
+          var newActions = reactState.allActions.slice();
+          var thisTurn = newActions[newActions.length - 1].slice();
+          thisTurn.push(action);
+          newActions[newActions.length - 1] = thisTurn;
+          return {
+            allActions: newActions
+          };
         });
       }
       /*
@@ -29239,10 +29246,12 @@ function withGame(WrappedComponent, events, additionalState) {
 
           alert("Illegal action!\n" + error.message);
         }
+
+        this.dismissWarnings();
       }
     }, {
       key: "doEndTurn",
-      value: function doEndTurn(player) {
+      value: function doEndTurn(player, callback) {
         var current = this.getCurrentState();
         var newState = current.doEndTurn(); // whoa there... check that you actually can end the turn
 
@@ -29257,7 +29266,7 @@ function withGame(WrappedComponent, events, additionalState) {
           return;
         }
 
-        this.updateGameState(newState, true);
+        this.updateGameState(newState, true, callback);
         this.setState({
           // append a single empty array to the end
           allActions: this.state.allActions.concat([[]])
@@ -29280,8 +29289,13 @@ function withGame(WrappedComponent, events, additionalState) {
           });
         } else {
           // just clear it totally
-          this.actionInProgress = null;
-        }
+          this.setState({
+            actionInProgress: null
+          });
+        } // dismiss any warnings
+
+
+        this.dismissWarnings();
       } // Undoes the actions you took this turn.
 
     }, {
@@ -29310,6 +29324,14 @@ function withGame(WrappedComponent, events, additionalState) {
         if (events.onAfterResetTurn) {
           events.onAfterResetTurn.call(this, player, startOfTurn);
         }
+      } // Not sure where to put this
+
+    }, {
+      key: "dismissWarnings",
+      value: function dismissWarnings() {
+        this.setState({
+          showWarnings: false
+        });
       }
       /*
       Clicking on a ship.
@@ -29523,7 +29545,17 @@ function withGame(WrappedComponent, events, additionalState) {
                 newPiece: serial
               }, current.turn);
             } else if (aip.type === "homeworld") {
-              // Here we have to update the actionInProgress object itself
+              // Check if the piece is already taken.
+              for (var key in aip) {
+                // "key" will be star1, star2, etc (and also type but we don't really care because that never matches a serial)
+                if (serial === aip[key]) {
+                  // you have already used this piece
+                  // (don't yell at them, they probably just double-clicked)
+                  return;
+                }
+              } // Here we have to update the actionInProgress object itself
+
+
               var newAIP = {};
 
               if (!aip.star1) {
@@ -29575,7 +29607,8 @@ function withGame(WrappedComponent, events, additionalState) {
             });
           }
         }
-      }
+      } // Handles clicking Reset Turn.
+
     }, {
       key: "handleResetClick",
       value: function handleResetClick() {
@@ -29585,7 +29618,27 @@ function withGame(WrappedComponent, events, additionalState) {
         }
 
         this.doResetTurn(this.getCurrentState().turn);
-      }
+      } // Handles clicking End Turn. Not for use by the warning component.
+
+    }, {
+      key: "handleEndTurnClick",
+      value: function handleEndTurnClick() {
+        var current = this.getCurrentState();
+        var warnings = current.getEndTurnWarnings();
+
+        for (var i = 0; i < warnings.length; i++) {
+          if (warnings[i].level === "warning" || warnings[i].level === "danger") {
+            this.setState({
+              showWarnings: true
+            });
+            return;
+          }
+        } // if nothing sufficiently serious was found...
+
+
+        this.doEndTurn(current.turn);
+      } // The grand finale method, as I call it
+
     }, {
       key: "render",
       value: function render() {
@@ -29595,6 +29648,7 @@ function withGame(WrappedComponent, events, additionalState) {
         var winBanner = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
           className: "alert alert-primary lead"
         }, "Game over, " + (current.winner ? current.winner + " has won!" : "the game is a draw!"));
+        var warnings = current.getEndTurnWarnings();
         var starMapStyle = {
           // make there be a border, but it is invisible
           borderColor: "rgba(0,0,0,0)",
@@ -29604,17 +29658,37 @@ function withGame(WrappedComponent, events, additionalState) {
         }; // Modify the look based on if you can currently interact...
 
         var canInteract = events.canInteract ? events.canInteract.call(this, current) : true;
+        var endTurnClass = "success";
 
         if (canInteract) {
-          starMapStyle.borderColor = "#ccc";
-        } else {// nothing
+          starMapStyle.borderColor = "#ccc"; // find the maximum level
+
+          var levels = {
+            note: 0,
+            caution: 1,
+            warning: 2,
+            danger: 3
+          };
+          var maxLevel = 0;
+
+          for (var i = 0; i < warnings.length; i++) {
+            // use the lookup table
+            var newLevel = levels[warnings[i].level];
+
+            if (newLevel > maxLevel) {
+              maxLevel = newLevel;
+            }
+          } // there's no "caution" or "note" button class
+
+
+          endTurnClass = ["success text-light", "info", "warning text-white", "danger"][maxLevel];
         } // very very simple heuristic that scales the board down based on the number of pieces that are on the board
 
 
         var numPiecesOnBoard = 0;
 
         for (var serial in current.map) {
-          if (current.map[serial] !== null) {
+          if (current.map[serial]) {
             numPiecesOnBoard++;
           }
         }
@@ -29652,7 +29726,18 @@ function withGame(WrappedComponent, events, additionalState) {
           }
         })), current.phase === "end" ? winBanner : null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
           className: "info"
-        }, "Turn: ", current.turn, " \u2022 Actions left: ", current.actions.number), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
+        }, "Turn: ", current.turn, " \u2022 Actions left: ", current.actions.number, // let them know there are warnings if there are
+        canInteract && warnings.length > 0 ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(react__WEBPACK_IMPORTED_MODULE_0___default.a.Fragment, null, "\xA0\u2022 hover over End Turn to see warnings") : null),
+        /* Give the warning indicator if you try to end your turn dangerously */
+        this.state.showWarnings && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_warningIndicator_jsx__WEBPACK_IMPORTED_MODULE_6__["default"], {
+          warnings: warnings,
+          onClose: function onClose() {
+            return _this3.dismissWarnings();
+          },
+          onEndTurn: function onEndTurn() {
+            return _this3.doEndTurn(current.turn);
+          }
+        }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement(_actionInProgress_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
           actionInProgress: this.state.actionInProgress,
           turnActions: current.actions
         })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
@@ -29675,7 +29760,7 @@ function withGame(WrappedComponent, events, additionalState) {
         /*#__PURE__*/
 
         /* this is to prevent the UI from changing too much
-        we make there still be a button but it is inert */
+        we make there still be a button, but it is inert */
         react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
           className: "btn btn-outline-danger mt-1",
           disabled: true
@@ -29683,10 +29768,14 @@ function withGame(WrappedComponent, events, additionalState) {
         /*#__PURE__*/
 
         /* todo: clicking "end turn" should check for warnings like overpopulations */
+        // use title for a tooltip...
         react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
-          className: "btn btn-lg btn-info mt-2",
+          className: "mt-2 btn btn-lg btn-" + endTurnClass,
+          title: warnings.map(function (warn) {
+            return warn.message;
+          }).join("\n\n"),
           onClick: function onClick() {
-            return _this3.doEndTurn(current.turn);
+            return _this3.handleEndTurnClick();
           }
         }, "End Turn") : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
           className: "btn btn-lg btn-outline-info mt-2",
@@ -30599,7 +30688,14 @@ class GameState {
 		for (let i = 0; i < pieces.length; i++) {
 			const freeToTake = this.map.hasOwnProperty(pieces[i]) && this.map[pieces[i]] === null;
 			if (!freeToTake) {
-				throw new Error("The piece " + pieces[i] + " is not available in the stash. If you have not been hacking, this is a bug.");
+				throw new Error("The piece " + pieces[i] + " is not available in the stash. This is either a faulty load file or a bug.");
+			}
+			
+			// Also verify that you did not pick the same piece twice
+			for (let j = i+1; j < pieces.length; j++) {
+				if (pieces[i] === pieces[j]) {
+					throw new Error("You have duplicated piece " + pieces[i] + ". That is not allowed.");
+				}
 			}
 		}
 		// We use the number of actions to determine if you have your HW set up or not
@@ -30965,6 +31061,23 @@ class GameState {
 		const you = this.turn;
 		const allHWs = this.getPiecesAtHomeworlds();
 		const yourData = allHWs[you];
+		if (!yourData) {
+			return [
+				{
+					level: "danger",
+					message: "You haven't picked your homeworld yet, so don't end your turn!",
+				}
+			];
+		}
+		
+		// one easy one
+		if (this.actions.number > 0) {
+			warnings.push({
+				level: "caution",
+				message: "You haven't used all your actions this turn, so ending now could be a waste.",
+			});
+		}
+		
 		const yourShips = yourData.ships;
 		const yourStars = yourData.stars;
 		const allPieces = yourShips.concat(yourStars);
@@ -31027,7 +31140,7 @@ class GameState {
 			if (!hasGreen) {
 				warnings.push({
 					level: "danger",
-					message: "You do not have construction (green) technology in your homeworld! You will not be able to build new ships! This is bad.",
+					message: "You do not have building (green) technology in your homeworld! You will not be able to build new ships! This is bad.",
 				});
 			}
 			if (!hasBlue) {
@@ -31045,7 +31158,7 @@ class GameState {
 		} else {
 			// not setup
 			if (yourShips.length === 0) {
-				this.warnings.push({
+				warnings.push({
 					level: "danger",
 					message: "You can't abandon your homeworld, or else you lose! You need to make sure you have a ship at home when your turn ends. (Reset Turn if you need to.)",
 				});
@@ -31070,19 +31183,34 @@ class GameState {
 			const colors = Object.keys(colorFrequencies)
 			if (colors.length === 1) {
 				// you only have 1 color
-				if (yourShips.length === 3) {
-					this.warnings.push({
+				if (yourShips.length === 4) {
+					warnings.push({
+						level: "danger",
+						message: "You have 4 ships in your homeworld and they are all the same color! That's a catastrophe waiting to happen!",
+					});
+				} else if (yourShips.length === 3) {
+					warnings.push({
 						level: "warning",
-						message: "You have 3 ships in your homeworld, and they are all the same color. If your opponent can move just one more in, you will lose!",
+						message: "You have 3 ships in your homeworld, and they are all the same color. If your opponent can move just one more in, you would lose, so be careful!",
 					});
 				} else if (yourShips.length === 2) {
-					this.warnings.push({
-						level: "note",
-						message: "You have 2 ships in your homeworld, and they are the same color. Be careful if your opponent can move 2 more and catastrophe you."
-					})
+					// this is too common in legitimate games so I'm disabling it
+					// warnings.push({
+					// 	level: "note",
+					// 	message: "You have 2 ships in your homeworld, and they are the same color. Be careful if your opponent can move 2 more and catastrophe you."
+					// })
 				}
 			}
+			
+			if (!hasLarge) {
+				warnings.push({
+					level: "caution",
+					message: "You don't have a large ship at your homeworld. If your opponent gets a large in before you do, you won't be able to fight back!",
+				});
+			}
 		}
+		
+		return warnings;
 	}
 	
 	// Last and... kind of deserves to be last!
@@ -32211,6 +32339,48 @@ var System = /*#__PURE__*/function (_React$PureComponent) {
 }(react__WEBPACK_IMPORTED_MODULE_0___default.a.PureComponent);
 
 /* harmony default export */ __webpack_exports__["default"] = (System);
+
+/***/ }),
+
+/***/ "./scripts/game/warningIndicator.jsx":
+/*!*******************************************!*\
+  !*** ./scripts/game/warningIndicator.jsx ***!
+  \*******************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+// warningIndicator.jsx
+//
+// Indicates when you end your turn with a warning of sufficiently high severity. The end turn is caught and you must confirm that you really want to.
+
+
+function WarningIndicator(props) {
+  // props: warnings and the two events, onClose and onEndTurn
+  var warningElements = props.warnings.map(function (warning) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("p", {
+      key: warning.message
+    }, warning.message);
+  });
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("div", {
+    className: "alert alert-light"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("span", {
+    className: "float-right"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: "btn btn-secondary",
+    onClick: props.onClose
+  }, "Cancel"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("button", {
+    className: "btn btn-primary",
+    onClick: props.onEndTurn
+  }, "End Turn")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default.a.createElement("h4", {
+    className: "text-warning"
+  }, "Are you sure?"), warningElements);
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (WarningIndicator);
 
 /***/ })
 
