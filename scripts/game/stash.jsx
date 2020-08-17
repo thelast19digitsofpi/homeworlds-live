@@ -64,11 +64,12 @@ function Stash(props) {
 	}
 	
 	// put those rows into a <table>
-	return (
+	return <React.Fragment>
+		<h4 align="center">Bank</h4>
 		<table className="stash-table">
 			<tbody>{rows}</tbody>
 		</table>
-	);
+	</React.Fragment>;
 }
 
 export default Stash;

@@ -1,10 +1,10 @@
-// warningIndicator.jsx
+// warningPrompt.jsx
 //
 // Indicates when you end your turn with a warning of sufficiently high severity. The end turn is caught and you must confirm that you really want to.
 
 import React from 'react';
 
-function WarningIndicator(props) {
+function WarningPrompt(props) {
 	// props: warnings and the two events, onClose and onEndTurn
 	const warningElements = props.warnings.map(warning => <p key={warning.message}>{warning.message}</p>)
 	return <div className="alert alert-light">
@@ -17,4 +17,4 @@ function WarningIndicator(props) {
 	</div>
 }
 
-export default WarningIndicator;
+export default WarningPrompt;

@@ -1,4 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="72">
 	<polygon points="4,68 44,68 24,4" fill="#090" stroke="#090" stroke-linejoin="round" stroke-width="8" />
  	<ellipse cx="24" cy="56" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
+
+  	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+  		transform="translate(24 48) scale(0.9)">
+  		
+  	</g>
+  
 </svg>

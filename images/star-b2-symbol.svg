@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="68" height="68">
+	<rect x="0" y="0" width="68" height="68" rx="4" ry="4" fill="#00c" stroke="#000000" stroke-width="1" />
+	<g fill="#000000" opacity="0.75" stroke="none">
+ 		<ellipse cx="34" cy="5" rx="5" ry="3" />
+ 		<ellipse cx="34" cy="63" rx="5" ry="3" />
+ 		<ellipse cx="5" cy="34" rx="3" ry="5" />
+ 		<ellipse cx="63" cy="34" rx="3" ry="5" />
+ 		<ellipse cx="47" cy="5" rx="5" ry="3" />
+ 		<ellipse cx="21" cy="63" rx="5" ry="3" />
+ 		<ellipse cx="5" cy="21" rx="3" ry="5" />
+ 		<ellipse cx="63" cy="47" rx="3" ry="5" />
+ 	</g>
+ 	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none" transform="translate(34 34) scale(1.4)">
+    	
+		<path stroke="white" d="M-10,5 h20 l-7,-7 m0,14 l7,-7" />
+		<path stroke="white" d="M10,-5 h-20 l7,7 m0,-14 l-7,7" />
+    </g>
+</svg>

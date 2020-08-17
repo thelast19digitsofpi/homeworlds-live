@@ -1267,14 +1267,6 @@ class GameState {
 			];
 		}
 		
-		// one easy one
-		if (this.actions.number > 0) {
-			warnings.push({
-				level: "caution",
-				message: "You haven't used all your actions this turn, so ending now could be a waste.",
-			});
-		}
-		
 		const yourShips = yourData.ships;
 		const yourStars = yourData.stars;
 		const allPieces = yourShips.concat(yourStars);
@@ -1359,6 +1351,23 @@ class GameState {
 					level: "danger",
 					message: "You can't abandon your homeworld, or else you lose! You need to make sure you have a ship at home when your turn ends. (Reset Turn if you need to.)",
 				});
+			}
+			
+			// one easy one
+			if (this.actions.number > 0) {
+				// we call this a "warning" if you are trying to pass a turn
+				// if you sacrificed we just call it a "caution"
+				if (this.actions.sacrifice) {
+					warnings.push({
+						level: "caution",
+						message: "You haven't used all of your actions. Ending your turn now wastes them.",
+					});
+				} else {
+					warnings.push({
+						level: "warning",
+						message: "You haven't done your action yet this turn! Are you sure you want to pass?",
+					});
+				}
 			}
 			
 			// check bluebird and large defense

@@ -3,8 +3,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import GameState from './gameState.mjs';
 import withGame from './game.jsx';
-import tutorialList from '../tutorials/tutorialList.js';
-console.log(tutorialList);
 
 // handles tutorial UI
 class TutorialWrapper extends React.Component {

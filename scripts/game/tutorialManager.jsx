@@ -2,17 +2,23 @@
 //
 // The component that lets you access the tutorials.
 
-import React from 'react';
+import React, {Suspense} from 'react';
 import ReactDOM from 'react-dom';
-import tutorialList from '../tutorials/tutorialList.js';
+import basicList from '../tutorials/basicTutorials.js';
+import intermediateList from '../tutorials/intermediateTutorials.js';
+import advancedList from '../tutorials/advancedTutorials.js';
 import TutorialGame from './tutorialGame.jsx';
+
+const tutorialList = basicList;
+let loadingQueue = ["intermediate", "advanced"];
 
 class TutorialManager extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			tutorial: null,
-		}
+			loading: true,
+		};
 	}
 	
 	startTutorial(tutorial) {
@@ -30,10 +36,31 @@ class TutorialManager extends React.Component {
 	nextTutorial() {
 		this.setState(function(reactState) {
 			const i = tutorialList.indexOf(reactState.tutorial);
-			return {
-				// Default to null (menu) if they go out of bounds
-				tutorial: tutorialList[i + 1] || null,
-			};
+			if (i < tutorialList.length) {
+				return {
+					// Default to null (menu) if they go out of bounds
+					tutorial: tutorialList[i + 1] || null,
+				};
+			} else if (loadingQueue.length) {
+				// lazy-load the next tutorial batch
+				this.setState({
+					loading: true,
+				});
+				const next = loadingQueue.shift();
+				import(`../tutorials/${next}Tutorials.js`).then(function(tutorials) {
+					// we put the new tutorials we got into the global list
+					tutorialList.push(...tutorials);
+					// and then set our React state
+					this.setState({
+						tutorial: tutorialList[i + 1],
+					});
+				}.bind(this)) // no semicolon!
+				// catch the error...
+				.catch(function(error) {
+					console.error("INVALID MODULE!", next);
+					console.error(error);
+				});
+			}
 		});
 	}
 	
@@ -84,6 +111,7 @@ class TutorialManager extends React.Component {
 			};
 			// use a key to forcefully destroy the component when a new tutorial loads
 			return <TutorialGame
+				disableWarnings={this.state.tutorial.disableWarnings}
 				tutorial={this.state.tutorial}
 				key={this.state.tutorial.title}
 				navMethods={navMethods} />;

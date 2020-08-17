@@ -41,7 +41,7 @@ function ActionInProgress(props) {
 		
 		return <p className="alert alert-secondary">
 			{stars || <i className="material-icons mr-1">{icon}</i>}
-			{message}
+			{message} {aip.type !== "homeworld" && <small>(or click the original piece to cancel)</small>}
 		</p>;
 	} else if (turnActions && turnActions.sacrifice) {
 		const color = {

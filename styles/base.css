@@ -10,11 +10,14 @@ body {
 	}
 }
 
+/* Because "text-warning" is orange... */
+.text-yellow {
+	color: #CCCC11 !important;
+}
+
 /* Game styling */
 /* For the most part I put here only that which either (1) was done early on, (2) I cannot do with Bootstrap's classes, or (3) I want to be able to adjust more finely than bootstrap's. */
 
-.star-map-wrapper {
-}
 .systems {
 	min-height: 50vh;
 	display: flex;
@@ -77,6 +80,15 @@ body {
 }
 .stash-table img {
 	display: block;
+}
+
+.end-turn-popup {
+	top: -1em;
+	right: calc(100% + 1em);
+	width: 40vw;
+	background-color: rgba(64, 64, 64, 0.75);
+	border-radius: 4px;
+	padding: 0.5em;
 }
 
 /* Highlight pieces by making them fade out and in */

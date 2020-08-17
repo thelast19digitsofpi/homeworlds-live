@@ -2,4 +2,18 @@
 	<polygon points="4,100 64,100 34,4" fill="#cc0" stroke="#cc0" stroke-linejoin="round" stroke-width="8" />
  	<ellipse cx="34" cy="88" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
  	<ellipse cx="21" cy="88" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
+
+  	<!-- Render 1, 2, or 3 copies of the move arrow -->
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(34 76)">
+    	
+    </g>
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(34 46)">
+    	
+    </g>
+
+
 </svg>

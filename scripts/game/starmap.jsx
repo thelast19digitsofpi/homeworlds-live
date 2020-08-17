@@ -13,11 +13,23 @@ class StarMap extends React.Component {
 		this.state = {
 			// array of: {x, y, stars: [serials], numShips}
 			systemPositions: [],
-			scaleFactor: 0.5, // good baseline
+			
+			// I don't think I used that but I do use this one
+			symbolMode: props.initialSymbolMode || false,
+		};
+		if (props.symbolMode) {
+			console.error("It's props.initialSymbolMode for setting the initial configuration!");
 		}
 		
 		//this.handleResize = this.handleResize.bind(this);
 		this.getSystemOwnershipScore = this.getSystemOwnershipScore.bind(this);
+	}
+	
+	// When you click the checkbox.
+	handleCheckbox(bool) {
+		this.setState({
+			symbolMode: bool,
+		});
 	}
 	
 	/*componentDidMount() {
@@ -391,6 +403,7 @@ class StarMap extends React.Component {
 						homeworld={system.homeworld}
 						scaleFactor={props.scaleFactor}
 						activePiece={props.activePiece}
+						symbolMode={this.state.symbolMode}
 						
 						handleBoardClick={props.handleBoardClick}
 					/>
@@ -454,13 +467,23 @@ class StarMap extends React.Component {
 				innerDisplay = <div>{containers.adjNeither}</div>
 			}
 			
-			return (
+			return <React.Fragment>
+				<p className="mb-0 mt-0">
+					{/* Color reference */}
+					<strong className="text-primary mr-2">Trade = Blue (&#x21c6;)</strong>
+					<strong className="text-success mr-2">Build = Green (+)</strong>
+					<strong className="text-yellow mr-2">Move = Yellow (^)</strong>
+					<strong className="text-danger mr-2">Steal = Red (&#x2734;)</strong>
+					<br/>
+					<input type="checkbox" value={this.state.symbolMode} />
+					Colorblind mode ships
+				</p>
 				<div className="systems">
 					{containers.hwNorth}
 					{innerDisplay}
 					{containers.hwSouth}
 				</div>
-			);
+			</React.Fragment>;
 		} else {
 			// Some sort of SVG render...? Does this even work for SVG images in all browsers?
 			console.log("other render method is not supported, please change that boolean back");

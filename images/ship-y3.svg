@@ -3,4 +3,23 @@
  	<ellipse cx="44" cy="120" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
  	<ellipse cx="31" cy="120" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
  	<ellipse cx="18" cy="120" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
+
+  	<!-- Render 1, 2, or 3 copies of the move arrow -->
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(44 108)">
+    	
+    </g>
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(44 78)">
+    	
+    </g>
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(44 48)">
+    	
+    </g>
+
+
 </svg>

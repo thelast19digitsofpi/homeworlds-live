@@ -1,27 +1,6 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<%- include("headElement") %>
-		<title>Archive Game <%- archiveGame.id %></title>
-	</head>
-	<body>
-		<%- include("header") %>
-		
-		<h3 class="title">Archive Viewer for Game #<%- archiveGame.id %></h3>
-		<h5 class="subtitle"><%= archiveGame.players.join(" vs ") %></h5>
-		
-		<div id="game-container"></div>
-		
-		<%- include("footer") %>
-		<script>
-const GAME_INFO = {
-	id: <%- archiveGame.id %>,
-	<%# this is somewhat unfortunate that I have to json it both ways
-	but I have to count on React to not actually set any innerHTML's %>
-	players: JSON.parse(`<%- JSON.stringify(archiveGame.players) %>`),
+<!doctype html><html><head> <%- include("headElement") %> <title>Archive Game <%- archiveGame.id %></title></head><body> <%- include("header") %> <h3 class="title">Archive Viewer for Game #<%- archiveGame.id %></h3><h5 class="subtitle"><%= archiveGame.players.join(" vs ") %></h5><div id="game-container"></div> <%- include("footer") %> <script>const GAME_INFO = {
+	id: <%- archiveGame.id %>, <%# this is somewhat unfortunate that I have to json it both ways
+	but I have to count on React to not actually set any innerHTML's %> players: JSON.parse(`<%- JSON.stringify(archiveGame.players) %>`),
 	summary: `<%- archiveGame.summary %>`,
 };
-console.log(GAME_INFO);
-		</script>
-	<script src="/scripts/vendor.js?db8e314f74555ebee523"></script><script src="/scripts/archiveGame.js?db8e314f74555ebee523"></script></body>
-</html>
+console.log(GAME_INFO);</script><script src="/scripts/vendor.js?dfe4837e25a57524dfd2"></script><script src="/scripts/archiveGame.js?dfe4837e25a57524dfd2"></script></body></html>

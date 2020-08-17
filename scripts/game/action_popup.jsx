@@ -1,6 +1,12 @@
 
 import React from 'react';
 
+function pleaseFocusMe(div) {
+	if (div) {
+		div.focus();
+	}
+}
+
 function ActionsPopup(props) {
 	// possibly render popup
 	let popupElement = null;
@@ -59,8 +65,10 @@ function ActionsPopup(props) {
 				throw new Error("Unknown action type " + ac.type);
 			}
 			buttons.push(
+				// onMouseDown stops the onBlur from firing prematurely
 				<button className={className} key={ac.type} type="button"
 					onClick={() => props.handleButtonClick(ac)}
+					onMouseDown={event => event.preventDefault()}
 				>{message}</button>
 			)
 		}
@@ -70,14 +78,13 @@ function ActionsPopup(props) {
 					onClick={() => props.handleButtonClick(null)}>Cancel</button>
 			)
 		}
-		popupElement = (
-			<div className="action-popup" style={styleData}>
+		return (
+			<div className="action-popup" style={styleData} onBlurCapture={props.onBlur} tabIndex="0" autoFocus ref={pleaseFocusMe}>
 				<div className="btn-group-vertical">
 					{buttons}
 				</div>
 			</div>
 		);
-		return popupElement;
 	} else {
 		return null;
 	}

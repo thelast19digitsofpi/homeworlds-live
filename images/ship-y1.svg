@@ -1,4 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="72">
 	<polygon points="4,68 44,68 24,4" fill="#cc0" stroke="#cc0" stroke-linejoin="round" stroke-width="8" />
  	<ellipse cx="24" cy="56" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
+
+  	<!-- Render 1, 2, or 3 copies of the move arrow -->
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(24 44)">
+    	
+    </g>
+
+
 </svg>

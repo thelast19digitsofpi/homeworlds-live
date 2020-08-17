@@ -29,7 +29,8 @@ import StarMap from './starmap.jsx';
 import ActionInProgress from './actionInProgress.jsx';
 import ActionsPopup from './action_popup.jsx';
 import Stash from './stash.jsx';
-import WarningIndicator from './warningIndicator.jsx';
+import WarningPrompt from './warningPrompt.jsx';
+import TurnControls from './turnControls.jsx';
 
 function withGame(WrappedComponent, events, additionalState) {
 	return class extends React.Component {
@@ -59,7 +60,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				actionInProgress: null,
 				
 				// the warnings themselves are computed from the GameState
-				showWarnings: false,
+				showWarningPrompt: false,
 			};
 			this.state.current = GameState.recoverFromJSON(this.state.current);
 			// start with a state in the history list!
@@ -75,6 +76,13 @@ function withGame(WrappedComponent, events, additionalState) {
 			
 			// for my debugging!
 			window._g = this;
+			
+			// Bind specific methods.
+			const bindThese = ["toggleWarningPopup", "handleEndTurnClick", "handleResetClick", "handleEmptyClick"];
+			for (let i = 0; i < bindThese.length; i++) {
+				const method = bindThese[i];
+				this[method] = this[method].bind(this);
+			}
 		}
 		
 		componentDidMount() {
@@ -354,13 +362,16 @@ function withGame(WrappedComponent, events, additionalState) {
 			if (events.onAfterResetTurn) {
 				events.onAfterResetTurn.call(this, player, startOfTurn);
 			}
+			
+			this.dismissWarnings();
 		}
 		
 		
 		// Not sure where to put this
 		dismissWarnings() {
 			this.setState({
-				showWarnings: false,
+				showWarningPrompt: false,
+				showWarningPopup: false,
 			});
 		}
 		
@@ -387,11 +398,21 @@ function withGame(WrappedComponent, events, additionalState) {
 			return current.getActionsAvailableForPiece(player, piece);
 		}
 		
+		// Handles clicking on nothing...
+		handleEmptyClick() {
+			this.setState({
+				popup: null,
+			});
+		}
+		
 		// Handles clicking on any piece on the board.
 		handleBoardClick(piece, event) {
 			window.___lastE = event.nativeEvent;
 			const aip = this.state.actionInProgress;
 			const current = this.getCurrentState();
+			
+			// I think this should happen regardless
+			this.dismissWarnings();
 			
 			// are you authorized?
 			if (events.canInteract && !events.canInteract.call(this, current)) {
@@ -436,8 +457,8 @@ function withGame(WrappedComponent, events, additionalState) {
 					}
 				}
 				this.setState({
-					actionInProgress: null
-				})
+					actionInProgress: null,
+				});
 			} else {
 				// Start of an action.
 				// For now, console.log the actions
@@ -647,18 +668,29 @@ function withGame(WrappedComponent, events, additionalState) {
 		// Handles clicking End Turn. Not for use by the warning component.
 		handleEndTurnClick() {
 			const current = this.getCurrentState();
-			const warnings = current.getEndTurnWarnings();
-			for (let i = 0; i < warnings.length; i++) {
-				if (warnings[i].level === "warning" || warnings[i].level === "danger") {
-					this.setState({
-						showWarnings: true,
-					});
-					return;
+			if (!this.props.disableWarnings) {
+				const warnings = current.getEndTurnWarnings();
+				for (let i = 0; i < warnings.length; i++) {
+					if (warnings[i].level === "warning" || warnings[i].level === "danger") {
+						this.setState({
+							showWarningPrompt: true,
+						});
+						return;
+					}
 				}
 			}
 			
 			// if nothing sufficiently serious was found...
 			this.doEndTurn(current.turn);
+		}
+		
+		toggleWarningPopup() {
+			this.setState(function(reactState) {
+				// Toggle the popup, but don't show it over the confirm prompt
+				return {
+					showWarningPopup: !(reactState.showWarningPopup || reactState.showWarningPrompt),
+				};
+			});
 		}
 		
 		// The grand finale method, as I call it
@@ -684,24 +716,6 @@ function withGame(WrappedComponent, events, additionalState) {
 			let endTurnClass = "success";
 			if (canInteract) {
 				starMapStyle.borderColor = "#ccc";
-				// find the maximum level
-				const levels = {
-					note: 0,
-					caution: 1,
-					warning: 2,
-					danger: 3,
-				};
-				let maxLevel = 0;
-				for (let i = 0; i < warnings.length; i++) {
-					// use the lookup table
-					const newLevel = levels[warnings[i].level];
-					if (newLevel > maxLevel) {
-						maxLevel = newLevel;
-					}
-				}
-				
-				// there's no "caution" or "note" button class
-				endTurnClass = ["success text-light", "info", "warning text-white", "danger"][maxLevel];
 			}
 			
 			
@@ -741,55 +755,45 @@ function withGame(WrappedComponent, events, additionalState) {
 							<ActionsPopup
 								popup={this.state.popup}
 								handleButtonClick={(acData) => this.handleButtonClick(acData)}
+								onBlur={this.handleEmptyClick}
 							/>
 						</div>
 						{current.phase === "end" ? winBanner : null}
 						<p className="info">
 							Turn: {current.turn} &bull;
 							Actions left: {current.actions.number}
-							{ // let them know there are warnings if there are
-								(canInteract && warnings.length > 0) ?
-									<React.Fragment>&nbsp;&bull; hover over End Turn to see warnings</React.Fragment> :
-									null
-							}
 						</p>
 						
-						{/* Give the warning indicator if you try to end your turn dangerously */
-							this.state.showWarnings && <WarningIndicator
+						{/* Give the warning prompt if you try to end your turn dangerously */
+							this.state.showWarningPrompt && !this.props.disableWarnings &&
+							<WarningPrompt
 								warnings={warnings}
 								onClose={() => this.dismissWarnings()}
 								onEndTurn={() => this.doEndTurn(current.turn)} />
 						}
-						{/* Give the AIP indicator anything about your sacrifice actions */}
+						
+						{/* The AIP indicator cares about your number of actions left on the turn
+						This is because a sacrifice is, in some sense, "in progress" until you run out of actions... and because it makes sense to put that down there */}
 						<ActionInProgress
 							actionInProgress={this.state.actionInProgress}
 							turnActions={current.actions} />
 					</div>
 					<div className="stash col-auto" align="right">
-						<h4 align="center">Stash</h4>
 						<Stash
 							scaleFactor={ stashScale }
 							data={current.map}
 							handleClick={(serial) => this.handleStashClick(serial)}
 						/>
-						{canInteract ? <button
-							onClick={() => this.handleResetClick()}
-							className="btn btn-danger mt-1">Reset Turn</button>
-							:
-							/* this is to prevent the UI from changing too much
-							we make there still be a button, but it is inert */
-							<button className="btn btn-outline-danger mt-1" disabled>Reset Turn</button>
-						}
-						<br/>
-						{canInteract ?
-							/* todo: clicking "end turn" should check for warnings like overpopulations */
-							// use title for a tooltip...
-						<button className={"mt-2 btn btn-lg btn-" + endTurnClass}
-						        title={warnings.map(warn => warn.message).join("\n\n")}
-						        onClick={() => this.handleEndTurnClick()}>End Turn</button>
-						        :
-						<button className="btn btn-lg btn-outline-info mt-2" disabled>End Turn</button>
-						}
+						
+						{/* Don't show the popup if we have the confirm prompt open */}
+						<TurnControls
+							canInteract={canInteract}
+							warnings={warnings}
+							disableWarnings={this.props.disableWarnings}
+							showPopup={this.state.showWarningPopup && !this.state.showWarningPrompt}
+							toggleWarningPopup={this.toggleWarningPopup}
+							handleEndTurnClick={this.handleEndTurnClick}
+							handleResetClick={this.handleResetClick} />
 					</div>
 				</div>
 			</WrappedComponent>;

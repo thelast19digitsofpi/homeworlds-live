@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="68" height="104">
+	<polygon points="4,100 64,100 34,4" fill="#090" stroke="#090" stroke-linejoin="round" stroke-width="8" />
+ 	<ellipse cx="34" cy="88" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
+ 	<ellipse cx="21" cy="88" rx="5" ry="8" fill="#000000" opacity="0.75" stroke="none" />
+
+  	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+  		transform="translate(34 72) scale(1.35)">
+  		
+		<path stroke="white" stroke-width="4" d="M-10,0 h20 M0,-10 v20" />
+  	</g>
+  
+</svg>

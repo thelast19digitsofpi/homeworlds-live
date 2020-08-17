@@ -1,20 +1,10 @@
-// tutorialData.js
+// basicTutorials.js
 //
-// just trying to get a sense for what tutorials would look like
-// this is *not* the React component
+// the hope is that we don't load the entire thing at once
+// but only load the modules the user actually might play
 
-// import nothing from null;
-// ...right?
-// nope!
 import React from 'react';
-
-function Tutorial(data) {
-	this.title = data.title;
-	// the second "t" is important!
-	this.startMap = data.startMap;
-	this.steps = data.steps;
-	this.endMessages = data.endMessages;
-}
+import Tutorial from './tutorialConstructor.js';
 
 /*
 const template = {
@@ -60,10 +50,11 @@ const template = {
 };
 */
 
-const tutorialList = [
+export default [
 	// Building
 	new Tutorial({
 		title: "Building Ships",
+		disableWarnings: true,
 		startMap: {
 			"b1A": null,
 			"b1B": null,
@@ -152,12 +143,12 @@ const tutorialList = [
 					"This actually means that there is a limited supply of pieces. Homeworlds may be a war, but it's a very *economic* war, complete with supply and investments and exchanges. (We'll get to most of that later.)",
 					"Anyway, when you build, there are two main rules:\n" +
 						"(1) You can only build a ship of the *same color* as a ship you already have at that star, and\n" +
-						"(2) You can only build the smallest *available* piece (i.e. in the stash) of any given color.",
-					"It's important to note that you do NOT \"grow\" a ship. You only get bigger ones by building when the stash is out of smaller pieces of that color.",
+						"(2) You can only build the smallest *available* piece (i.e. in the Bank) of any given color.",
+					"It's important to note that you do NOT \"grow\" a ship. You only get bigger ones by building when the Bank is out of smaller pieces of that color.",
 					"Given this, your challenge is to build a medium ship (two pips)!\n(Again, hint button is on the top left)",
 				],
 				hint: [
-					"Look at the stash. Which color does not have smalls available?",
+					"Look at the Bank. Which color does not have smalls available?",
 					"Remember you have to click an existing ship of yours first to build.",
 				],
 				checkAction: function(action, oldState) {
@@ -165,7 +156,7 @@ const tutorialList = [
 						return [false, "I'll get to sacrificing in a later module."];
 					}
 					if (action.newPiece[1] !== "2") {
-						return [false, "Unfortunately, building that color only gives you a small ship, because there is one in the stash. See if you can build a medium (size-2) ship."];
+						return [false, "Unfortunately, building that color only gives you a small ship, because there is one in the Bank. See if you can build a medium (size-2) ship."];
 					}
 					return [true, "Remember to end your turn every time..."];
 				},
@@ -191,6 +182,7 @@ const tutorialList = [
 	// Trading
 	new Tutorial({
 		title: "Trading Ships",
+		disableWarnings: true,
 		startMap: {
 			"b1A": {"at": 6, "owner": "you"},
 			"b1B": {"at": 3, "owner": null},
@@ -241,7 +233,7 @@ const tutorialList = [
 					"Your goal this turn is to obtain a red ship.",
 				],
 				hint: [
-					"Remember you have to have blue at the system AND there has to be a matching red in the stash.",
+					"Remember you have to have blue at the system AND there has to be a matching red in the Bank.",
 					"You can only trade equal sizes (small for small, medium for medium, or large for large)!",
 				],
 				checkAction: function(action, oldState) {
@@ -280,7 +272,7 @@ const tutorialList = [
 				],
 				objective: "Obtain a yellow ship (and also keep your red one)",
 				hint: [
-					"What size is the yellow in the stash?",
+					"What size is the yellow in the Bank?",
 					"Remember you can do a trade at any system with something blue there!",
 				],
 				checkAction: function(action, oldState) {
@@ -321,6 +313,7 @@ const tutorialList = [
 	// Movement (and discovery)
 	new Tutorial({
 		title: "Movement",
+		disableWarnings: true,
 		startMap: {
 			"b1A": null,
 			"b1B": null,
@@ -401,11 +394,11 @@ const tutorialList = [
 					"Oh neat, a new star just appeared on the map!",
 					"In fact, you can discover a star any time you have movement power. In the physical game, you just add a piece to the board, then move there.",
 					"Here, to discover a system, you first click the piece you want to move, then click the \"Discover a system...\" button in the popup.",
-					"Then you click a piece in the stash. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
+					"Then you click a piece in the Bank. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
 					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home. (That's a good habit for the real game...)",
 				],
 				hint: [
-					"First click the ship, then click a star in the stash.",
+					"First click the ship, then click a star in the Bank.",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "discover") {
@@ -454,30 +447,31 @@ const tutorialList = [
 	// Economic Intermission
 	new Tutorial({
 		title: "It's the Economy, Captain!",
+		disableWarnings: true,
 		startMap: {
-			"b1A": null,
+			"b1A": {"at": 3, "owner": "enemy"},
 			"b1B": null,
-			"b1C": null,
-			"b2A": null,
-			"b2B": null,
+			"b1C": {"at": 5, "owner": "enemy"},
+			"b2A": {"at": 4, "owner": "you"},
+			"b2B": {"at": 6, "owner": null},
 			"b2C": {"at": 2, "owner": null},
 			"b3A": null,
-			"b3B": null,
+			"b3B": {"at": 7, "owner": null},
 			"b3C": {"at": 1, "owner": null},
 
-			"g1A": {"at": 1, "owner": "you"},
-			"g1B": {"at": 2, "owner": "enemy"},
-			"g1C": null,
-			"g2A": null,
-			"g2B": null,
+			"g1A": {"at": 5, "owner": "enemy"},
+			"g1B": {"at": 6, "owner": "you"},
+			"g1C": {"at": 7, "owner": "enemy"},
+			"g2A": {"at": 4, "owner": null},
+			"g2B": {"at": 6, "owner": "you"},
 			"g2C": null,
-			"g3A": null,
+			"g3A": {"at": 3, "owner": null},
 			"g3B": {"at": 2, "owner": "enemy"},
 			"g3C": {"at": 1, "owner": "you"},
 
 			"r1A": null,
-			"r1B": {"at": 1, "owner": null},
-			"r1C": null,
+			"r1B": {"at": 4, "owner": "you"},
+			"r1C": {"at": 1, "owner": null},
 			"r2A": null,
 			"r2B": null,
 			"r2C": null,
@@ -486,70 +480,72 @@ const tutorialList = [
 			"r3C": null,
 
 			"y1A": null,
-			"y1B": null,
+			"y1B": {"at": 1, "owner": "you"},
 			"y1C": {"at": 2, "owner": null},
 			"y2A": null,
 			"y2B": null,
 			"y2C": null,
 			"y3A": null,
 			"y3B": null,
-			"y3C": null,
+			"y3C": {"at": 5, "owner": null},
 		},
 		steps: [
 			{
 				startMessages: [
 					"Before we get to the last ability, I want to emphasize something I glossed over a while back.",
 					"You see, Homeworlds is a war, but it's a very *economic* war.",
-					"This is partially because you can only use abilities if you have the color available.",
-					"But it's also because of the limited supply of pieces in the stash.",
+					"This is partially because of the limited supply of pieces in the Bank.",
 					"A large part of success is about manipulating the available pieces to obtain more and bigger ships than your opponent.",
-					"Here's a simple example of that. Watch what happens if you build a third small green... (or, pass your turn and the enemy will do it)",
+					"Here's a simple example of that. Build the small blue, and let's see what happens. (Or maybe you can predict...)",
 				],
-				objective: "Build the last small green",
+				objective: "Build the last small blue OR pass your turn",
 				hint: [
 					"If you're wondering how to \"pass your turn\": Just click End Turn before doing anything.",
 					"This is usually disabled in tutorials but is perfectly legal and you can do it in this one.",
 				],
 				checkAction: function(action, oldState) {
+					// originally this was an opening situation where you only had green
+					// but... I'll allow any build as a pass move
 					if (action.type !== "build") {
-						return [false, "You're getting too smart for me..."];
+						return [false, "Not falling for it, eh? Or did you just mis-click? If you want, you can build the medium green instead and the opponent will take the small blue."];
 					}
 					return [true];
 				},
 				checkEndTurn: function(oldState) {
-					if (oldState.actions.number > 0) {
-						return [true, "You know... let's do this from the other perspective. I'll have the opponent build the small green...", {
+					if (oldState.map.b1B === null) {
+						return [true, "You know... let's do this from the other perspective. I'll have the opponent build the blue...", {
 							type: "build",
-							newPiece: "g1C", // the only green left
-							system: 2
+							newPiece: "b1B", // the only blue left
+							system: 5,
 						}];
 					} else {
 						return [true, [
-							"So there's no more SMALL greens in the stash.",
-							"So the smallest green piece is now a medium size...",
+							"So there's no more small blues in the Bank.",
+							"The smallest blue piece is now a large...",
 							"...and it's your opponent's turn...",
 						], {
 							type: "build",
-							newPiece: "g2A",
-							system: 2
+							newPiece: "b3A",
+							system: 3,
 						}];
 					}
 				},
 				nextStep: function(oldState) {
-					// If they build the G2, move to the end, otherwise move to the next step
-					return oldState.map.g2A ? 2 : 1;
+					// If they build the B3, move to the end, otherwise move to the next step
+					return oldState.map.b3A ? 2 : 1;
 				},
 			},
 			{
 				startMessages: [
-					"See, there are no more small greens in the stash.",
+					"See, there are no more small (or medium) blues in the Bank.",
 					"So what does that mean about your build options?",
 				],
-				objective: "Build a medium green",
-				hint: "OK, you're just obsessively clicking Hint. Please stop.",
+				objective: "Build a large blue",
+				hint: "OK, you're just obsessively clicking Hint. If you're curious, you can read the source code on GitHub (link on the homepage). The files are in the /scripts/tutorials folder.",
 				checkAction: function(action, oldState) {
-					if (action.type !== "build") {
-						return [false, "Come on, there's a medium green waiting for you!"];
+					// I assume that if you know sacrifices you also know catastrophes
+					if (action.type !== "build" || action.newPiece !== "b3A") {
+						return [false, "Come on, there's a large blue waiting for you!"];
 					}
 					return [true];
 				},
@@ -557,30 +553,41 @@ const tutorialList = [
 					if (oldState.actions.number > 0) {
 						return [false, "This time, let's actually get that medium green."];
 					}
+					// Either trade for red or build a green
+					const action = (oldState.map.r1A ? {
+						type: "build",
+						newPiece: "g2C",
+						system: 2,
+					} : {
+						type: "trade",
+						oldPiece: "b1B",
+						newPiece: "r1A",
+					});
+					
 					return [true, [
-						"Great. You're now in the lead on medium ships!",
-						"(Why can't the opponent just build their medium, you ask? Because bad things happen if you have 4 ships of the same color at a system. We'll cover that in a later module.)",
-						"Of course, I don't condone passing like this. Normally you would have, say, traded for yellow so you could move next turn.",
-						"Or, if you had passed, your opponent surely would have traded and you would have wasted a valuable turn.",
+						"Great. You're now in the lead on large ships!",
+						"You now would have a solid advantage. The enemy still has only their initial large ship.",
 					], {
 						type: "trade",
-						oldPiece: "g1B",
-						newPiece: "r1B",
+						oldPiece: "b1B",
+						newPiece: "r1A",
 					}];
 				}
 			}
 		],
 		endMessages: [
-			"That's just a small piece of what you should think about every time you build (or trade for) a piece.",
-			"Small advantages like that often keep adding up until eventually one side can no longer hold their position.",
-			"The extreme example is being \"frozen out\" of a color, unable to build OR trade for it, because your enemy has all the pieces. That's what happened in the trade tutorial.",
-			"Oh right! I haven't covered the last color power! Without further ado...",
+			"Yep! One side got a small ship, the other got a large. That's just one example of how tricky the economy can be in Homeworlds.",
+			"It's important to watch the Bank. If you're taking the last ship of a size, that often opens up the next size to your opponent.",
+			"The extreme example is being \"frozen out\" of a color, unable to build OR trade for it, because your enemy has all the pieces.",
+			"So as you play, keep thinking: am I giving the opponent more opportunities to get bigger ships than me?",
+			"Now, exactly why are bigger ships more important? Because of the last color, red...",
 		],
 	}),
 
 	// Capturing
 	new Tutorial({
 		title: "Offense and Defense",
+		disableWarnings: true,
 		startMap: {
 			"b1A": {"at": 5, "owner": "enemy"},
 			"b1B": {"at": 4, "owner": "you"},
@@ -747,6 +754,7 @@ const tutorialList = [
 	// Sacrifices
 	new Tutorial({
 		title: "Sometimes You Have to Make Sacrifices",
+		disableWarnings: true,
 		startMap: {
 			"b1A": null,
 			"b1B": null,
@@ -939,6 +947,7 @@ const tutorialList = [
 	// Catastrophes
 	new Tutorial({
 		title: "Catastrophe!",
+		disableWarnings: true,
 		startMap: {
 			"b1A": null,
 			"b1B": {"at": 3, "owner": "you"},
@@ -998,7 +1007,7 @@ const tutorialList = [
 						if (action.oldPiece[0] === "y") {
 							return [false, "Trying to escape, eh? Interesting strategy, but here you can actually destroy the invader if you can create a catastrophe."];
 						} else if (action.oldPiece === "b1B") {
-							return [false, "Were you hoping to trade that small blue (and clicked sacrifice by mistake)? If so, good thinking, but I don't see a small red in the stash."];
+							return [false, "Were you hoping to trade that small blue (and clicked sacrifice by mistake)? If so, good thinking, but I don't see a small red in the Bank."];
 						} else if (action.oldPiece === "b2B") {
 							return [false, [
 								"Oh neat! I assume you're trying to trade out your red (in your homeworld), then trade the small blue for it?",
@@ -1066,7 +1075,7 @@ const tutorialList = [
 				startMessages: [
 					"So you took out their large ship, but you lost three of your own.",
 					"But other times you can devastate your opponent for a relatively small price. Your opponent foolishly built another green at that one blue star.",
-					"You see, sometimes the star itself is part of the overpopulation. In that case, the ENTIRE system is destroyed and returned to the stash.",
+					"You see, sometimes the star itself is part of the overpopulation. In that case, the ENTIRE system is destroyed and returned to the Bank.",
 					"Let's totally destroy their system!",
 				],
 				objective: "Cause a blue catastrophe",
@@ -1133,6 +1142,7 @@ const tutorialList = [
 	// Homeworld Setup
 	new Tutorial({
 		title: "Your Homeworld",
+		disableWarnings: true,
 		startMap: {
 			b1A: null,
 			b1B: null,
@@ -1289,6 +1299,8 @@ const tutorialList = [
 			"Oh wait. I forgot to cover how to *win*!",
 			"If, at the end of any turn (yours or your opponent's), you have no ships at your homeworld, you LOSE.",
 			"That's important. You can never abandon your homeworld!",
+			"(Well, actually, you CAN abandon it mid-turn, like with a yellow sacrifice, as long as you get back home before your turn ends.)",
+			// somehow I don't feel like using JSX
 			React.createElement("span", {}, 
 				"Well, I think that about covers everything you need to know. I do have some more information on this site itself ",
 				React.createElement("a", {href: "/howThisWorks"}, "here"),
@@ -1429,542 +1441,4 @@ const tutorialList = [
 			"If you both had picked, say, small+large homeworlds, the stars would "
 		],
 	}),
-	
-	// Openings
-	new Tutorial({
-		title: "Basic Openings",
-		startMap: {
-			"b1A": null,
-			"b1B": null,
-			"b1C": null,
-			"b2A": null,
-			"b2B": null,
-			"b2C": {"at": 2, "owner": null},
-			"b3A": null,
-			"b3B": null,
-			"b3C": {"at": 1, "owner": null},
-
-			"g1A": null,
-			"g1B": null,
-			"g1C": null,
-			"g2A": null,
-			"g2B": null,
-			"g2C": null,
-			"g3A": null,
-			"g3B": {"at": 2, "owner": "enemy"},
-			"g3C": {"at": 1, "owner": "you"},
-
-			"r1A": null,
-			"r1B": {"at": 1, "owner": null},
-			"r1C": null,
-			"r2A": null,
-			"r2B": null,
-			"r2C": null,
-			"r3A": null,
-			"r3B": null,
-			"r3C": null,
-
-			"y1A": null,
-			"y1B": null,
-			"y1C": {"at": 2, "owner": null},
-			"y2A": null,
-			"y2B": null,
-			"y2C": null,
-			"y3A": null,
-			"y3B": null,
-			"y3C": null,
-		},
-		steps: [
-			{
-				startMessages: [
-					"So now come the strategy guide modules. Here you'll find some tips on how to play better.",
-					"The first question is, what do you do once you have made your homeworld? Well, it depends in part on what you picked.",
-					"I've given you a B3+R1 homeworld against a B2+Y1, but a lot of these ideas apply to any setup situation.",
-					"Your second turn will almost always be to build a second ship. (You can't capture anything, moving abandons your homeworld, and trading just wastes a turn because you could have picked the new ship to begin with.)",
-					"So do that.",
-				],
-				hint: "Come on, you don't need a hint here.",
-				objective: "Build a new ship",
-				checkAction: function(action, oldState) {
-					if (action.type === "build") {
-						return [true];
-					} else {
-						return [false, "I suppose I should appreciate your curiosity. Please report any bugs you inevitably find."];
-					}
-				},
-				checkEndTurn: function(oldState) {
-					if (oldState.actions.number > 0) {
-						return [false];
-					} else {
-						return [true, "I think you know what the opponent is doing... (no, there are no surprises left)", {
-							type: "build",
-							newPiece: oldState.getPieceInStashByType('g', 1),
-							system: 2,
-						}];
-					}
-				},
-			},
-			{
-				startMessages: [
-					"In this particular game, you don't have any yellow, so you can't move away.",
-					"But you do have blue, so you can get yellow with a trade.",
-					"Let's trade our small green.",
-				],
-				hint: "Error 404: Hint Not Found.",
-				objective: "Get a yellow ship",
-				checkAction: function(action, oldState) {
-					if (action.type === "trade") {
-						if (action.oldPiece.substring(0, 2) === "g3") {
-							return [false, "I'm going to override that move, mostly because there's something rather interesting that only happens if you trade the small."];
-						}
-					} else if (action.type === "build") {
-						return [false, [
-							"Ah, you see, this is why Homeworlds is a game of economics.",
-							"There are 3 small greens on the board, which means your opponent can build a medium green now.",
-							"Why give them a material advantage so early?",
-						]];
-					} else {
-						return [false, "Uhhh... did you mis-click? Try again."];
-					}
-				},
-				checkEndTurn: function(oldState) {
-					if (oldState.actions.number > 0) {
-						return [false];
-					} else {
-						// get the g1
-						let enemyShip = '';
-						const letters = 'ABC';
-						for (let i = 0; i < letters.length; i++) {
-							const data = oldState.map['g1' + letters[i]];
-							if (data && data.at === 2) {
-								enemyShip = 'g1' + letters[i];
-								break;
-							}
-						}
-						return [true, "All right. I mean, if you want to trade the large green in your games, it's all yours. But this particular move leads to a weird outcome...", {
-							type: "trade",
-							oldPiece: enemyShip,
-							newPiece: oldState.getPieceInStashByType('r1'),
-						}];
-					}
-				},
-			},
-			{
-				startMessages: [
-					"Sorry for forcing the issue here, but...",
-					"There's only *one* small yellow left in the bank.",
-					"Which means if you build it, the enemy won't be able to trade for it!",
-				],
-				hint: "Just read the intro again.",
-				objective: "Build the other yellow ship.",
-				checkAction: function(action, oldState) {
-					if (action.type !== "build") {
-						return [false, ""]
-					}
-				},
-			}
-		],
-		endMessages: [],
-	}),
-	
-	// Direct Assault
-	new Tutorial({
-		title: "Direct Assault",
-		subtitle: "Basic Paths to Victory, 1/3",
-		startMap: {
-			/*
-			2 (enemy): enemy has g2,g1,y1; stars b2,r3; 
-			
-			3: enemy has b2,y2,r2; stars g1
-			4: stars b1, you have r3,y2
-			
-			5: enemy has y3, stars g3, you have b2,r1
-			
-			1 (you): stars b1,r2; you have y3,g1,g2
-			*/
-			
-			b1A: {at: 1, owner: null},
-			b1B: {at: 4, owner: null},
-			b1C: null,
-			b2A: {at: 5, owner: "you"},
-			b2B: {at: 2, owner: null},
-			b2C: {at: 3, owner: "enemy"},
-			b3A: null,
-			b3B: null,
-			b3C: null,
-			
-			g1A: {at: 1, owner: "you"},
-			g1B: {at: 3, owner: null},
-			g1C: {at: 2, owner: "enemy"},
-			g2A: {at: 1, owner: "you"},
-			g2B: {at: 2, owner: "enemy"},
-			g2C: null,
-			g3A: {at: 5, owner: "you"},
-			g3B: {at: 5, owner: null},
-			g3C: null,
-			
-			r1A: {at: 5, owner: "you"},
-			r1B: {at: 3, owner: "enemy"},
-			r1C: null,
-			r2A: {at: 1, owner: null},
-			r2B: null,
-			r2C: null,
-			r3A: {at: 4, owner: "you"},
-			r3B: null,
-			r3C: {at: 2, owner: null},
-			
-			y1A: {at: 2, owner: "enemy"},
-			y1B: null,
-			y1C: null,
-			y2A: {at: 4, owner: "you"},
-			y2B: {at: 3, owner: "enemy"},
-			y2C: null,
-			y3A: {at: 1, owner: "you"},
-			y3B: {at: 5, owner: "enemy"},
-			y3C: null,
-		},
-		steps: [
-			{
-				startMessages: [
-					// dunno if the \n's will do anything
-					"So you may know that you lose the game if you ever have zero ships at your homeworld.",
-					"But maybe you're wondering how you actually go about pulling off a win? That's the subject of the next three modules.",
-					"There are three main paths to victory. Each one has its own requirements and defenses.",
-					"One way to win is to use the red (steal) ability to capture all your opponent's ships.",
-					"Here is an example. Can you invade the opponent's homeworld?"
-				],
-				hint: "There's a nice big ship you have right next to their homeworld...",
-				checkAction: function(action, oldState) {
-					console.log(action);
-					if (action.type === "sacrifice") {
-						return [false, "You don't need to sacrifice anything. A simple movement will do."];
-					}
-					if (action.type === "discover") {
-						return [false, "You don't need to discover a *new* system, just invade their homeworld!"];
-					}
-					if (action.type !== "move") {
-						return [false, "You need to move a ship to invade!"];
-					}
-					// 2 is the enemy's homeworld
-					if (action.system !== 2) {
-						return [false, "Let's try moving a ship directly into their homeworld."];
-					}
-					// r3A is the red you have to invade with
-					if (action.oldPiece !== "r3A") {
-						return [false, "Almost there! A medium won't do, because your opponent has a medium as well and can just capture yours. But do you have something stronger?"];
-					}
-					return [true, "You got it! Remember to end your turn..."];
-				},
-				checkEndTurn: function(oldState) {
-					return [true, "Great! Now, let's see what your opponent does...", {
-						// opponent response(s)
-						type: "discover",
-						oldPiece: "b2C",
-						newPiece: "g2C",
-					}];
-				}
-			},
-			{
-				startMessages: [
-					"Fortunately for you, they don't have any large ships and can't attack you first!",
-					"Let's raid their homeworld! To capture a ship, click on the enemy's ship first.",
-				],
-				hint: "All you need to do is capture one of their ships.",
-				checkAction: function(action, oldState) {
-					if (action.type !== "steal") {
-						return [false, "You need to capture ships at the enemy's homeworld to win!"];
-					}
-					return [true, null];
-				},
-				checkEndTurn: function(oldState) {
-					return [true, "One down, two to go... wait, what's this?!", {
-						type: "build",
-						newPiece: "g3C",
-						system: 2,
-					}];
-				}
-			},
-			{
-				title: "Problem... or not?",
-				startMessages: [
-					"Looks like your opponent has built a large ship now! But it's your turn...",
-				],
-				hint: "The biggest obstacle should be dealt with first.",
-				checkAction: function(action, oldState) {
-					// sacrifice green to cause catastrophe or sacrifice yellow to move G3 in
-					if (action.type === "sacrifice") {
-						if (action.oldPiece[0] === "g" || action.oldPiece[0] === "y") {
-							return [true]; // if they have an idea let them use it
-						} else if (action.oldPiece[0] === "r3A") {
-							return [false, "Trying to be efficient, eh?\nYou can't have your ship and sacrifice it too...\n\n(you can't capture the large green if you don't have a large anymore)"];
-						}
-					}
-					if (action.type === "steal") {
-						return [true]; // let them make the mistake if it's not the G3
-					}
-					
-					return [false, "You need to capture ALL of the ships at the enemy's homeworld to win!"]
-				},
-				checkEndTurn: function(oldState) {
-					// did you find a way to destroy the g3?
-					if (oldState.map.g3C === null) {
-						return [true, "Clever! You could have just attacked the large green, but it's good to think creatively on things like this!"]
-					} else if (oldState.map.g3C.owner === "you") {
-						return [true, "Good. As soon as they build anything, you just take it."];
-					}
-				}
-			}
-		],
-		endMessages: [
-			"Nice work. Keep in mind this only worked because your opponent did not have a large ship at their home.",
-			"If they had, they could have attacked you when you came in...",
-			"In the next two modules we will look at a few other ways to win. There's also a later module with some more advanced Direct Assaults."
-		],
-	}),
-	
-	// Fleet Catastrophe
-	new Tutorial({
-		title: "Fleet Catastrophe",
-		subtitle: "Basic Paths to Victory, 2/3",
-		startMap: {
-			"b1A": null,
-			"b1B": {"at": 7, "owner": null},
-			"b1C": {"at": 3, "owner": null},
-			"b2A": null,
-			"b2B": {"at": 4, "owner": "enemy"},
-			"b2C": {"at": 2, "owner": null},
-			"b3A": null,
-			"b3B": null,
-			"b3C": {"at": 1, "owner": null},
-
-			"g1A": {"at": 3, "owner": "you"},
-			"g1B": {"at": 2, "owner": "enemy"},
-			"g1C": {"at": 1, "owner": "you"},
-			"g2A": {"at": 5, "owner": "you"},
-			"g2B": {"at": 8, "owner": null},
-			"g2C": {"at": 6, "owner": null},
-			"g3A": {"at": 4, "owner": null},
-			"g3B": {"at": 2, "owner": "enemy"},
-			"g3C": {"at": 1, "owner": "you"},
-
-			"r1A": {"at": 8, "owner": "you"},
-			"r1B": {"at": 4, "owner": "enemy"},
-			"r1C": {"at": 2, "owner": null},
-			"r2A": null,
-			"r2B": {"at": 3, "owner": "you"},
-			"r2C": {"at": 1, "owner": null},
-			"r3A": null,
-			"r3B": null,
-			"r3C": null,
-
-			"y1A": {"at": 6, "owner": "enemy"},
-			"y1B": {"at": 3, "owner": "you"},
-			"y1C": null,
-			"y2A": {"at": 4, "owner": "enemy"},
-			"y2B": {"at": 7, "owner": "you"},
-			"y2C": {"at": 6, "owner": "enemy"},
-			"y3A": {"at": 1, "owner": "you"},
-			"y3B": {"at": 4, "owner": "enemy"},
-			"y3C": {"at": 5, "owner": null},
-		},
-		steps: [
-			{
-				startMessages: [
-					"Direct assault is straightforward, but it's also rather easy to defend against by keeping a large ship at home.",
-					"But sometimes you can destroy that large ship using a catastrophe.",
-					"In fact, if all your opponent's ships are the same color and you have enough movement, you can win right there!",
-					"Can you win in one turn?",
-					"Oh, and I'm going to start being less helpful. There's still a hint and you always have the Reset Turn. Good luck!",
-				],
-				objective: "Destroy all the ships in the enemy's homeworld.",
-				hint: [
-					"Are systems 6 and 8 throwing you off?",
-					"Remember star systems are connected if they have no star sizes in common.",
-					"6 and 8 are displayed in the middle because they aren't connected to either homeworld. But you can, for instance, move directly from 7 to 4 because those stars are still different sizes.",
-					"You *do* have enough moves here if you plan correctly.",
-				],
-				checkAction: function(action, oldState) {
-					// I'm just going to let them figure this out on their own.
-					return [true];
-				},
-				checkEndTurn: function(oldState) {
-					if (oldState.isSystemOverpopulated('g', 2)) {
-						return [false, "You have to manually invoke the catastrophe! Click one of the ships, then click the catastrophe button."];
-					} else if (oldState.map.g3B) {
-						// the lead ship is intact, you failed
-						return [false, "Hmmm... It looks like you've found 1 way not to destroy a homeworld. Reset your turn, and try again!"];
-					} else {
-						return [true, "There you go!"];
-					}
-				}
-			}
-		],
-		endMessages: [
-			"You did it!",
-			"The opponent, by keeping only one color at their homeworld, committed what is known as the Bluebird Mistake.",
-			"Apparently there was this one real-life game played at some coffee shop called the Bluebird where this mistake won a game.",
-			"This is why you should usually have two colors at your homeworld.",
-			"However, even then, sometimes a combination of Fleet Catastrophe and Direct Assault can work, where you move in a large after destroying theirs.",
-			"Anyway, the last path to victory is definitely the hardest to pull off, but it's also the most surefire way.",
-		],
-	}),
-	
-	// Star Demolition
-	new Tutorial({
-		title: "Star Demolition",
-		subtitle: "Basic Paths to Victory, 3/3",
-		startMap: {
-			"b1A": {"at": 4, "owner": "you"},
-			"b1B": {"at": 6, "owner": "you"},
-			"b1C": {"at": 11, "owner": null},
-			"b2A": {"at": 4, "owner": "you"},
-			"b2B": {"at": 7, "owner": null},
-			"b2C": {"at": 2, "owner": null},
-			"b3A": {"at": 8, "owner": "enemy"},
-			"b3B": {"at": 10, "owner": null},
-			"b3C": {"at": 1, "owner": null},
-
-			"g1A": {"at": 4, "owner": null},
-			"g1B": {"at": 10, "owner": "you"},
-			"g1C": {"at": 2, "owner": null},
-			"g2A": {"at": 9, "owner": "you"},
-			"g2B": {"at": 3, "owner": null},
-			"g2C": {"at": 10, "owner": "you"},
-			"g3A": {"at": 8, "owner": null},
-			"g3B": {"at": 5, "owner": null},
-			"g3C": {"at": 1, "owner": "you"},
-
-			"r1A": {"at": 2, "owner": "enemy"},
-			"r1B": {"at": 6, "owner": null},
-			"r1C": null,
-			"r2A": null,
-			"r2B": null,
-			"r2C": null,
-			"r3A": null,
-			"r3B": {"at": 9, "owner": null},
-			"r3C": {"at": 2, "owner": "enemy"},
-
-			"y1A": null,
-			"y1B": {"at": 8, "owner": "enemy"},
-			"y1C": {"at": 1, "owner": null},
-			"y2A": {"at": 11, "owner": "enemy"},
-			"y2B": {"at": 5, "owner": "enemy"},
-			"y2C": {"at": 7, "owner": "enemy"},
-			"y3A": {"at": 2, "owner": "enemy"},
-			"y3B": {"at": 3, "owner": "you"},
-			"y3C": {"at": 6, "owner": "you"},
-		},
-		steps: [
-			{
-				startMessages: [
-					"There's a lot going on here, and that is because Star Demolition, the last main path to victory, takes the most work.",
-					"You see, you can cause catastrophes to destroy the opponent's homeworld stars. But you need 2 catastrophes, which takes at least 6 ships if the opponent doesn't help you.",
-					"Plus, moving one at a time is usually too slow (it gives the enemy time to counter-attack or just capture the ships), so you need yellow to sacrifice.",
-					"Here's a situation where you can obliterate the enemy homeworld in just two turns. Can you see what to do?",
-				],
-				objective: "Destroy the enemy homeworld in 2 turns",
-				hint: [
-					"Can you destroy *one* of the stars this turn? Which one?",
-				],
-				checkAction: function(action, oldState) {
-					if (oldState.actions.sacrifice) {
-						if (action.type === "move") {
-							if (action.oldPiece[0] === "b") {
-								return [false, [
-									"Hmmm...",
-									"Sometimes with Star Demolition you *can* get away with moving, say, 2 greens and a blue (for a green-blue homeworld).",
-									"But as for this one... how many moves can you make through yellow sacrifices? And how many ships do you need in order to blow up two stars?",
-									"...",
-								]];
-							} else if (action.oldPiece.substring(0, 2) === "g3") {
-								return [false, "No! Don't abandon your homeworld!!"];
-							} else if (action.oldPiece[0] !== "g") {
-								return [false, "What colors are the enemy's homeworld? You want to be moving those colors in to cause catastrophes."];
-							} else {
-								return [true];
-							}
-						} else if (action.type === "catastrophe") {
-							return [true, [
-								"One down, one to go!",
-								"Hey, notice the map re-arranged a bit...",
-								"Your enemy's homeworld lost its small green, so it is connected to small AND large systems now!",
-								"Small and large...",
-								"...",
-								"...",
-								"(remember end turn)",
-							]];
-						}
-					} else {
-						if (action.type === "sacrifice") {
-							if (action.oldPiece[0] === "y") {
-								return [true]; // you only have Y3s
-							} else {
-								return [false, "You have to *move* ships in to cause a catastrophe..."];
-							}
-						} else {
-							return [false, "Hmmm... a regular move won't cut it, I'm afraid."]
-						}
-					}
-				},
-				checkEndTurn: function(oldState) {
-					if (oldState.isSystemOverpopulated('g', 2)) {
-						return [false, "Whoops. You have to actually invoke the catastrophe. Click one of the green ships, then click the catastrophe button."];
-					} else if (oldState.map.g1C) {
-						// star is intact
-						return [false, "Hmmm... It turns out you actually can't win this particular situation without blowing up the green star."];
-					} else {
-						return [true, [], {
-							type: "move",
-							oldPiece: "r3C",
-							system: 1, // revenge invasion!
-						}];
-					}
-				}
-			},
-			{
-				startMessages: [
-					"Gaah! Where'd that guy come from?",
-					"And... Eek! We don't have any red at all!",
-					"Don't panic...",
-					"...",
-					"Right... Your homeworld is a Small+Large binary (binary just means 2 stars)...",
-					"...and your enemy's is just a Medium, so they have no sizes in common, so they are connected!",
-					"...",
-					"Well...",
-					"I guess you just have to win before they get a turn!",
-					"(this time I'm not going to stop you until you end your turn)",
-				],
-				objective: "Destroy the enemy's homeworld this turn.",
-				hint: "Their homeworld is connected to small systems now.",
-				checkAction: function() {
-					// lazy
-					return [true];
-				},
-				checkEndTurn: function(oldState) {
-					if (oldState.isSystemOverpopulated('b', 2)) {
-						return [false, "Still gotta remember to hit that catastrophe button!"];
-					} else if (oldState.map.b2C) {
-						return [false, "You haven't failed, you just found one way not to destroy a star!"];
-					} else {
-						return [true, "Whew. That was close."];
-					}
-				},
-			}
-		],
-		endMessages: [
-			"Yep.",
-			"That particular setup is called a Doomsday Machine.",
-			"It's powerful because it often can't be stopped, but there are other ways.",
-			"You don't need to have everything set up at once; you can even destroy one star and then destroy the other 15 turns later!",
-			"BUT...",
-			"The longer you wait, the greater the chance of an enemy counter-attack.",
-			"And you normally have to give up at least 4 ships for the first star, so you'll be down in material.",
-			"Many experts suggest you NOT blow up one star unless you have a plan to get the other.",
-			"However, you don't *always* need two Y3s. See the advanced version of this tutorial.",
-			"Well... this is message 10... But that's the last main way to win.",
-			"If you need a break you've earned it.",
-		],
-	}),
 ];
-
-export default tutorialList;
