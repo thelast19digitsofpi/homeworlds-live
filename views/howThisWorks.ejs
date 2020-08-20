@@ -8,7 +8,7 @@
 		<%- include("header") %>
 		<div class="container">
 			<h2>Playing on Homeworlds Live</h2>
-			<h6 class="text-primary">This page only covers how this website operates. It does not cover how to play the game of Homeworlds in general.</h6>
+			<h6>This page only covers how this website operates. It does not cover how to play the game of Homeworlds in general. For that, go <a href="/tutorial">here</a>.</h6>
 			<h5 class="text-warning">It is especially important to read the bullet points in orange.</h5>
 			<br/>
 			<h3>Lobby</h3>
@@ -29,13 +29,26 @@
 			<h5>Launch Sequence</h5>
 			<ul>
 				<li>The owner of a room (whoever has been in it the longest) can decide to start a game.</li>
-				<li>All players in the room must agree to start. If anyone declines, the start sequence is halted.</li>
+				<li>All players in the room must agree to start. If anyone declines, the start sequence is blocked.</li>
 				<li>When everyone (including the owner) confirms, the game starts.</li>
 			</ul>
 			
 			<p>You can also watch games in progress by clicking the links in the lobby.</p>
 			
 			<h3>In Game</h3>
+			
+			<h5>Colorblind Mode</h5>
+			<ul>
+				<li>This puts the symbols
+					<strong class="text-primary">&#x21c6;</strong>,
+					<strong class="text-success">+</strong>,
+					<strong class="text-yellow">&#x2227;</strong>, and
+					<strong class="text-danger">&#x2734;</strong> on all ships and stars.
+				</li>
+				<li>Yellow ships have the movement symbol (<strong class="text-yellow">&#x2227;</strong>) repeated 1, 2, or 3 times instead of pips.</li>
+				<li>Other colors have white symbols and black pips (except small ships, where the pips were removed).</li>
+			</ul>
+			
 			<h5>Turns</h5>
 			<ul>
 				<li>When it is your turn, the border of the star map will turn white.</li>
@@ -52,8 +65,8 @@
 				<li><strong class="text-dark">Homeworld Setup</strong>: Click your two stars first, then your ship. They are displayed below the star map. Use "Reset Turn" if you make a mistake.</li>
 				<li><strong class="text-success">Building</strong>: <span class="text-warning">First click on a ship of the same color</span> in the intended system, then click the Build button. (Example: if you want to build a red at your homeworld, click a red ship you already have there.)</li>
 				<li><strong class="text-primary">Trading</strong>: Click the ship you want to trade, click the "Trade" button, then click a stash piece.</li>
-				<li><strong style="color: #ee3">Movement</strong>: Click the ship you want to move, click the "Move" button, then click any piece at the target system.</li>
-				<li><strong style="color: #ee3">Discovery</strong>: Like movement, but click the "Discover" button followed by a piece in the stash.</li>
+				<li><strong class="text-yellow">Movement</strong>: Click the ship you want to move, click the "Move" button, then click any piece at the target system.</li>
+				<li><strong class="text-yellow">Discovery</strong>: Like movement, but click the "Discover" button followed by a piece in the stash.</li>
 				<li><strong class="text-danger">Capturing</strong>: Click the enemy ship, then the Capture button.</li>
 				<li><strong class="text-info">Sacrificing</strong>: Click the ship to sacrifice, then the Sacrifice button. Then do your sacrifice actions as above.</li>
 				<li><strong class="text-info">Catastrophes</strong>: Click any piece of the overpopulated color at the system, then the catastrophe button.</li>
@@ -70,12 +83,12 @@
 			
 			<h5>Some Quirks</h5>
 			<ul>
-				<li>If you set a timed game, <strong class="text-warning">the clock is completely unforgiving.</strong></li>
-				<li><strong class="text-warning">The map may rearrange dramatically if half a homeworld is destroyed.</strong></li>
+				<li>If you set a timed game, <strong class="text-warning">the clock is completely unforgiving</strong>. Either play with a comfortable delay or increment, or else make sure your internet connection is strong.</li>
+				<li><strong class="text-warning">The map may rearrange dramatically if half a homeworld is destroyed</strong>, and also rearranges when systems become contested (i.e. occupied by both players).</li>
 				<ul>
 					<li>This is mostly because right now the stars are positioned by a simple algorithm that has no memory of previous arrangements.</li>
 					<li>You may actually find this useful (because it emphasizes that things are different).</li>
-					<li>It might help to pay attention to the system numbers. These do not change.</li>
+					<li>It might help to pay attention to the system numbers.</li>
 				</ul>
 				<li><strong class="text-warning">If you <em>disconnect</em> for more than 5 minutes, you forfeit the game</strong> even if it is not timed.</li>
 				<li>If you do the game-winning catastrophe or capture, but do not click "End Turn" until after your clock expires, <strong>the game is considered a draw</strong>.</li>

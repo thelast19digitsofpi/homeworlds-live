@@ -72,7 +72,7 @@ class System extends React.PureComponent {
 				type="star"
 				size={star.size}
 				color={star.color}
-				symbolMode={false}
+				symbolMode={this.props.symbolMode}
 				rotation={0}
 				scaleFactor={this.props.scaleFactor}
 				

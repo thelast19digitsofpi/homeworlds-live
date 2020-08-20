@@ -108,7 +108,7 @@ app.use(function(req, res, next) {
 		}
 		// base64 but made url-safe
 		res.locals.render.nonce = buf.toString("base64");
-		res.set("Content-Security-Policy", `script-src 'nonce-${res.locals.render.nonce}'`);
+		res.set("Content-Security-Policy", `script-src 'unsafe-inline' https: 'nonce-${res.locals.render.nonce}' 'strict-dynamic'`);
 		next();
 	});
 });
@@ -124,7 +124,6 @@ const listener = server.listen(port, function() {
 	// for testing purposes
 	console.log(ip.address());
 });
-
 
 module.exports = {
 	app: app,

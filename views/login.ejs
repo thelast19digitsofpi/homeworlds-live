@@ -11,7 +11,7 @@
 			<p class="lead">Don't have an account? <a href="/createAccount">Create one</a>.</p>
 			<form id="login-form" method="post" action="/login">
 				<% if (typeof error !== 'undefined') { _%>
-				<h4 class="text-warning"><%= error %></h4>
+				<h5 class="text-warning"><%= error %></h5>
 				<% } %>
 				<div class="form-group">
 					<label for="login-username">Username</label>

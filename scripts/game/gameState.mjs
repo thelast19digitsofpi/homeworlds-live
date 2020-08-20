@@ -205,7 +205,7 @@ class GameState {
 	}
 	
 	// Like the above, but also uses a size.
-	// You can pass either ('b', 2) or ('b2').
+	// You can pass either ('b', 2) or ('b2') but the latter is preferred
 	// Returns "null" if failed.
 	getPieceInStashByType(color, size) {
 		if (typeof size === "undefined") {
@@ -217,7 +217,24 @@ class GameState {
 		const letters = "ABCDE";
 		for (let i = 0; i < 3; i++) {
 			let serial = color + size.toString() + letters[i];
+			// null means in the stash
 			if (this.map[serial] === null) {
+				return serial;
+			}
+		}
+		return null;
+	}
+	
+	// Like the above but finds a piece at a system instead.
+	// Only ('b2', 4) and similar is supported.
+	// Please watch out for null returns.
+	getPieceInSystemByType(colorSize, system) {
+		const letters = "ABCDE";
+		for (let i = 0; i < letters.length; i++) {
+			let serial = color + size.toString() + letters[i];
+			const data = this.map[serial];
+			// it must exist and be at the system
+			if (data && data.at === system) {
 				return serial;
 			}
 		}

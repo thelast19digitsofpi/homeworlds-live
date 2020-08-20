@@ -6,7 +6,7 @@ import React from 'react';
 import Tutorial from './tutorialConstructor.js';
 
 
-export default [
+const tutorialList = [
 	// Openings 1
 	new Tutorial({
 		title: "Basic Opening Strategy",
@@ -89,9 +89,9 @@ export default [
 			},
 			{
 				startMessages: [
-					"If you remember the tutorial about the economy, you probably know not to build another green.",
-					"So what else is there?",
-					"Well, you have movement, so you can discover a new system.",
+					"What do do next?",
+					"Well, you probably don't want to build the last small green and open up mediums.",
+					"You do have movement, so you can discover a new system.",
 					"Alternatively, you can trade for some other color.",
 					"I'll let you pick which one you want to try. (This tutorial has 3 different branches; you can come back and try a different route.)",
 				],
@@ -121,7 +121,7 @@ export default [
 						if (action.oldPiece[1] === "1") {
 							// sacrificed the small
 							return [false, [
-								"Sacrificing a small green... would get you 1 build. That can be useful (it lets you build where you don't have green). But does that help you *here*?",
+								"Sacrificing a small green... would get you 1 build. That can be useful sometimes (it lets you build where you don't have green). But does that help you *here*?",
 							]];
 						} else if (action.oldPiece[1] === "3") {
 							// sacrificed the large
@@ -246,8 +246,12 @@ export default [
 			{
 				startMessages: [
 					"So there's one small yellow left in the bank.",
-					"Let's get it while we can!",
-					"But make sure you still have green tech at that system.",
+					"Let's get it while we can!...",
+					"Wait a second... didn't I just say NOT to do that a few turns ago?",
+					"Well, the reason is that here, after they build the medium yellow, you can build one of your own.",
+					"But before, when you had 2 greens, if you built the last small and then a medium, that would make 4, an overpopulation.",
+					"So you have to keep an eye not just on the Bank but also the population of your systems.",
+					"Anyway, let's trade for yellow.",
 				],
 				hint: "It's usually good to trade where you have two ships.",
 				checkAction: function(action, oldState) {
@@ -295,7 +299,7 @@ export default [
 			},
 			{
 				startMessages: [
-					"Your opponent just got a medium yellow. Let's get one of our own!",
+					"As expected, your opponent just got a medium yellow. Let's get one of our own!",
 				],
 				hint: "Come on... you don't need a hint...",
 				checkAction: function(action, oldState) {
@@ -326,7 +330,7 @@ export default [
 			{
 				startMessages: [
 					"Your opponent just obtained a red ship.",
-					"(Notice how they *traded* a medium yellow into a medium red. Sometimes you can bypass the smalls this way.)",
+					"(Notice how they *traded* a medium yellow into a medium red. They already had a medium, so they didn't need to get small reds first.)",
 					"Right now you are totally defenseless if they were to attack (i.e. send ships into your colonies).",
 					"It may take a few turns for them to reach you, but it's generally better to be prepared.",
 					"Let's get a red ship of our own.",
@@ -339,7 +343,7 @@ export default [
 								return [true]; // per-action messages are a bit annoying and I want to encourage end-turn
 							} else {
 								return [false, [
-									"You probably don't want to trade your green away.",
+									"You probably don't want to trade your green away. If you do, you no longer have build power there.",
 									"That would mean you have to waste a move trading for green later.",
 								]];
 							}
@@ -364,7 +368,7 @@ export default [
 						"There you go!",
 						"The red power is a useful deterrent. Now your opponent won't invade you because you would just sacrifice your red and capture their ship!",
 						"Anyway, the next goal would be to expand your fleet more, maybe discover another system, maybe get some blue ships...",
-						""
+						"...but for that you need to play the real game!",
 					], {
 						type: "discover",
 						oldPiece: "r2C",
@@ -384,15 +388,21 @@ export default [
 					"I see you have a yellow ship.",
 					"It may look redundant, but it's actually good to have yellow ships, particularly mediums and larges, so you can sacrifice for several moves at once.",
 					"It looks like your opponent also traded for yellow.",
-					"You probably don't want to grab the last yellow (can you think why?). What other options do you have?",
+					"There's one yellow ship left. You probably shouldn't take it, because (1) you already have yellow and (2) it lets your opponent get mediums.",
+					"So what else?",
+					"There's not much else going on, so how about just building a small green?",
 				],
+				hint: "Error 404: Hint Not Found",
+				checkAction: function(action, oldState) {
+					
+				},
 			}
 		],
 		endMessages: [
 			"I'm sorry to cut this off here, but you have to play the real game for more!",
 			"This module actually has four different branches (three for the colors you can trade for, plus one if you discover a system right away).",
 			"The important thing to keep in mind is to always watch the Bank!",
-			"The next tutorial covers another opening trick, but after that, you'll learn how to actually set up for victory!",
+			"The next tutorial covers another opening trick, but after that, you'll learn how to actually win!",
 		],
 	}),
 	
@@ -932,3 +942,9 @@ export default [
 		],
 	}),
 ];
+
+export default {
+	title: "Intermediate Tutorials",
+	description: "These tutorials discuss some opening strategy and the main ways to win the game.",
+	list: tutorialList,
+};

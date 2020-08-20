@@ -15,11 +15,16 @@ body {
 	color: #CCCC11 !important;
 }
 
+/* And "text-primary" is a bit too bright of a blue */
+.text-blue {
+	color: #0000CC !important;
+}
+
 /* Game styling */
 /* For the most part I put here only that which either (1) was done early on, (2) I cannot do with Bootstrap's classes, or (3) I want to be able to adjust more finely than bootstrap's. */
 
 .systems {
-	min-height: 50vh;
+	min-height: 54vh;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;

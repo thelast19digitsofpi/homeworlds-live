@@ -2,10 +2,10 @@
 # If I end up needing a compile step, this would make it easier.
 
 runp:
-	NODE_ENV=prod node main.js
+	NODE_ENV=prod node --experimental-modules main.js
 
 run:
-	NODE_ENV=dev node main.js
+	NODE_ENV=dev node --experimental-modules main.js
 
 # OK this made it easier
 # & to make it a background process

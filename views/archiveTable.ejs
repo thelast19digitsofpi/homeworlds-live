@@ -24,7 +24,11 @@
 						var row = archiveList[i];
 				%>
 				<tr>
-					<th><a href="/archive/view/<%= row.id %>"><%= row.id %> (view)</a></th>
+					<th>
+						<a href="/archive/view/<%= row.id %>"><%= row.id %> (view)</a>
+						<br/>
+						<a href="/archive/raw/<%= row.id %>">Raw JSON</a>
+					</th>
 					<!-- unfortunately escaping player names prohibits <br/> as a separator -->
 					<td><%= row.players.join(", ") %></td>
 					<td><%= row.winner || "[Draw]" %></td>

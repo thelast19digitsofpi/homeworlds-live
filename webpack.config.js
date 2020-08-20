@@ -8,7 +8,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 // All these pages use only the basic scripting
-const simplePages = ["index", "howThisWorks", "login", "createAccount"].map(function(page) {
+const simplePages = ["index", "howThisWorks", "login", "createAccount", "changePassword", "orDidI"].map(function(page) {
 	return new HtmlWebpackPlugin({
 		hash: true,
 		chunks: ["vendor"],
@@ -60,13 +60,28 @@ module.exports = {
 			filename: "./tutorial.ejs",
 			template: "./views/tutorial.ejs",
 		}),
+		{
+			apply: function(compiler) {
+				// I have no idea why this works and it's not well documented
+				// I just wanted the "watch" command to put a unique number after each compile so I know when it recompiles
+				compiler.hooks.afterEmit.tap('AfterEmitPlugin', function() {
+					setTimeout(function() {
+						console.log("Compiled.", Math.random());
+					}, 1000);
+				})
+			}
+		}
 	].concat(simplePages),
 	mode: "production",
 	devtool: "source-map",
+	resolve: {
+		symlinks: false,
+	},
 	module: {
 		rules: [
 			{
 				test: /\.ejs$/,
+				exclude: /node_modules/,
 				loader: "ejs-loader",
 				options: {
 					variable: "data",
@@ -84,6 +99,7 @@ module.exports = {
 						options: {
 							babelrc: false,
 							presets: ["@babel/preset-env", "@babel/react"],
+							plugins: ["@babel/plugin-syntax-dynamic-import"]
 						},
 					}
 				],

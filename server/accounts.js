@@ -133,9 +133,8 @@ app.use(async function(req, res, next) {
 
 // Login Screen (GET)
 app.get("/login", function(req, res) {
-	// so if the user is already authenticated, 
-	const isValidCookie = false; // todo: obviously this needs to be legit
-	if (isValidCookie) {
+	// so if the user is already authenticated, send them to the lobby
+	if (res.locals.render.userInfo && res.locals.render.userInfo.loggedIn) {
 		return res.redirect("/lobby");
 	} else {
 		// show login screen
@@ -152,6 +151,69 @@ app.get("/createAccount", function(req, res) {
 	} else {
 		// show account creation screen
 		res.render("createAccount", res.locals.render);
+	}
+});
+
+// Changing your Password
+app.get("/changePassword", function(req, res) {
+	if (res.locals.render.userInfo && res.locals.render.userInfo.loggedIn) {
+		return res.render("changePassword", res.locals.render);
+	} else {
+		return res.redirect("/login");
+	}
+});
+
+app.post("/changePassword", async function(req, res) {
+	console.log("Changing password");
+	// Who is this?
+	const username = res.locals.render.userInfo.username;
+	if (!username) {
+		console.log("changePassword: Not Logged In");
+		// you aren't logged in
+		return res.redirect("/login");
+	}
+	
+	// Query database to find the user
+	try {
+		const row = await myUtil.databaseCall(db, "get", "SELECT * FROM users WHERE username = ?", [username]);
+		if (!row) {
+			// you don't exist (?!)
+			console.warn("[POST changePassword] This isn't good! POST to changePassword but user does not exist");
+			return res.redirect("/login");
+		}
+		
+		const correct = await a2.verify(row.hashedPassword, req.body.oldPassword);
+		if (correct) {
+			// now check if the new passwords match
+			const newPassword = req.body.newPassword;
+			if (typeof newPassword !== "string") {
+				// Password is not a string
+				console.warn("How did they send a non-string as their password?");
+				return res.send("That doesn't look like a password. Were you hacking? If not, please try again.");
+			} else if (newPassword !== req.body.confirmPassword) {
+				// Confirm-password is not identical
+				res.locals.render.error = "The new passwords do not match.";
+				return res.render("changePassword", res.locals.render);
+			} else if (newPassword.length < 12 || newPassword.length >= 100) {
+				// password length out of range
+				res.locals.render.error = "The new password must be between 12 and 99 characters.";
+				return res.render("changePassword", res.locals.render);
+			} else {
+				// Yay! It's valid!
+				
+				// We can send the user to the lobby now.
+				a2.hash(newPassword, passwordOptions).then(function(hash) {
+					myUtil.databaseCall(db, "run", "UPDATE users SET hashedPassword = ? WHERE username = ?", [hash, username]);
+				});
+				return res.redirect("/lobby");
+			}
+		} else {
+			res.locals.render.error = "The old password was incorrect. Please try again.";
+			return res.render("changePassword", res.locals.render);
+		}
+	} catch (error) {
+		res.locals.render.error = "Something went wrong. It could be that you are not logged in.";
+		return res.status(500).render("login", res.locals.render);
 	}
 });
 

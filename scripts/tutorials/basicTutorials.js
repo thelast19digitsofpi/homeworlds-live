@@ -50,7 +50,7 @@ const template = {
 };
 */
 
-export default [
+const tutorialList = [
 	// Building
 	new Tutorial({
 		title: "Building Ships",
@@ -366,7 +366,7 @@ export default [
 					"How about we get started with a simple move: Move one of your yellow ships to your homeworld.",
 				],
 				bannedActions: {
-					"discover": "Moving and discovering are slightly different. Let's stick to movement for now.",
+					"discover": "Moving and discovering are slightly different (although both use yellow). Let's stick to movement for now.",
 				},
 				hint: [
 					"Your homeworld is the system that has 2 stars and one large green ship.",
@@ -393,15 +393,19 @@ export default [
 				startMessages: [
 					"Oh neat, a new star just appeared on the map!",
 					"In fact, you can discover a star any time you have movement power. In the physical game, you just add a piece to the board, then move there.",
+					"(Note: Homeworld systems always start out as two-star systems. All other systems are single stars.)",
 					"Here, to discover a system, you first click the piece you want to move, then click the \"Discover a system...\" button in the popup.",
 					"Then you click a piece in the Bank. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
-					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home. (That's a good habit for the real game...)",
+					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home.",
 				],
 				hint: [
 					"First click the ship, then click a star in the Bank.",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "discover") {
+						if (action.oldPiece[1] === "3") {
+							return [false, "That's a good move! However, as we'll see later, it's a good habit to keep your largest ship at your homeworld (for defense).\n\nTry moving one of the yellow ships."];
+						}
 						return [true, "Good job. End your turn and I'll show you something interesting..."];
 					} else {
 						return [false, "That's legal, but I'd like you to discover a new star system instead."];
@@ -422,11 +426,11 @@ export default [
 					if (newStar) {
 						// If you discovered a medium, move move from the homeworld (which is y1A), otherwise move the existing y1B
 						const message = newStar[1] === "2" ? [
-							"Notice how the system is next to your opponent's homeworld?",
+							"Notice how the system is closer to your opponent's homeworld?",
 							"That's because they are connected! Their home is a Small+Large, so it's connected to Medium systems (the only other size).",
-							"You're one move away from invading if you wanted! (But it wouldn't do much good with just your one ship.)"
+							"(Note: The actual position of stars is ONLY a visual aid. The different-size rule is what matters.)",
 						] : null;
-						return [true, null, {
+						return [true, message, {
 							type: "move",
 							oldPiece: (newStar[1] === "2") ? "y1A" : "y1B",
 							system: 5
@@ -438,9 +442,8 @@ export default [
 			}
 		],
 		endMessages: [
-			"Did you notice how the star system disappeared when it was abandoned? Stars get added to the map when a ship lands there, and go away when the last ship leaves.",
-			"Yeah, this game is a little weird. But keep that in mind, as you can use it to your advantage. (Similarly, you can discover a piece to stop your opponent from using it as a ship.)",
-			"Anyway, it looks like your opponent paid you a visit. That doesn't usually happen in Homeworlds, because of the last color ability...",
+			"Did you notice how the star system disappeared when it was abandoned? Stars get added to the map when a ship lands there, and go back to the Bank when the last ship leaves.",
+			"It may seem weird at first, but it's actually a very crucial part of how the game works...",
 		],
 	}),
 
@@ -1442,3 +1445,10 @@ export default [
 		],
 	}),
 ];
+
+// I don't trust a raw {} to not have strange meanings
+export default ({
+	title: "Basic Tutorials",
+	description: "These cover the basics of gameplay. Start here if you don't already know how Homeworlds works!",
+	list: tutorialList,
+});

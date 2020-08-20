@@ -53,6 +53,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				// These are important.
 				scaleFactor: 0.5,
 				viewer: "south",
+				symbolMode: false,
 				
 				// Popup data for clicking on a ship.
 				popup: null,
@@ -83,6 +84,12 @@ function withGame(WrappedComponent, events, additionalState) {
 				const method = bindThese[i];
 				this[method] = this[method].bind(this);
 			}
+		}
+		
+		setSymbolMode(bool) {
+			this.setState({
+				symbolMode: bool,
+			});
 		}
 		
 		componentDidMount() {
@@ -127,7 +134,7 @@ function withGame(WrappedComponent, events, additionalState) {
 		The following methods are all very fundamental to managing state and such.
 		*/
 		
-		// Gets the current state.
+		// Gets the current GameState.
 		getCurrentState() {
 			return this.state.current;
 		}
@@ -734,18 +741,35 @@ function withGame(WrappedComponent, events, additionalState) {
 			const activePiece = this.state.actionInProgress ? this.state.actionInProgress.oldPiece : null;
 			// I am not sure if sending the entire state object is "correct"
 			const moreProps = events.getProps ? events.getProps.call(this) : {};
+			const sym = this.state.symbolMode;
+			const F = React.Fragment;
 			return <WrappedComponent
 					reactState={this.state}
 					gameState={current}
 					{...moreProps}>
 				<div className="game row no-gutters">
 					<div className="star-map-wrapper col">
+						<p className="mb-0 mt-0">
+							{/* Color reference */}
+							<strong className="text-blue mr-2">Trade {sym && <F>= &#x21c6;;</F>}</strong>
+							<strong className="text-success mr-2">Build {sym && <F>= +;</F>}</strong>
+							<strong className="text-yellow mr-2">Move {sym && <F>= ^;</F>}</strong>
+							<strong className="text-danger mr-2">Steal {sym && <F>= &#x2734;.</F>}</strong>
+							{/* inline block to make the text wrap with the checkbox */}
+							<span className="d-inline-block">
+								<input type="checkbox" value={sym} onChange={event => this.setSymbolMode(event.target.checked)} />
+								Colorblind mode
+							</span>
+						</p>
 						<div className="star-map" style={starMapStyle} ref={this.starMapRef}>
+							{/* The Star Map!! */}
 							<StarMap
 								map={current.map}
 								homeworldData={current.homeworldData}
 								scaleFactor={ boardScale }
 								viewer={this.state.viewer}
+								symbolMode={this.state.symbolMode}
+								setSymbolMode={this.state.setSymbolMode}
 								
 								activePiece={activePiece}
 								
@@ -781,6 +805,7 @@ function withGame(WrappedComponent, events, additionalState) {
 					<div className="stash col-auto" align="right">
 						<Stash
 							scaleFactor={ stashScale }
+							symbolMode={this.state.symbolMode}
 							data={current.map}
 							handleClick={(serial) => this.handleStashClick(serial)}
 						/>
