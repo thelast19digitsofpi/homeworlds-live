@@ -42,7 +42,11 @@ class TutorialWrapper extends React.Component {
 			</div>
 		</div> : null;
 		
-		// ooh this is interesting
+		const objectiveText = <p className="mb-1 mt-1">
+			<strong className="text-primary">Goal:</strong> {currentStep.objective}
+		</p>;
+		
+		// Put it on main viewscreen, captain!
 		return <div className="position-relative">
 			<h3>{tutorial.title}</h3>
 			{/* button group at top */}
@@ -57,6 +61,7 @@ class TutorialWrapper extends React.Component {
 					Show Intro
 				</button>
 				<button className="btn btn-secondary"
+					disabled={!currentStep.hint}
 					onClick={() => this.props.displayHint()}>
 					<i className="material-icons md-18 mr-1 align-middle">help_outline</i>
 					Show Hint
@@ -69,6 +74,8 @@ class TutorialWrapper extends React.Component {
 					</button>
 				}
 			</div>
+			{currentStep.objective && objectiveText}
+			
 			{/* Render the game */}
 			{this.props.children}
 			{popup}
@@ -320,7 +327,7 @@ const TutorialGame = withGame(TutorialWrapper, {
 		if (banned instanceof Object && banned[actionType]) {
 			const msg = banned[actionType];
 			this.setState({
-				message: (msg instanceof Array) ? msg : [msg],
+				messages: (msg instanceof Array) ? msg : [msg],
 				messageTitle: "Not Yet",
 				messageNumber: 1,
 			});
@@ -376,6 +383,25 @@ const TutorialGame = withGame(TutorialWrapper, {
 			return true;
 		}
 		const step = this.props.tutorial.steps[this.state.stepID];
+		// Many steps require you to use all your actions before ending your turn
+		if (step.requireAction && oldState.actions.number > 0 && !oldState.actions.sacrifice) {
+			this.setState({
+				messages: ["Don't end your turn yet. You haven't done anything yet!"],
+				messageTitle: "Do Something First",
+				messageNumber: 1,
+			});
+			return false;
+		}
+		// the above, but for sacrifices
+		// sometimes you sacrifice but can't or shouldn't use all the actions
+		if (step.checkWastedSacrifice && oldState.actions.number > 0 && oldState.actions.sacrifice) {
+			this.setState({
+				messages: ["You still have sacrifice actions left! You don't *HAVE* to use them, but here, you should."],
+				messageTitle: "Do More",
+				messageNumber: 1,
+			});
+		}
+		
 		if (step.checkEndTurn) {
 			const result = step.checkEndTurn(this.state.current);
 			if (result[1]) {

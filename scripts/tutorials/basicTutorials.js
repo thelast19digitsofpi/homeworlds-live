@@ -101,11 +101,14 @@ const tutorialList = [
 				startMessages: [
 					"Welcome to the Homeworlds Tutorial! Here I will walk you through the fundamentals of gameplay. Please note you will have to learn by *doing*, so pay attention.",
 					"Homeworlds is typically played on a tabletop with colorful pyramids which represent stars (when vertical) or starships (when lying down, pointing away from the owner).",
-					"On this web version, ships are triangles and stars are squares. The ships next to the stars are considered at that star system.",
-					"The goal of the game is to destroy or conquer your opponent's homeworld. You do this by building and changing starships, discovering new systems, and eventually capturing or blowing up opponent's stuff.",
-					"Let's begin with building. Click one of the ships pointing upwards, and then click the \"Build\" button to create a new ship.",
+					"On this web version, ships are triangles and stars are squares.",
+					"Your ships are pointing \"away from you\", which here means upward. Enemy ships point down. (Color has meaning, but it's something different.)",
+					"The star and all ships next to it are called a star system. Systems are separated by empty space, so there are 5 star systems in this scenario (you probably can't see them all yet).",
+					"The goal of the game is to destroy or conquer your opponent's homeworld. You do this by building starships and colonizing new systems until you can destroy their stars or ships.",
+					"Let's begin with building. Click one of the ships pointing upwards, and then click the \"Build XX here\" button to create a new ship.",
 					"If you get stuck, there is Show Intro (which displays these messages again) and Show Hint in the upper right.",
 				],
+				objective: "Build a ship (you should have four total afterward)",
 				hint: [
 					"Your ships are the three triangles on the bottom half of the screen.",
 					"If you have four, you have already built; just click End Turn.",
@@ -119,7 +122,7 @@ const tutorialList = [
 					return [true, [
 						"Good job. Did you notice how it automatically gave you a small " + color + " ship at the same star?",
 						"You may have also noticed the " + abbr + "1 thing on the button. The " + abbr + " part is for " + color + ", and the 1 is for small (they come in 3 sizes). Similarly, B2 would be a medium blue, and so on.",
-						"Anyway, your turn is over now. Click the purple End Turn button on the lower right to continue. (You can also Reset Turn, if you want to change your mind.)",
+						"Anyway, your turn is over now. Click the green End Turn button on the lower right to continue. (You can also Reset Turn, if you want to change your mind.)",
 					]];
 				},
 				checkEndTurn: function(oldState) {
@@ -136,10 +139,11 @@ const tutorialList = [
 					}
 				},
 			},
+			// introduce Bank
 			{
 				startMessages: [
 					"They built a small red ship of their own!\nThis is actually interesting...",
-					"If you look at the Stash on the right, you will see that there are three of each piece total (some are on the board).",
+					"If you look at the Bank on the right, you will see that there are three of each piece total (some are on the board).",
 					"This actually means that there is a limited supply of pieces. Homeworlds may be a war, but it's a very *economic* war, complete with supply and investments and exchanges. (We'll get to most of that later.)",
 					"Anyway, when you build, there are two main rules:\n" +
 						"(1) You can only build a ship of the *same color* as a ship you already have at that star, and\n" +
@@ -197,10 +201,10 @@ const tutorialList = [
 			"g1A": {"at": 3, "owner": "you"},
 			"g1B": {"at": 6, "owner": null},
 			"g1C": {"at": 5, "owner": "enemy"},
-			"g2A": {"at": 9, "owner": "you"},
+			"g2A": {"at": 9, "owner": "enemy"},
 			"g2B": {"at": 1, "owner": "you"},
 			"g2C": {"at": 2, "owner": null},
-			"g3A": {"at": 9, "owner": "you"},
+			"g3A": {"at": 9, "owner": "enemy"},
 			"g3B": {"at": 4, "owner": null},
 			"g3C": {"at": 1, "owner": "you"},
 
@@ -227,21 +231,22 @@ const tutorialList = [
 		steps: [
 			{
 				startMessages: [
-					"Building ships is important, but you can only build colors you already have. The next color, blue, allows you to change colors of your ships.",
-					"When you trade, you first click on one of your ships, then click a piece from the Stash *of the same size*.",
-					"Also, you have to have access to blue technology there. Blue technology can come either from one of your ships (even if it isn't the one being traded) or from a star.",
-					"Your goal this turn is to obtain a red ship.",
+					"Building ships is important, but you can only build colors you already have. The next ability, trading, allows you to change colors of your ships.",
+					"When you trade, you first click on one of your ships, then click a piece from the Bank *of the same size*.",
+					"This is nice because once you build medium and large ships of one color, you can change them into other colors!",
+					"But remember, the piece has to be available in the Bank!",
+					"All right. Your goal this turn is to use a trade to get a red ship. Again, use the hint button (top) for help!",
 				],
 				hint: [
-					"Remember you have to have blue at the system AND there has to be a matching red in the Bank.",
-					"You can only trade equal sizes (small for small, medium for medium, or large for large)!",
+					"You can only trade equal sizes (small for small, medium for medium, or large for large).",
+					"So what red sizes are available?",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "build") {
 						return [false, "That's ok, but this lesson is about trading. Can you trade to get a red ship?"];
 					}
 					if (action.type === "sacrifice") {
-						return [false, "We will cover sacrifice actions later."];
+						return [false, "I will get to the sacrifice action! Let's focus on trading for now..."];
 					}
 					if (action.type === "trade") {
 						if (action.newPiece[0] === "r") {
@@ -250,13 +255,17 @@ const tutorialList = [
 							return [false, "Good trade. However, I would like you to see if you can get a RED ship."];
 						}
 					}
-					return [false, "Not entirely sure what you did, but it doesn't look like a trade to me."];
+					return [false, "I'm not entirely sure what you did, but it doesn't look like a trade to me."];
 				},
 				checkEndTurn: function(oldState) {
 					if (oldState.actions.number > 0) {
 						return [false, "Don't end your turn yet!"];
 					}
-					return [true, "Good work. Once again, let's see what your opponent does...", {
+					return [true, [
+						"You may have noticed you couldn't trade at system #9, the one on the right.",
+						"That's because you have no blue ships there and the star isn't blue.",
+						"All right, you're doing great! Let's see what your opponent does..."
+					], {
 						type: "trade",
 						oldPiece: "y2A",
 						newPiece: oldState.getPieceInStashByType('r2'),
@@ -266,14 +275,13 @@ const tutorialList = [
 			{
 				startMessages: [
 					"It looks like they also traded for a red.",
-					"Now that you have one red ship, you could build more.",
-					"But notice something else. All the yellow pieces were in play, but now that your opponent traded out their yellow, you can get your own.",
+					"Now that you have one red ship, you *could* build more.",
+					"But notice something else. The opponent just traded away a yellow, so there is one in the Bank. Which means YOU can trade for it!",
 					"Your challenge this turn: Obtain a yellow, but keep your red ship.",
 				],
 				objective: "Obtain a yellow ship (and also keep your red one)",
 				hint: [
-					"What size is the yellow in the Bank?",
-					"Remember you can do a trade at any system with something blue there!",
+					"What size is the yellow in the Bank?\nYou want to trade something of that size.",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "trade") {
@@ -291,12 +299,12 @@ const tutorialList = [
 					} else if (action.type === "sacrifice") {
 						return [false, "Patience! Sacrifices are a little tricky and I'll cover them later."];
 					} else {
-						return [false, "That doesn't get you a yellow ship."]
+						return [false, "That's legal, but we're focusing on trading right now. Specifically, can you trade for a yellow ship?"]
 					}
 				},
 				checkEndTurn: function(oldState) {
 					if (oldState.actions.number > 0) {
-						return [false, "Don't end your turn yet!"];
+						return [false, "Don't end your turn yet, because you haven't done anything!"];
 					}
 					// no message because this is the last slide
 					return [true];
@@ -304,9 +312,10 @@ const tutorialList = [
 			}
 		],
 		endMessages: [
-			"It's great if you have ships of all four colors, because then you can in theory build any color (although other factors may get in the way).",
-			"Now, what's all the fuss about yellow and red ships? Well, each color is an ability. For that, it's time for a new module...",
+			"There you go. You have ships of all four colors!",
+			"That's great because then you can in theory build any color (although other factors may get in the way, like access to green for the build ability).",
 			"Oh, did you notice two of the star systems had 2 stars instead of 1? Those are your homeworld and your opponent's homeworld! We'll see more about that in a bit.",
+			"But first, we need to learn how to explore other stars!",
 		],
 	}),
 	
@@ -358,31 +367,41 @@ const tutorialList = [
 		steps: [
 			{
 				startMessages: [
-					"Ah, yellow. Probably the trickiest color in the game.",
-					"Yellow is the color of movement. Now, the stars have sizes just like ships (they actually use the same pool of pieces). The rule on movement is...",
-					"You can move between two star systems if they are *different sizes*.",
-					"Now, this website tries to smartly arrange the stars to help you visualize the connections. However, this is *only* a visual aid, and really all that matters is the star's size.",
+					"Ah, yellow. Probably the trickiest color in the game to get used to.",
+					"Yellow is the color of movement. Now, the stars have sizes just like ships (they actually use the same pool of pieces). There's a simple, but perhaps unnatural, rule on how you can move between stars.",
+					"You can move between two star systems if they have NO SIZES in common.",
+					"For example, if your ships is at a Large system, you can move to any Small or Medium system, or a Small+Medium homeworld.",
+					"But you can *NOT* move from a Large to another Large, nor to any homeworld that has a Large star.",
+					"Now, this website tries to smartly arrange the stars in rows, to help you visualize the connections. However, this is *only* a visual aid.",
 					"Anyway, to do a move, click the ship, then click the \"move\" button, then click the system you want to move to.",
-					"How about we get started with a simple move: Move one of your yellow ships to your homeworld.",
+					"How about we get started with a simple move: Move one of your yellow ships to your homeworld (the system with two stars).",
 				],
 				bannedActions: {
-					"discover": "Moving and discovering are slightly different (although both use yellow). Let's stick to movement for now.",
+					"discover": [
+						"Moving and discovering are related, but different.",
+						"We'll cover discovery next, but first let's do movement.",
+					],
 				},
+				objective: "Move one of the yellow ships into your homeworld",
 				hint: [
-					"Your homeworld is the system that has 2 stars and one large green ship.",
+					"Your homeworld is the system that has 2 stars. (Actually, it's possible to lose a star, but that's a topic for much later.)",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "move") {
 						return [true];
 					} else {
-						return [false, "That's all well and good, but we're doing movement now."];
+						return [false, "That's all well and good, but we're doing movement now. Can you try moving to your homeworld?"];
 					}
 				},
 				checkEndTurn: function(oldState) {
 					if (oldState.actions.number > 0) {
-						return [false, "Whoops. Don't end your turn quite yet..."];
+						return [false, "Whoops. Don't end your turn before you do anything..."];
 					}
-					return [true, "Opponent moves...", {
+					return [true, [
+						"By the way, if you click the wrong piece, just click the flashing ship again to cancel.",
+						"Or use the Reset Turn at right to undo your whole turn. This even works in real games.",
+						"Now, how do you find new stars? It's pretty simple...",
+					], {
 						type: "discover",
 						oldPiece: "y1B",
 						newPiece: "g2A",
@@ -392,19 +411,20 @@ const tutorialList = [
 			{
 				startMessages: [
 					"Oh neat, a new star just appeared on the map!",
-					"In fact, you can discover a star any time you have movement power. In the physical game, you just add a piece to the board, then move there.",
-					"(Note: Homeworld systems always start out as two-star systems. All other systems are single stars.)",
+					"In fact, you can \"discover\" a star any time you have movement power.",
 					"Here, to discover a system, you first click the piece you want to move, then click the \"Discover a system...\" button in the popup.",
 					"Then you click a piece in the Bank. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
+					"(Note: Homeworld systems always start out with two stars. All other systems are single stars.)",
 					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home.",
 				],
+				objective: "Discover a new system",
 				hint: [
 					"First click the ship, then click a star in the Bank.",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "discover") {
 						if (action.oldPiece[1] === "3") {
-							return [false, "That's a good move! However, as we'll see later, it's a good habit to keep your largest ship at your homeworld (for defense).\n\nTry moving one of the yellow ships."];
+							return [false, "Yep, that's it! However, as we'll see later, it's a good habit to keep your largest ship at your homeworld (for defense).\n\nTry moving one of the yellow ships."];
 						}
 						return [true, "Good job. End your turn and I'll show you something interesting..."];
 					} else {
@@ -442,8 +462,10 @@ const tutorialList = [
 			}
 		],
 		endMessages: [
-			"Did you notice how the star system disappeared when it was abandoned? Stars get added to the map when a ship lands there, and go back to the Bank when the last ship leaves.",
-			"It may seem weird at first, but it's actually a very crucial part of how the game works...",
+			"There you go. If you find that unintuitive, the last module in the Basic collection is a \"playground\" where you can practice moving around.",
+			"Anyway, did you notice how the star system disappeared when it was abandoned? Stars get added to the map via discovery, and go back to the Bank when the last ship leaves.",
+			"It may seem weird at first, but it's actually a very crucial part of how the game works.",
+			"It can be used to manipulate the Bank. That's important enough to emphasize in another module...",
 		],
 	}),
 
@@ -582,8 +604,164 @@ const tutorialList = [
 			"Yep! One side got a small ship, the other got a large. That's just one example of how tricky the economy can be in Homeworlds.",
 			"It's important to watch the Bank. If you're taking the last ship of a size, that often opens up the next size to your opponent.",
 			"The extreme example is being \"frozen out\" of a color, unable to build OR trade for it, because your enemy has all the pieces.",
-			"So as you play, keep thinking: am I giving the opponent more opportunities to get bigger ships than me?",
-			"Now, exactly why are bigger ships more important? Because of the last color, red...",
+			"So as you play, keep thinking: am I giving the opponent more opportunities to get bigger ships than mine?",
+			"Now, what's all this fuss about colors? See you in the next module!",
+		],
+	}),
+
+	// What "color power" really means
+	new Tutorial({
+		title: "Colors are Powerful",
+		disableWarnings: true,
+		startMap: {
+			"b1A": {"at": 5, "owner": "you"},
+			"b1B": {"at": 3, "owner": "you"},
+			"b1C": {"at": 2, "owner": null},
+			"b2A": null,
+			"b2B": null,
+			"b2C": {"at": 4, "owner": null},
+			"b3A": null,
+			"b3B": null,
+			"b3C": {"at": 1, "owner": null},
+
+			"g1A": {"at": 4, "owner": "you"},
+			"g1B": {"at": 3, "owner": "you"},
+			"g1C": null,
+			"g2A": null,
+			"g2B": {"at": 5, "owner": null},
+			"g2C": {"at": 2, "owner": null},
+			"g3A": null,
+			"g3B": null,
+			"g3C": {"at": 1, "owner": "you"},
+
+			"r1A": null,
+			"r1B": null,
+			"r1C": {"at": 1, "owner": null},
+			"r2A": null,
+			"r2B": null,
+			"r2C": null,
+			"r3A": null,
+			"r3B": null,
+			"r3C": {"at": 2, "owner": "enemy"},
+
+			"y1A": {"at": 1, "owner": "you"},
+			"y1B": null,
+			"y1C": {"at": 5, "owner": "you"},
+			"y2A": null,
+			"y2B": null,
+			"y2C": {"at": 3, "owner": null},
+			"y3A": {"at": 4, "owner": "enemy"},
+			"y3B": null,
+			"y3C": null,
+		},
+		steps: [
+			{
+				startMessages: [
+					"Now that we've learned three of the four abilities, I wanted to explain how they relate to colors.",
+					"I mentioned that green is connected to building, and blue to trading, but I didn't properly explain what that meant.",
+					"Each star and each ship has a color. And that color corresponds to an ability.",
+					"At a star system, you can do an action if either (1) the star is the matching color, or (2) you have a ship of that color at the system.",
+					"You cannot, however, use technology from enemy ships, nor from ships at a different star.",
+					"That's what that \"Trade Build Steal Move\" thing above the map is. (We'll cover stealing next module.)",
+					"This tutorial is open-ended. Try moving pieces around and see how your abilities change.",
+				],
+				objective: "Experiment with what abilities you can and cannot do",
+				hint: [
+					"Notice how you can't move one of your ships?",
+					"You can't use technology from enemy ships.",
+					"If you wanted to move it, you have to get your OWN yellow there.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice") {
+						return [false, "The sacrifice action is... tricky, and I don't want to overwhelm you. Stick to the basic ones for now."];
+					}
+					if ((action.type === "move" || action.type === "discover") && action.oldPiece === "g3C") {
+						return [true, "I'll allow that move, but it's generally not a good idea to leave your homeworld without a large ship defending it."];
+					}
+					return [true];
+				},
+				checkEndTurn: function() {
+					// it has to be valid here
+					// the enemy does nothing here
+					return [true];
+				},
+			},
+			{
+				startMessages: [
+					"Just so you know...",
+					"Sometimes, a button won't appear even if you have the ability.",
+					"This is just because the action is impossible for another reason.",
+					"For example, you click a small ship and have trade power, but there are no smalls in the stash.",
+					"Then you won't see the trade button.",
+					"And the popup won't show up at all if it's not your turn!",
+					"Anyway, try discovering new systems and see how the action buttons change. (You have to end your turn to see the difference.)",
+				],
+				objective: "Keep experimenting!",
+				hint: [
+					"Here's one thing to try...",
+					"Discover a new system (or trade a ship), then end your turn. What happens to the ships left behind? What actions can they do?",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice") {
+						return [false, "The sacrifice action is... tricky, and I don't want to overwhelm you. Stick to the basic ones."];
+					}
+					
+					return [true];
+				},
+				checkEndTurn: function(oldState) {
+					const pieces = oldState.getAllPiecesAtSystem(1);
+					if (pieces.length <= 2) {
+						return [false, "Ack! Don't abandon your homeworld! That's the one thing I can't allow... (well, there's more than one thing)"];
+					}
+					
+					return [true, [
+						"Well...",
+						"I'll leave you to whatever you want to do.",
+						"When you're done, click the End Turn button *twice in a row*.",
+						"It's in the Hint if you forget.",
+					]];
+				},
+			},
+			{
+				id: 'loop',
+				startMessages: [],
+				hint: "When you're done, click the End Turn button *twice in a row*.",
+				objective: "Experiment. When done, click End Turn twice.",
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice") {
+						return [false, "Nope. Patience!"];
+					}
+					if (action.type === "steal" || action.type === "catastrophe") {
+						return [true, React.createElement(
+							"span",
+							{},
+							"I see you're finding stuff out... You know you can read the rules (scroll up) and play around in the ",
+							React.createElement("a", {href: "/sandbox"}, "sandbox?")
+						)];
+					}
+					return [true];
+				},
+				checkEndTurn: function(oldState) {
+					const pieces = oldState.getAllPiecesAtSystem(1);
+					if (pieces.length <= 2) {
+						return [false, "No! Don't abandon your homeworld! That's one thing I can't allow... (In the real game you get a warning, assuming you haven't disabled them)"];
+					}
+					return [true];
+				},
+				nextStep: function(oldState) {
+					if (oldState.actions.number === 0) {
+						return 1;
+					} else {
+						return 'loop';
+					}
+				},
+			}
+		],
+		endMessages: [
+			"There you go.",
+			"(If you want, you can go back to this tutorial from the menu to try it again.)",
+			"Now, maybe you already figured out what the red ability is, or maybe you haven't.",
+			"The interesting thing about red is that it is rarely used, yet still extremely important...",
 		],
 	}),
 
@@ -636,15 +814,15 @@ const tutorialList = [
 			{
 				startMessages: [
 					"OK, time for the last ability.",
-					"Red is the color of defense. Its ability is probably the least commonly used one in the game, but it's just as important as the other three.",
-					"Red gives you the ability to capture (i.e. steal) enemy ships. But it only works at short range (i.e. in the same system).",
-					"To use red, you click on an enemy ship. If you have an equal or larger ship, and you have red technology, you can capture it, and it becomes yours.",
-					"Note that on this website I've arranged the ships and stars so yours are on the right side, almost like cars on a highway (in the US). You may notice things move around unexpectedly; this is because of changing ownership.",
+					"Capturing is probably the least commonly used action in the game, but it's just as important as the other three.",
+					"Capturing lets you take control of (i.e. steal) enemy ships. But it only works at short range (i.e. in the same system).",
+					"To use it, you click on an enemy ship. If you have an equal or larger ship at the same system, you can capture it, and it becomes yours.",
+					"Note that on this website I've arranged the ships and stars so yours are on the right side, almost like cars on a highway (in the US).",
+					"So if you notice things move around a bit, that is why.",
 					"Here, your opponent has moved a ship to one of your colonies. It seems they forgot that their turn is now over, so YOU get to strike first! Steal that invader ship!",
-					"(Note: Capturing takes control of an enemy ship, so it becomes yours. You do NOT destroy ships, at least not with Red.)"
 				],
 				hint: [
-					"There's a lot more going on here, so don't panic. What ship doesn't belong? That's the one you want to capture.",
+					"There's a lot more going on here, so don't panic. Which ship doesn't belong? That's the one you want to capture.",
 					"Click on it, then click \"Capture this ship\".",
 				],
 				checkAction: function(action, oldState) {
@@ -653,7 +831,7 @@ const tutorialList = [
 							"There you go. That'll teach them to be smarter about invasions...",
 						]];
 					} else {
-						return [false, "That's fine but we have an invader! You need to capture them before they steal your ships!"]
+						return [false, "That's fine, but there's an invader in one of your colonies. You need to capture them before they steal your ships!"]
 					}
 				},
 				checkEndTurn: function(oldState) {
@@ -670,13 +848,9 @@ const tutorialList = [
 			},
 			{
 				startMessages: [
-					"That raises an important point I want to emphasize.",
-					"You could steal the medium red because (1) you had a medium AND (2) you had red technology (from your small red).",
-					"Your ships can borrow each other's technology to perform actions, IF they are at the same system. (Similarly, your blue could have moved, or your yellow could have changed color, if you wanted.)",
-					"You can also use the star's technology. You *cannot*, however, borrow technology from enemy ships. Either you capture the ship itself (and you can use it next turn) or you can't use it.",
-					"Usually you haven't had to worry about this because of how I set up the map, but that's important to note for the Real Thing.",
-					"Anyway...",
-					"Let's do some raiding, the smart way. If you move a ship in that is BIGGER than all the enemy ships, they can't fight back!",
+					"So maybe that was dumb on their part to invade like that.",
+					"That's why in real games captures are the rarest action. No one would really send their own ship into hostile territory like that.",
+					"But if you move a ship in that is BIGGER than all the enemy ships, they can't fight back!",
 					"See those four ships at the one system? Let's invade with a stronger ship...",
 				],
 				hint: [
@@ -694,7 +868,7 @@ const tutorialList = [
 							// ok at this point we are going to system 5
 							return [false, "That ship isn't strong enough! They'll just capture you right away..."];
 						} else {
-							return [true, "Resistance Is Futile!\n\n...right?"];
+							return [true, "Their ships are smaller, so they can't capture you. Resistance Is Futile!\n\n...right?"];
 						}
 					} else {
 						// not a move action
@@ -729,9 +903,10 @@ const tutorialList = [
 			},
 			{
 				startMessages: [
-					"What in the galaxy was THAT?",
+					"What in the galaxy was THAT? They just moved two ships and a third disappeared!",
 					"That's something for a new module... BUT, I wanted to give you the chance to capture that last ship first, if you want to.",
-					"Do *whatever you want* (or nothing) this turn, then we'll start the next module after you End Turn."
+					"(You can also experiment with sacrificing, but if you're confused, we will cover it next module.)",
+					"Do whatever you want (or nothing) this turn, then we'll start the next module after you End Turn.",
 				],
 				hint: [
 					"Did you sacrifice and get stuck?",
@@ -739,7 +914,7 @@ const tutorialList = [
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "catastrophe") {
-						return [true, "I see you've found out about the catastrophe action..."];
+						return [true, "I see you've found out about the catastrophe action... that's two modules from now."];
 					}
 					return [true];
 				},
@@ -816,9 +991,13 @@ const tutorialList = [
 				checkAction: function(action, oldState) {
 					if (action.type === "sacrifice") {
 						if (action.oldPiece === "g3C") {
-							return [true, "Good. Now you can do 3 build actions: 3 because it was a large, and build actions because it was green."];
+							return [true, [
+								"Good. Now you can do 3 build actions: 3 because it was a large, and build actions because it was green.",
+								"You can do them at any of the three systems where you still have ships.",
+								"They don't even have to all be in one place!",
+							]];
 						} else {
-							return [false, "Nice try, but sacrificing a yellow gives you *move* actions, and you want to build."];
+							return [false, "Nice try, but sacrificing a yellow gives you *move* actions. What color gives you build actions?"];
 						}
 					} else if (action.type === "build") {
 						if (oldState.actions.sacrifice) {
@@ -840,13 +1019,17 @@ const tutorialList = [
 							}
 							return [true];
 						} else {
-							return [false, "If you just build now, your turn will be over. Sacrifice something first!"];
+							return [false, "If you just build now, you only get one ship. Sacrifice something first!"];
 						}
 					}
 				},
 				checkEndTurn: function(oldState) {
 					if (oldState.actions.number > 0) {
-						return [false, "While you don't *have* to use all your actions (sometimes you can't), here you should."];
+						if (oldState.actions.sacrifice) {
+							return [false, "Remember, you got *three* build actions from the sacrifice. Use them all before you End Turn!"];
+						} else {
+							return [false, "You haven't done anything yet, so don't end your turn!"];
+						}
 					}
 					
 					// enemy move
@@ -942,7 +1125,8 @@ const tutorialList = [
 			"What? How did they destroy your ships?",
 			"Something about concentrations of color, apparently... well, time for the next module!",
 			"By the way, I just wanted to clarify something before we go: You can only sacrifice one piece per turn.",
-			"So even if you sacrifice, you might get multiple moves (if yellow) OR multiple captures (if red), but you do NOT get both in the same turn.",
+			"So even if you sacrifice, you might get multiple moves (if yellow) OR multiple captures (if red), but you can NOT get both in the same turn.",
+			"Also, you can sacrifice ANY piece you have; it does NOT require any specific color like the other four actions do.",
 			"All right, let's learn about catastrophes! I promise, we're done with these surprises.",
 		],
 	}),
@@ -998,7 +1182,7 @@ const tutorialList = [
 					"So what I didn't tell you about these four technologies was that they are somewhat unstable.",
 					"In fact, if you ever have 4 pieces (ships or stars) of the *same color* in the same system, that is called an Overpopulation.",
 					"And, on your turn, if there is an Overpopulated system, you have the option to invoke a Catastrophe, destroying all pieces of the Overpopulated color!",
-					"Let's see this in action. Your opponent just invaded one of your colonies, and you can't fight back. But there are 3 red pieces there, 1 shy of a catastrophe...",
+					"Let's see this in action. Your opponent just invaded one of your colonies (lower left), and you can't fight back. But there are 3 red pieces there. If you just got one more red there...",
 				],
 				hint: [
 					"You need 4 pieces of the same color (here, red) to make a catastrophe.",
@@ -1010,12 +1194,12 @@ const tutorialList = [
 						if (action.oldPiece[0] === "y") {
 							return [false, "Trying to escape, eh? Interesting strategy, but here you can actually destroy the invader if you can create a catastrophe."];
 						} else if (action.oldPiece === "b1B") {
-							return [false, "Were you hoping to trade that small blue (and clicked sacrifice by mistake)? If so, good thinking, but I don't see a small red in the Bank."];
+							return [false, "Were you hoping to trade that small blue (and clicked sacrifice by mistake)? If so, good thinking, but I don't see a small red in the Bank..."];
 						} else if (action.oldPiece === "b2B") {
 							return [false, [
-								"Oh neat! I assume you're trying to trade out your red (in your homeworld), then trade the small blue for it?",
+								"Oh neat! Are you trying to trade out your red (in your homeworld), then trade the small blue for it?",
 								"That's really clever. Unfortunately, I can't let you do that here because you need those blue ships for the next turn...",
-								"But there *is* another clever way to make a nice profit off of this turn."
+								"But there *is* another clever way to make a nice profit off of this turn.",
 							]];
 						} else if (action.oldPiece === "g3C" || action.oldPiece === "g2B") {
 							return [true]; // hold our breath
@@ -1024,7 +1208,7 @@ const tutorialList = [
 						}
 					} else if (action.type === "build") {
 						// Build.
-						// Give no message unless 
+						// Give no message unless they cause an overpopulation
 						if (action.newPiece[0] === 'r' && action.system === 3) {
 							return [true, "Now that there are 4 reds, you still have to manually declare the catastrophe. Click any one of the four red ships, then click the catastrophe button (it's the last one)."];
 						} else {
@@ -1043,7 +1227,10 @@ const tutorialList = [
 								return [true, "Whoops, looks like you clicked the wrong system by mistake. Why don't you try out that Reset Turn button? That is designed to save you from these mistakes in a real game."];
 							}
 						} else if (action.type === "catastrophe") {
-							return [true, "There. Notice how your blue is still there? In a ship catastrophe, only the involved ships are destroyed.\n(The star would, of course, disappear if those were the ONLY ships there and the star became abandoned.)"]
+							return [true, [
+								"There. Notice how your blue is still there? In a ship catastrophe, only the involved ships are destroyed.",
+								"(The star would, of course, disappear if those were the ONLY ships there and the star became abandoned.)",
+							]];
 						}
 					} else {
 						return [true];
@@ -1057,7 +1244,7 @@ const tutorialList = [
 						} else if (oldState.actions.number > 0) {
 							return [false, "Hmmm... It looks like you aren't quite finished. Don't end your turn just yet. (Perhaps you meant to reset?)"];
 						} else {
-							return [false, "Hmmm... It looks like you had a plan, but it didn't work out. That's why we have a Reset Turn button!"];
+							return [false, "Hmmm... It looks like you had a plan, but it didn't quite work out. That's why we have a Reset Turn button!"];
 						}
 					} else {
 						const action = {
@@ -1069,21 +1256,23 @@ const tutorialList = [
 							// you managed to build the other red
 							return [true, "Great! You even managed to build the large before declaring the catastrophe!", action];
 						} else if (oldState.map["r1A"]) {
-							return [true, "Good. Now, there was a better way to do it; if you want to find it, come back to this tutorial.\n\nLet's move on.", action];
+							return [true, "Good. (Just so you know, there's a clever way to make a nice profit out of this situation...)\n\nLet's see what the opponent does...", action];
 						}
 					}
 				},
 			},
 			{
 				startMessages: [
-					"So you took out their large ship, but you lost three of your own.",
-					"But other times you can devastate your opponent for a relatively small price. Your opponent foolishly built another green at that one blue star.",
-					"You see, sometimes the star itself is part of the overpopulation. In that case, the ENTIRE system is destroyed and returned to the Bank.",
-					"Let's totally destroy their system!",
+					"Well, you took out a large enemy ship!",
+					"But unfortunately you had to lose three ships of your own.",
+					"Sometimes you can devastate your opponent for a relatively small price.",
+					"Here, your opponent foolishly built another green at that one blue star.",
+					"You see, if the star itself is part of the overpopulation, then ALL ships there are destroyed and returned to the Bank. (The star explodes!)",
+					"Let's see if we can do that and take out five enemy ships!",
 				],
 				objective: "Cause a blue catastrophe",
 				hint: [
-					"How many blue pieces are in that system (#6)? You need there to be 4.",
+					"How many blue pieces are in that system (#6)? You need there to be 4 total.",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "sacrifice") {
@@ -1107,12 +1296,12 @@ const tutorialList = [
 							} else if (action.oldPiece[0] !== "b") {
 								return [false, "What color is the star? Move *that* color in..."];
 							} else if (action.system !== 6) {
-								return [false, "Where are you going? Let's move directly into the blue star system!"];
+								return [false, "Where are you going? Let's move directly into the blue star!"];
 							} else {
 								return [true];
 							}
 						} else {
-							return [false, "...and then your turn would end with only 3 blues in the system."];
+							return [false, "Hmmm... You're on the right track! But if you just do the one move, it won't be enough. How can you move multiple ships at once?"];
 						}
 					} else if (action.type === "catastrophe") {
 						return [true, [
@@ -1125,7 +1314,9 @@ const tutorialList = [
 				},
 				checkEndTurn: function(oldState) {
 					if (oldState.map.b3B) {
-						if (oldState.actions.number > 0) {
+						if (oldState.isSystemOverpopulated('b', 6)) {
+							return [false, "Again, you have to remember to actually trigger the catastrophe!"];
+						} else if (oldState.actions.number > 0) {
 							return [false, "Whoops, looks like you tried to end your turn. You aren't done yet!"];
 						} else {
 							return [false, "It looks like you had a plan that didn't work. That's what the Reset Turn is for!"]
@@ -1137,8 +1328,10 @@ const tutorialList = [
 			},
 		],
 		endMessages: [
-			"Well done. You've destroyed six enemy ships, two large.",
-			"You've actually gotten through all the basic actions. There's one last thing left: setting up your homeworld.",
+			"Well done. You've decimated the enemy fleet, reducing them to just three ships.",
+			"Of course, you did take a fair amount of losses yourself... that's war sometimes.",
+			"Anyway, congratulations! You've gotten through all the basic actions... except the very beginning of the game.",
+			"There's one last thing left to learn: setting up your homeworld.",
 		],
 	}),
 	
@@ -1147,6 +1340,7 @@ const tutorialList = [
 		title: "Your Homeworld",
 		disableWarnings: true,
 		startMap: {
+			// yep, all empty
 			b1A: null,
 			b1B: null,
 			b1C: null,
@@ -1194,7 +1388,7 @@ const tutorialList = [
 					"At the *very beginning* of the game, you need to pick two stars and one ship for your homeworld.",
 					"There are a lot of factors involved. Which sizes do you pick for your stars? Which colors?",
 					"So instead of a big lecture right at the start, I'll let you set up any homeworld you want. Click your two stars first, then your ship.",
-					"After you pick it, I'll evaluate it. You can even deliberately pick bad homeworlds to see what happens.",
+					"Then I'll give feedback. You can use Reset Turn to try another homeworld or End Turn to finish this module.",
 				],
 				hint: [
 					"Just experiment. Pick something random, reset turn, pick something else, etc until you are comfortable.",
@@ -1235,10 +1429,11 @@ const tutorialList = [
 					} else if (colorUse['y'] > 0) {
 						// you DO have yellow
 						techFeedback.push("You picked G+B+Y. Good, solid opening. You can move out of your homeworld quickly. You will have to eventually get red, and probably keep one at your homeworld.");
-					} else {
+					} else if (colorUse['r'] > 0) {
 						// you must have green+blue+red
 						techFeedback.push("You picked G+B+R. Good, solid opening. You don't have yellow, but you can trade for it after you build a ship. Your homeworld has built-in defenses against enemy invasions.");
 					}
+					// else you picked a duplicate and there is no more need for comment
 					
 					// Feedback about your ship
 					if (action.ship[1] !== "3") {
@@ -1268,11 +1463,11 @@ const tutorialList = [
 					if (sizesConnected.length === 1) {
 						const missingSize = sizesConnected[0];
 						if (missingSize === 1) {
-							starFeedback.push("You picked a Medium+Large homeworld, also known as a Fortress. This is because Small pieces tend to get used up quickly as ships, so later on it is harder to invade your homeworld.");
+							starFeedback.push("You picked a Medium+Large homeworld, also known as a Fortress. This is because Small pieces tend to get used up quickly as ships, so they are not as available for stars to invade your homeworld.");
 						} else if (missingSize === 2) {
-							starFeedback.push("You picked a Small+Large homeworld, also known as a Goldilocks. In the opening there are usually more Mediums available than any other size, so you can often get 2 or even 3 green colonies.");
+							starFeedback.push("You picked a Small+Large homeworld, also known as a Goldilocks. In the opening there are usually more Mediums available than any other size, so you can often get 2 or even 3 green-star colonies.");
 						} else if (missingSize === 3) {
-							starFeedback.push("You picked a Small+Medium homeworld, also known as a Banker. This makes it slightly easier to pull off the Investment strategy that I cover later on. Some people say this is the strongest homeworld.");
+							starFeedback.push("You picked a Small+Medium homeworld, also known as a Banker. This makes it slightly easier to pull off the Investment strategy (see intermediate modules). Some people say this is the strongest homeworld.");
 						} else {
 							starFeedback.push("...something weird happened. This is almost certainly a bug.");
 						}
@@ -1299,10 +1494,11 @@ const tutorialList = [
 			}
 		],
 		endMessages: [
-			"Oh wait. I forgot to cover how to *win*!",
+			"Oh wait. I forgot to cover how to win and lose!",
+			"Well, you may have encountered my stern warnings against abandoning your homeworld...",
 			"If, at the end of any turn (yours or your opponent's), you have no ships at your homeworld, you LOSE.",
 			"That's important. You can never abandon your homeworld!",
-			"(Well, actually, you CAN abandon it mid-turn, like with a yellow sacrifice, as long as you get back home before your turn ends.)",
+			"(Well, actually, you CAN safely abandon it mid-turn, like with a yellow sacrifice, IF you get a ship back home before your turn ends.)",
 			// somehow I don't feel like using JSX
 			React.createElement("span", {}, 
 				"Well, I think that about covers everything you need to know. I do have some more information on this site itself ",
@@ -1311,7 +1507,7 @@ const tutorialList = [
 				React.createElement("a", {href: "https://www.looneylabs.com/sites/default/files/pyramid_rules/Rules.Homeworlds.pdf"}, "here"),
 				"."
 			),
-			"The next module is designed in case you have found the movement slightly confusing. It lets you move all around many different stars.\n\nFurther modules will cover more advanced strategies. Good luck!"
+			"The next module is designed in case you have found the movement rule confusing. It lets you move all around many different stars.\n\nFurther modules will cover more advanced strategies. Good luck!"
 		],
 	}),
 	
@@ -1400,7 +1596,7 @@ const tutorialList = [
 						"However, *always* remember that the actual position of stars on the map is entirely irrevelant and is only done as a visual aid.",
 						"The sizes are all that matters.\nCapture those ships!",
 						"(Oh, and the Show Intro won't work anymore. Use Show Hint from now on if you need a refresher.)",
-					]]
+					]];
 				}
 			},
 			{
@@ -1408,12 +1604,12 @@ const tutorialList = [
 				startMessages: [], // no annoying message every single turn
 				hint: [
 					"Systems are connected if they have NO sizes in common. It may take you two or three moves to get where you want to go...",
-					"You need a large ship to attack other larges. Where can you build one?",
+					"You need a large ship to capture other larges. Where can you build one?",
 				],
 				
 				checkAction: function(action) {
 					if (action.type === "trade" || action.type === "catastrophe") {
-						return [false, "I've turned off those actions for now. "]
+						return [false, "I've turned off those actions for this module, because the focus is on movement."]
 					}
 					return [true];
 				},
@@ -1423,7 +1619,7 @@ const tutorialList = [
 					if (!pieces["you"] || pieces["you"].ships.length <= 0) {
 						// oh no, you abandoned your homeworld!
 						// (this almost should be standard...)
-						return [false, "No! NEVER abandon your homeworld! You will lose!"];
+						return [false, "No! NEVER abandon your homeworld! You will lose! Click Reset Turn to undo that."];
 					}
 					
 					return [true];
@@ -1440,8 +1636,11 @@ const tutorialList = [
 		],
 		endMessages: [
 			"Well done! I'll admit system number 3, the green/yellow binary, may have been a bit confusing. (It tripped me up when I was testing this!)",
-			"This is part of why it is recommended to pick a different size combination than your opponent in homeworld setup.",
-			"If you both had picked, say, small+large homeworlds, the stars would "
+			"My algorithm places stars in rows based on proximity to homeworlds.",
+			"The rows, top down:\n(1) Enemy homeworld.\n(2) Systems connected to enemy homeworld (but not yours).\n(3) Systems connected to neither (or both) homeworlds.\n(4) Systems connected to your homeworld.\n(5) Your homeworld.",
+			"Of course, since both 3 and 8 were in the \"neither\" category, they ended up in the same row...",
+			"By the way, when one player loses half their homeworld, the systems move around a bit to reflect the new connections, so don't be caught off guard.",
+			"OK! You are now ready to begin playing or check out the Intermediate level tutorials for more gameplay tips!",
 		],
 	}),
 ];

@@ -5,6 +5,12 @@
 import React from 'react';
 
 function TurnControls(props) {
+	const warningContent = props.showDisableWarnings && <React.Fragment>
+		<p className="mb-0">
+			<input type="checkbox" id="show-warnings-box" checked={!props.disableWarnings} onChange={(event) => props.changeDisableWarnings(!event.target.checked)}/>
+			<label className="ml-1" htmlFor="show-warnings-box">Warnings</label>
+		</p>
+	</React.Fragment>;
 	
 	if (props.canInteract) {
 		const warnings = props.warnings;
@@ -39,6 +45,7 @@ function TurnControls(props) {
 		
 		const warningClass = (warnings.length > 0 ? "warning" : "success");
 		
+		// The display!
 		return <React.Fragment>
 			<button
 				onClick={props.handleResetClick}
@@ -53,16 +60,19 @@ function TurnControls(props) {
 				<button className={"end-turn mt-2 btn btn-lg btn-" + endTurnClass}
 				        onClick={props.handleEndTurnClick}>End Turn</button>
 			</div>
-			<button className={"text-light mt-3 btn btn-" + warningClass} onClick={props.toggleWarningPopup}>{warnings.length} warning(s)</button>
+			{warningContent}
+			{!props.disableWarnings && <button className={"text-light mt-3 btn btn-" + warningClass} onClick={props.toggleWarningPopup}>{warnings.length} warning(s)</button>}
 		</React.Fragment>
 	} else {
+		// Render a bunch of dummy outline buttons
 		return <React.Fragment>
 			<button className="btn btn-outline-danger mt-1" disabled>Reset Turn</button>
 			<br/>
 			<div className="position-relative">
 				<button className="btn btn-lg btn-outline-info mt-2" disabled>End Turn</button>
 			</div>
-			<button className="btn btn-outline-secondary mt-3" disabled>0 warning(s)</button>
+			{warningContent}
+			{!props.disableWarnings && <button className="btn btn-outline-secondary mt-3" disabled>0 warning(s)</button>}
 		</React.Fragment>
 	}
 }

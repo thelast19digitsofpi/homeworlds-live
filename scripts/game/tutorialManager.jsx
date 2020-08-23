@@ -4,10 +4,6 @@
 
 // hope this works...
 window.__webpack_nonce__ = "<%= nonce %>";
-window.__something_test__ = "<%= nonce %>";
-window.__other_test__ = "[[ nonce ]]";
-window.__escape_test__ = "[[:nonce:]]";
-window.__whats_going_on__ = "{{nonce}}";
 
 import React, {Suspense} from 'react';
 import ReactDOM from 'react-dom';
@@ -119,7 +115,7 @@ class TutorialManager extends React.Component {
 			import(
 				/* webpackMode: "lazy-once" */
 				/* webpackExclude: /game\/|\.jsx/ */
-				/* webpackChunkName: "/test123[request]" */
+				/* webpackChunkName: "/tutorial-set-[request]" */
 			`../tutorials/${next}Tutorials.js`).then(function(stuff) {
 				console.log(stuff);
 				const page = stuff.default;

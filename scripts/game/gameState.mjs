@@ -189,7 +189,7 @@ class GameState {
 		return pieces;
 	}
 	
-	// Gets the smallest piece of a specific color. Returns serial number.
+	// Gets the smallest piece of a specific color. Returns serial.
 	// Returns null if no piece of the color is available.
 	getSmallestPieceInStash(color) {
 		const letters = "ABCDE";
@@ -1109,7 +1109,7 @@ class GameState {
 				});
 			} else {
 				console.log(system);
-				throw new Error("You cannot move there, because (probably) the systems are not connected. Systems are connected if and only if the stars are DIFFERENT sizes.");
+				throw new Error("You cannot move there, because (probably) the systems are not connected. Systems are connected if and only if they have NO sizes in common.");
 			}
 		} else {
 			throw new Error("You do not have access to movement (yellow) technology in that system. You must have a yellow ship there, or be at a yellow star, or have sacrificed a yellow ship somewhere.");

@@ -12,7 +12,7 @@ import { getCompactSummary } from './gameFunctions.mjs';
 function getMapJSON() {
 	// JSON.stringify is not sufficient
 	// I want it formatted my way
-	let strings = ["{"];
+	let strings = ["{", "\t{",];
 	const map = this.getCurrentState().map;
 	// mult = multiplicity?
 	const colors = "bgry", sizes = 3, mult = "ABCDE";
@@ -33,7 +33,10 @@ function getMapJSON() {
 		strings.push("");
 	}
 	// the last newline becomes the closing brace
-	strings[strings.length - 1] = "}";
+	strings[strings.length - 1] = "\t},";
+	// now, add the homeworld data
+	strings.push("\"homeworldData\": " + JSON.stringify(this.getCurrentState().homeworldData));
+	strings.push("}");
 	return strings.join("\n");
 }
 
@@ -42,7 +45,7 @@ function SandboxDisplay(props) {
 		<div className="upper-row">
 			<button onClick={props.getMap} className="btn btn-secondary">Get Map</button>
 			<button onClick={props.getLog} className="btn btn-secondary">Get Log</button>
-			<textarea style={{resize: "none"}} className="small" value={props.textareaValue} onChange={props.setTextareaValue} placeholder={'Map and log appear here'}></textarea>
+			<textarea style={{resize: "none"}} className="small" value={props.textareaValue} onChange={event => props.setTextareaValue(event.target.value)} placeholder={'Map and log appear here'}></textarea>
 			<button onClick={() => props.loadMap(props.textareaValue)}>Load Map</button>
 			<button onClick={() => props.loadGame(props.textareaValue)}>Load Game Log</button>
 			{props.loadError && <p className="text-danger">Error: {props.loadError}</p>}
@@ -52,7 +55,8 @@ function SandboxDisplay(props) {
 }
 // the empty object is because we have no events
 const GameSandbox = withGame(SandboxDisplay, {
-	onMount: function() {
+	onConstructor: function() {
+		// Just generate a couple of methods
 		this.getMap = function() {
 			// update the textarea contents
 			this.setState({
@@ -70,7 +74,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 		this.setTextareaValue = function(contents) {
 			this.setState({
 				textareaValue: contents,
-			})
+			});
 		}.bind(this);
 		
 		this.loadMap = function() {
@@ -215,6 +219,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 		type: "homeworld",
 		player: "south",
 	},
+	disableWarnings: true,
 	// this adds new state
 	textareaValue: "",
 	loadError: null,

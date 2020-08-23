@@ -1,1 +1,36 @@
-<!doctype html><html><head> <%- include("headElement") %> <title>Tutorial Modules</title></head><body> <%- include("header") %> <div class="container"><h2>Tutorial Page</h2><p><a href="https://www.looneylabs.com">Looney Labs</a> (which I am not affiliated with) has resources for learning the rules of Homeworlds. Currently they have a video format and a rules document:</p><h4><a href="https://www.looneylabs.com/sites/default/files/pyramid_rules/Rules.Homeworlds.pdf"><i class="material-icons md-36 align-middle">article</i> If you prefer to learn by READING</a></h4><h4><a href="https://www.youtube.com/watch?v=Nz16s6oCIlQ"><i class="material-icons md-36 align-middle">ondemand_video</i> If you prefer to learn by WATCHING</a></h4><p class="text-muted italic">(Seriously, if you haven't already, you should check them out. The pieces you see in the video are an entire game system.)</p><p>Please also see <a href="/howThisWorks">How This Site Works</a> for more on the specifics of this website.</p><hr/><p>But if you prefer to learn by DOING, then my interactive tutorial system is here. You may still want to consult the rulebook or the video in case I miss something.</p><div id="game-container"></div></div> <%- include("footer") %> <script src="/scripts/vendor.js?20d11cfe3c3d7a21c9b3"></script><script src="/scripts/tutorial.js?20d11cfe3c3d7a21c9b3"></script></body></html>
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Tutorial Modules</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h2>Tutorial Page</h2>
+			
+			<p><a href="https://www.looneylabs.com">Looney Labs</a> (which I am not affiliated with) has resources for learning the rules of Homeworlds. Currently they have a video format and a rules document:</p>
+			<h4>
+				<a href="https://www.looneylabs.com/sites/default/files/pyramid_rules/Rules.Homeworlds.pdf">
+					<i class="material-icons md-36 align-middle">article</i>
+					If you prefer to learn by READING
+				</a>
+			</h4>
+			<h4>
+				<a href="https://www.youtube.com/watch?v=Nz16s6oCIlQ">
+					<i class="material-icons md-36 align-middle">ondemand_video</i>
+					If you prefer to learn by WATCHING
+				</a>
+			</h4>
+			<p class="text-muted italic">(Seriously, if you haven't already, you should check them out. The pieces you see in the video are an entire game system.)</p>
+			<p>Please also see <a href="/howThisWorks">How This Site Works</a> for more on the specifics of this website.</p>
+			
+			<hr/>
+			<p>But if you prefer to learn by DOING, then my interactive tutorial system is here, although admittedly I'm not great at user interfaces. (Generally, the controls are either above or to the right of the game board.)</p>
+			
+			<div id="game-container"></div>
+		</div>
+		
+		<%- include("footer") %>
+	<script src="/scripts/vendor.js?5ee9f9bc0d500d8a9a69"></script><script src="/scripts/tutorial.js?5ee9f9bc0d500d8a9a69"></script></body>
+</html>

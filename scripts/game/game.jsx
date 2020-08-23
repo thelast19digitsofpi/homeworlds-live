@@ -60,6 +60,10 @@ function withGame(WrappedComponent, events, additionalState) {
 				// For actions in progress. E.g. you click the "trade" button THEN a stash piece.
 				actionInProgress: null,
 				
+				// a state variable to disable warnings
+				// note that a prop can also override this
+				disableWarnings: false,
+				
 				// the warnings themselves are computed from the GameState
 				showWarningPrompt: false,
 			};
@@ -83,6 +87,11 @@ function withGame(WrappedComponent, events, additionalState) {
 			for (let i = 0; i < bindThese.length; i++) {
 				const method = bindThese[i];
 				this[method] = this[method].bind(this);
+			}
+			
+			// lastly...
+			if (events.onConstructor) {
+				events.onConstructor.call(this);
 			}
 		}
 		
@@ -154,6 +163,13 @@ function withGame(WrappedComponent, events, additionalState) {
 				number: Number(serial[1]),
 				sacrifice: serial[0],
 			};
+		}
+		
+		// Changes the disable-warnings state.
+		changeDisableWarnings(bool) {
+			this.setState({
+				disableWarnings: bool,
+			});
 		}
 		
 		/*
@@ -539,6 +555,7 @@ function withGame(WrappedComponent, events, additionalState) {
 					actionInProgress: null,
 					popup: null,
 				});
+				return;
 			}
 			
 			try {
@@ -675,7 +692,7 @@ function withGame(WrappedComponent, events, additionalState) {
 		// Handles clicking End Turn. Not for use by the warning component.
 		handleEndTurnClick() {
 			const current = this.getCurrentState();
-			if (!this.props.disableWarnings) {
+			if (!this.props.disableWarnings && !this.state.disableWarnings) {
 				const warnings = current.getEndTurnWarnings();
 				for (let i = 0; i < warnings.length; i++) {
 					if (warnings[i].level === "warning" || warnings[i].level === "danger") {
@@ -743,6 +760,32 @@ function withGame(WrappedComponent, events, additionalState) {
 			const moreProps = events.getProps ? events.getProps.call(this) : {};
 			const sym = this.state.symbolMode;
 			const F = React.Fragment;
+			
+			
+			// The Right Column
+			const rightColumn = <div className="stash col-auto" align="right">
+				<Stash
+					scaleFactor={ stashScale }
+					symbolMode={this.state.symbolMode}
+					data={current.map}
+					handleClick={(serial) => this.handleStashClick(serial)}
+				/>
+				
+				{/* ...ok this is too many props */}
+				<TurnControls
+					canInteract={canInteract}
+					
+					warnings={warnings}
+					showDisableWarnings={!this.props.disableWarnings}
+					disableWarnings={this.props.disableWarnings || this.state.disableWarnings}
+					changeDisableWarnings={(bool) => this.changeDisableWarnings(bool)}
+					
+					showPopup={this.state.showWarningPopup && !this.state.showWarningPrompt}
+					toggleWarningPopup={this.toggleWarningPopup}
+					handleEndTurnClick={this.handleEndTurnClick}
+					handleResetClick={this.handleResetClick} />
+			</div>;
+			
 			return <WrappedComponent
 					reactState={this.state}
 					gameState={current}
@@ -753,8 +796,8 @@ function withGame(WrappedComponent, events, additionalState) {
 							{/* Color reference */}
 							<strong className="text-blue mr-2">Trade {sym && <F>= &#x21c6;;</F>}</strong>
 							<strong className="text-success mr-2">Build {sym && <F>= +;</F>}</strong>
-							<strong className="text-yellow mr-2">Move {sym && <F>= ^;</F>}</strong>
-							<strong className="text-danger mr-2">Steal {sym && <F>= &#x2734;.</F>}</strong>
+							<strong className="text-danger mr-2">Steal {sym && <F>= &#x2734;;</F>}</strong>
+							<strong className="text-yellow mr-2">Move {sym && <F>= ^.</F>}</strong>
 							{/* inline block to make the text wrap with the checkbox */}
 							<span className="d-inline-block">
 								<input type="checkbox" value={sym} onChange={event => this.setSymbolMode(event.target.checked)} />
@@ -789,7 +832,7 @@ function withGame(WrappedComponent, events, additionalState) {
 						</p>
 						
 						{/* Give the warning prompt if you try to end your turn dangerously */
-							this.state.showWarningPrompt && !this.props.disableWarnings &&
+							this.state.showWarningPrompt && 
 							<WarningPrompt
 								warnings={warnings}
 								onClose={() => this.dismissWarnings()}
@@ -802,24 +845,7 @@ function withGame(WrappedComponent, events, additionalState) {
 							actionInProgress={this.state.actionInProgress}
 							turnActions={current.actions} />
 					</div>
-					<div className="stash col-auto" align="right">
-						<Stash
-							scaleFactor={ stashScale }
-							symbolMode={this.state.symbolMode}
-							data={current.map}
-							handleClick={(serial) => this.handleStashClick(serial)}
-						/>
-						
-						{/* Don't show the popup if we have the confirm prompt open */}
-						<TurnControls
-							canInteract={canInteract}
-							warnings={warnings}
-							disableWarnings={this.props.disableWarnings}
-							showPopup={this.state.showWarningPopup && !this.state.showWarningPrompt}
-							toggleWarningPopup={this.toggleWarningPopup}
-							handleEndTurnClick={this.handleEndTurnClick}
-							handleResetClick={this.handleResetClick} />
-					</div>
+					{rightColumn}
 				</div>
 			</WrappedComponent>;
 		}

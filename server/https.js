@@ -99,6 +99,8 @@ ejs.fileLoader = function(filePath) {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, "../dist"));
 
+const nodeEnv = process.env.NODE_ENV;
+console.log(nodeEnv);
 app.use(function(req, res, next) {
 	res.locals.render = {};
 	
@@ -108,7 +110,8 @@ app.use(function(req, res, next) {
 		}
 		// base64 but made url-safe
 		res.locals.render.nonce = buf.toString("base64");
-		res.set("Content-Security-Policy", `script-src 'unsafe-inline' https: 'nonce-${res.locals.render.nonce}' 'strict-dynamic'`);
+		const devEval = (nodeEnv === "dev") ? " 'unsafe-eval'" : "";
+		res.set("Content-Security-Policy", `script-src 'unsafe-inline' https: 'nonce-${res.locals.render.nonce}' 'strict-dynamic'` + devEval);
 		next();
 	});
 });

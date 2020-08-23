@@ -55,7 +55,7 @@ const tutorialList = [
 			{
 				startMessages: [
 					"I don't think my earlier Direct Assault tutorial did the concept justice.",
-					"You may be thinking that if you just have a large and a red, you're safe from direct assaults. But there are more tricky versions...",
+					"You may be thinking that if you just have a large and a red, you're safe from direct assaults. But there are more tricky versions of that tactic...",
 					"Here, your opponent has a single small red. What would happen if you moved *two* large ships into their homeworld at once?",
 					"(If you get stuck, there's still the Reset Turn button.)",
 				],
@@ -311,7 +311,7 @@ const tutorialList = [
 					"I'll let you in on a little secret...",
 					"With three ships, you have to do it in a certain way.",
 					"The *SECOND* ship has to be the large one.",
-					"Wait... why? Well, move your small or medium yellow in now...",
+					"Wait... why? Well, move your small or medium yellow in now (or click the Hint if you really want to know now)...",
 				],
 				hint: [
 					"You want to know the reason? Here you go.",
@@ -369,9 +369,6 @@ const tutorialList = [
 					"Or, if they capture the large yellow, you just move your third and final ship in and call catastrophe!",
 					"So... let's send in the large yellow!",
 				],
-				hint: [
-					"Error 404: Hint Not Found.",
-				],
 				checkAction: function(action, oldState) {
 					if (action.type === "sacrifice") {
 						return [false, "You don't need to sacrifice anything. Just move the large yellow in directly!"];
@@ -410,7 +407,10 @@ const tutorialList = [
 					"But I think you know what you have to do now.",
 					"Just don't abandon your own homeworld!",
 				],
-				hint: "Sacrifice something...",
+				objective: "Win the game",
+				hint: [
+					"I gave you two hints in the intro. Click the Show Intro button to read it again.",
+				],
 				checkAction: function(action) {
 					if (action.type === "sacrifice") {
 						if (action.oldPiece === "r3C") {
