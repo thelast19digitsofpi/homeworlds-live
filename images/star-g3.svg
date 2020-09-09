@@ -13,7 +13,7 @@
  		<ellipse cx="18" cy="83" rx="5" ry="3" />
  		<ellipse cx="5" cy="18" rx="3" ry="5" />
  		<ellipse cx="83" cy="70" rx="3" ry="5" />
- 	</g>
+  	</g>
  	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none" transform="translate(44 44) scale(1.9)">
     	
     </g>

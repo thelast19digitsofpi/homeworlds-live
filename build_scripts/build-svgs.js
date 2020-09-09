@@ -31,15 +31,18 @@ const ship_template = ejs.compile(`<% -%>
   	<%_ for (let i = 1; i <= size; i++) { %>
     <g stroke="${pipColor}" ${gExtraProps}
     	transform="translate(<%= shipWidth/2 + 4 %> <%= shipHeight - (i * 30 - 10) %>)">
-    	<%- extra %>
+    	<%- typeof extra !== "undefined" ? extra : null %>
     </g>
     <%_ } %>
   <%_ } else { %>
   	<g stroke="${pipColor}" ${gExtraProps}
   		transform="translate(<%= shipWidth/2 + 4 %> <%= shipHeight*0.75 %>) scale(<%= 0.45 + 0.45*size %>)">
-  		<%- extra %>
+  		<%- typeof extra !== "undefined" ? extra : null %>
   	</g>
   <% } %>
+  <%_ if (typeof number !== "undefined") { %>
+	<text fill="${pipColor}" text-anchor="middle" font-weight="bold" font-family="Courier New, monospace" x="<%= (shipWidth+8)/2 %>" y="<%= shipHeight * 0.95 %>" font-size="<%= Math.floor(shipHeight * 0.5) %>"><%= size %></text>
+<% } _%>
 </svg>`);
 
 // stars (image is square so width == height)
@@ -48,16 +51,21 @@ const star_template = ejs.compile(`<% -%>
 <svg xmlns="http://www.w3.org/2000/svg" width="<%= width %>" height="<%= width %>">
 	<rect x="0" y="0" width="<%= width %>" height="<%= width %>" rx="4" ry="4" fill="<%= color %>" stroke="${pipColor}" stroke-width="1" />
 	<g fill="${pipColor}" opacity="0.75" stroke="none">
-<%_ for (var i = 0; i < size; i++) { -%>
+<% if (pips) { _%>
+  <%_ for (var i = 0; i < size; i++) { -%>
  		<ellipse cx="<%= width/2 + 13*i %>" cy="${pipDistFromEdge}" rx="5" ry="3" />
  		<ellipse cx="<%= width/2 - 13*i %>" cy="<%= width - ${pipDistFromEdge} %>" rx="5" ry="3" />
  		<ellipse cx="${pipDistFromEdge}" cy="<%= width/2 - 13*i %>" rx="3" ry="5" />
  		<ellipse cx="<%= width - ${pipDistFromEdge} %>" cy="<%= width/2 + 13*i %>" rx="3" ry="5" />
-<%_ } -%>
+  <%_ } -%>
+ <% } _%>
  	</g>
  	<g stroke="${pipColor}" ${gExtraProps} transform="translate(<%= width/2 %> <%= width/2 %>) scale(<%= 0.4 + 0.5*size %>)">
-    	<%- extra %>
+    	<%- typeof extra !== "undefined" ? extra : null %>
     </g>
+<%_ if (typeof number !== "undefined") { %>
+	<text fill="${pipColor}" text-anchor="middle" font-weight="bold" font-family="Courier New, monospace" x="<%= width/2 %>" y="<%= width * 0.77 %>" font-size="<%= Math.floor(width * 0.8) %>"><%= size %></text>
+<% } _%>
 </svg>`);
 
 // Symbol designs. More ugly but make it clear what is going on.
@@ -123,6 +131,7 @@ for (let i = 1; i <= 3; i++) {
 		let shipSymbol = ship_template({
 			color: colors[colorName],
 			size: i,
+			// boolean
 			pips: (colorName !== "y") && (i > 1), // don't show pips on the smalls
 			shipWidth: sWidth,
 			shipHeight: sHeight,
@@ -140,6 +149,29 @@ for (let i = 1; i <= 3; i++) {
 			extra: symbols[colorName],
 		});
 		fs.writeFile(`images/star-${colorName}${i}-symbol.svg`, starSymbol, function(err) {
+			if (err) throw err;
+		});
+		
+		// "Size-blind" mode (draws numbers for sizes)
+		let shipNumber = ship_template({
+			color: colors[colorName],
+			size: i,
+			pips: false,
+			shipWidth: sWidth,
+			shipHeight: sHeight,
+			number: true,
+		});
+		fs.writeFile(`images/ship-${colorName}${i}-number.svg`, shipNumber, function(err) {
+			if (err) throw err;
+		});
+		let starNumber = star_template({
+			color: colors[colorName],
+			size: i,
+			pips: false,
+			width: sWidth + 8,
+			number: true,
+		});
+		fs.writeFile(`images/star-${colorName}${i}-number.svg`, starNumber, function(err) {
 			if (err) throw err;
 		});
 	}

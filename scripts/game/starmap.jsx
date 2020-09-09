@@ -20,9 +20,9 @@ class StarMap extends React.Component {
 	}
 	
 	// When you click the checkbox.
-	handleCheckbox(event) {
+	handleDisplayMode(event) {
 		console.log("clicked checkbox", event.target);
-		this.props.setSymbolMode(event.target.checked);
+		this.props.setDisplayMode(event.target.checked);
 	}
 	
 	/*componentDidMount() {
@@ -396,7 +396,7 @@ class StarMap extends React.Component {
 						homeworld={system.homeworld}
 						scaleFactor={props.scaleFactor}
 						activePiece={props.activePiece}
-						symbolMode={props.symbolMode}
+						displayMode={props.displayMode}
 						
 						handleBoardClick={props.handleBoardClick}
 					/>

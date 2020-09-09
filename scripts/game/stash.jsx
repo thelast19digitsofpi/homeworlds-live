@@ -40,7 +40,7 @@ function Stash(props) {
 						scaleFactor: scaleFactor,
 						style: css,
 						handleClick: props.handleClick,
-						symbolMode: props.symbolMode,
+						displayMode: props.displayMode,
 					});
 				}
 			}

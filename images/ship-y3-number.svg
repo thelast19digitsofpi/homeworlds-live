@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="88" height="136">
+	<polygon points="4,132 84,132 44,4" fill="#cc0" stroke="#cc0" stroke-linejoin="round" stroke-width="8" />
+
+  	<!-- Render 1, 2, or 3 copies of the move arrow -->
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(44 108)">
+    	
+    </g>
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(44 78)">
+    	
+    </g>
+
+    <g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+    	transform="translate(44 48)">
+    	
+    </g>
+
+
+
+	<text fill="#000000" text-anchor="middle" font-weight="bold" font-family="Courier New, monospace" x="44" y="121.6" font-size="64">3</text>
+</svg>

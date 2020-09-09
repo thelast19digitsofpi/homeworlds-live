@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="68" height="104">
+	<polygon points="4,100 64,100 34,4" fill="#090" stroke="#090" stroke-linejoin="round" stroke-width="8" />
+
+  	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none"
+  		transform="translate(34 72) scale(1.35)">
+  		
+  	</g>
+  
+
+	<text fill="#000000" text-anchor="middle" font-weight="bold" font-family="Courier New, monospace" x="34" y="91.19999999999999" font-size="48">2</text>
+</svg>

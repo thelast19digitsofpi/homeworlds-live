@@ -5,7 +5,7 @@
  		<ellipse cx="24" cy="43" rx="5" ry="3" />
  		<ellipse cx="5" cy="24" rx="3" ry="5" />
  		<ellipse cx="43" cy="24" rx="3" ry="5" />
- 	</g>
+  	</g>
  	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none" transform="translate(24 24) scale(0.9)">
     	
 		<path d="M-10,10 l10,-20 l10,20" />

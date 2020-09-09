@@ -53,7 +53,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				// These are important.
 				scaleFactor: 0.5,
 				viewer: "south",
-				symbolMode: false,
+				displayMode: "normal",
 				
 				// Popup data for clicking on a ship.
 				popup: null,
@@ -95,9 +95,9 @@ function withGame(WrappedComponent, events, additionalState) {
 			}
 		}
 		
-		setSymbolMode(bool) {
+		setDisplayMode(type) {
 			this.setState({
-				symbolMode: bool,
+				displayMode: type,
 			});
 		}
 		
@@ -360,12 +360,15 @@ function withGame(WrappedComponent, events, additionalState) {
 		// Undoes the actions you took this turn.
 		doResetTurn(player) {
 			const newHistory = this.state.history.slice();
+			const current = this.getCurrentState();
 			console.log(newHistory);
 			// clear the most recent turn
-			const startOfTurn = (newHistory[newHistory.length - 1][0]) || this.getCurrentState();
+			const startOfTurn = (newHistory[newHistory.length - 1][0]) || current;
 			
 			// set the most recent turn to only contain that state
 			newHistory[newHistory.length - 1] = [startOfTurn];
+			// In homeworld setup phase, start the homeworld actionInProgress if it is your turn.
+			const dontShowAIP = (events.canInteract && !events.canInteract.call(this, current));
 			// change the history
 			this.setState({
 				history: newHistory,
@@ -374,10 +377,11 @@ function withGame(WrappedComponent, events, additionalState) {
 				allActions: this.state.allActions.slice(0, -1).concat([[]]),
 				
 				// also clear the action popup and action in progress
-				actionInProgress: (startOfTurn.phase === "setup" ? {
+				// show homeworld popup in setup phase if you can interact
+				actionInProgress: (startOfTurn.phase === "setup" && !dontShowAIP) ? {
 					type: "homeworld",
 					player: player,
-				} : null),
+				} : null,
 				popup: null,
 			});
 			
@@ -758,7 +762,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			const activePiece = this.state.actionInProgress ? this.state.actionInProgress.oldPiece : null;
 			// I am not sure if sending the entire state object is "correct"
 			const moreProps = events.getProps ? events.getProps.call(this) : {};
-			const sym = this.state.symbolMode;
+			const sym = (this.state.displayMode === "symbol");
 			const F = React.Fragment;
 			
 			
@@ -766,7 +770,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			const rightColumn = <div className="stash col-auto" align="right">
 				<Stash
 					scaleFactor={ stashScale }
-					symbolMode={this.state.symbolMode}
+					displayMode={this.state.displayMode}
 					data={current.map}
 					handleClick={(serial) => this.handleStashClick(serial)}
 				/>
@@ -786,6 +790,8 @@ function withGame(WrappedComponent, events, additionalState) {
 					handleResetClick={this.handleResetClick} />
 			</div>;
 			
+			const radioHandler = (event) => this.setDisplayMode(event.target.value);
+			
 			return <WrappedComponent
 					reactState={this.state}
 					gameState={current}
@@ -800,8 +806,29 @@ function withGame(WrappedComponent, events, additionalState) {
 							<strong className="text-yellow mr-2">Move {sym && <F>= ^.</F>}</strong>
 							{/* inline block to make the text wrap with the checkbox */}
 							<span className="d-inline-block">
-								<input type="checkbox" value={sym} onChange={event => this.setSymbolMode(event.target.checked)} />
-								Colorblind mode
+								<input type="radio"
+									id="displayModeNormal"
+									name="displayMode"
+									value="normal"
+									checked={this.state.displayMode === "normal"}
+									onChange={radioHandler} />
+								<label htmlFor="displayModeNormal" className="mr-2">Normal</label>
+								
+								<input type="radio"
+									id="displayModeSymbol"
+									name="displayMode"
+									value="symbol"
+									checked={this.state.displayMode === "symbol"}
+									onChange={radioHandler} />
+								<label htmlFor="displayModeSymbol" className="mr-2">Colorblind</label>
+								
+								<input type="radio"
+									id="displayModeNumber"
+									name="displayMode"
+									value="number"
+									checked={this.state.displayMode === "number"}
+									onChange={radioHandler} />
+								<label htmlFor="displayModeNumber" className="mr-2">"Size-blind"</label>
 							</span>
 						</p>
 						<div className="star-map" style={starMapStyle} ref={this.starMapRef}>
@@ -811,8 +838,8 @@ function withGame(WrappedComponent, events, additionalState) {
 								homeworldData={current.homeworldData}
 								scaleFactor={ boardScale }
 								viewer={this.state.viewer}
-								symbolMode={this.state.symbolMode}
-								setSymbolMode={this.state.setSymbolMode}
+								displayMode={this.state.displayMode}
+								setDisplayMode={this.state.setDisplayMode}
 								
 								activePiece={activePiece}
 								
@@ -842,6 +869,8 @@ function withGame(WrappedComponent, events, additionalState) {
 						{/* The AIP indicator cares about your number of actions left on the turn
 						This is because a sacrifice is, in some sense, "in progress" until you run out of actions... and because it makes sense to put that down there */}
 						<ActionInProgress
+							displayMode={this.state.displayMode}
+							canInteract={canInteract}
 							actionInProgress={this.state.actionInProgress}
 							turnActions={current.actions} />
 					</div>

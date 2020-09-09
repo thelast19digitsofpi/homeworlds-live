@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="68" height="68">
+	<rect x="0" y="0" width="68" height="68" rx="4" ry="4" fill="#808080" stroke="#000000" stroke-width="1" />
+	<g fill="#000000" opacity="0.75" stroke="none">
+ 	</g>
+ 	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none" transform="translate(34 34) scale(1.4)">
+    	
+    </g>
+
+	<text fill="#000000" text-anchor="middle" font-weight="bold" font-family="Courier New, monospace" x="34" y="52.36" font-size="54">2</text>
+</svg>

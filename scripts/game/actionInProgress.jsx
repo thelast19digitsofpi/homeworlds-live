@@ -9,6 +9,12 @@ import Piece from './piece.jsx';
 function ActionInProgress(props) {
 	const aip = props.actionInProgress;
 	const turnActions = props.turnActions;
+	
+	// Don't show things for opponent's turn!
+	if (!props.canInteract) {
+		return null;
+	}
+	
 	if (aip) {
 		const message = "Click on " + (
 			aip.type === "trade" ? "a piece in the stash to TRADE for" :
@@ -34,8 +40,8 @@ function ActionInProgress(props) {
 		let stars = null;
 		if (aip.type === "homeworld") {
 			stars = <span className="mr-2">
-				{aip.star1 && <Piece type="star" serial={aip.star1} scaleFactor={0.25} />}
-				{aip.star2 && <Piece type="star" serial={aip.star2} scaleFactor={0.25} />}
+				{aip.star1 && <Piece type="star" serial={aip.star1} displayMode={props.displayMode} scaleFactor={0.25} />}
+				{aip.star2 && <Piece type="star" serial={aip.star2} displayMode={props.displayMode} scaleFactor={0.25} />}
 			</span>
 		}
 		
@@ -59,7 +65,17 @@ function ActionInProgress(props) {
 		return <p className="alert alert-light">
 			You have sacrificed a {color} ship. You have {turnActions.number} {type} {turnActions.number === 1 ? 'action' : 'actions'} left.
 		</p>;
+	} else if (turnActions && turnActions.number > 0) {
+		return <p className="alert alert-light">
+			Click on ships (on the board) to see possible actions
+		</p>;
+	} else if (turnActions && turnActions.number === 0) {
+		return <p className="alert alert-light">
+			Click End Turn to finish (or Reset Turn to undo)
+		</p>;
 	} else {
+		// not sure why... (probably no turnActions object?)
+		console.log("Why is this called? (no turnActions?)");
 		return null;
 	}
 }

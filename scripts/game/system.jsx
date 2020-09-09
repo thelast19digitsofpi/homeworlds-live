@@ -41,7 +41,7 @@ class System extends React.PureComponent {
 				type="ship"
 				size={shipData.size}
 				color={shipData.color}
-				symbolMode={this.props.symbolMode}
+				displayMode={this.props.displayMode}
 				rotation={rotation}
 				scaleFactor={this.props.scaleFactor}
 				highlight={shipData.serial === this.props.activePiece}
@@ -72,7 +72,7 @@ class System extends React.PureComponent {
 				type="star"
 				size={star.size}
 				color={star.color}
-				symbolMode={this.props.symbolMode}
+				displayMode={this.props.displayMode}
 				rotation={0}
 				scaleFactor={this.props.scaleFactor}
 				

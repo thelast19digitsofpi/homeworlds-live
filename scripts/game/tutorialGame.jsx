@@ -14,30 +14,61 @@ class TutorialWrapper extends React.Component {
 		const parent = this.props.reactState;
 		const tutorial = this.props.tutorial;
 		const currentStep = tutorial.steps[parent.stepID];
-		let showPopup = (parent.messages && parent.messages.length > 0);
+		
+		let showPopup = true, popupTitle = null, popupMessage = null, popupButtons = null;
+		
+		if (parent.confirm) {
+			popupTitle = "Are you sure?";
+			popupMessage = parent.confirmText;
+			const confirmHandler = () => {
+				parent.confirmFunction();
+				// and also hide it
+				this.props.cancelConfirm();
+			};
+			popupButtons = <React.Fragment>
+				<button className="btn btn-secondary btn-lg"
+					onClick={this.props.cancelConfirm}>
+					NO
+				</button>
+				<button className="btn btn-secondary btn-lg" onClick={confirmHandler}>
+					YES
+				</button>
+			</React.Fragment>
+		} else if (parent.messages && parent.messages.length > 0) {
+			popupTitle = parent.messageTitle || tutorial.title;
+			// the -1 is because of the array index
+			popupMessage = parent.messages[parent.messageNumber - 1];
+			// Navigation Buttons
+			popupButtons = <React.Fragment>
+				<button className="btn btn-secondary btn-sm"
+					disabled={parent.messageNumber <= 1}
+					onClick={() => this.props.prevMessage()}>
+					<i className="material-icons md-24 align-middle">chevron_left</i>
+				</button>
+				<button className="btn btn-secondary" disabled>
+					{parent.messageNumber}/{parent.messages.length}
+				</button>
+				<button className="btn btn-secondary btn-sm" onClick={() => this.props.nextMessage()}>
+					<i className="material-icons md-24 align-middle">
+						{parent.messageNumber >= parent.messages.length ? "check" : "chevron_right"}
+					</i>
+				</button>
+			</React.Fragment>;
+		} else {
+			showPopup = false;
+		}
 		
 		const popup = showPopup ? <div className="tutorial-popup-wrapper">
 			<div className="tutorial-popup card bg-light text-dark border border-primary">
 				<div className="card-body">
-					<h5 className="card-title text-center">{parent.messageTitle || tutorial.title}</h5>
+					<h5 className="card-title text-center">{popupTitle}</h5>
 					<p style={{whiteSpace: "pre-line"}} className="mb-0">
-						{parent.messages[parent.messageNumber - 1] /* -1 because array index */}
+						{popupMessage}
 					</p>
 				</div>
+				{/* Control Buttons */}
 				<div className="card-footer align-center btn-group">
-					<button className="btn btn-secondary btn-sm"
-						disabled={parent.messageNumber <= 1}
-						onClick={() => this.props.prevMessage()}>
-						<i className="material-icons md-24 align-middle">chevron_left</i>
-					</button>
-					<button className="btn btn-secondary" disabled>
-						{parent.messageNumber}/{parent.messages.length}
-					</button>
-					<button className="btn btn-secondary btn-sm" onClick={() => this.props.nextMessage()}>
-						<i className="material-icons md-24 align-middle">
-							{parent.messageNumber >= parent.messages.length ? "check" : "chevron_right"}
-						</i>
-					</button>
+					{popupButtons}
 				</div>
 			</div>
 		</div> : null;
@@ -55,6 +86,11 @@ class TutorialWrapper extends React.Component {
 					onClick={() => this.props.navMethods.returnToMenu()}>
 					<i className="material-icons md-18 mr-1 align-middle">undo</i>
 					Back to Menu
+				</button>
+				<button className="btn btn-warning text-light"
+					onClick={() => this.props.resetTutorial()}>
+					<i className="material-icons md-18 mr-1 align-middle">skip_previous</i>
+					Restart
 				</button>
 				<button className="btn btn-secondary" onClick={() => this.props.displayStartMessage()}>
 					<i className="material-icons md-18 mr-1 align-middle">restore</i>
@@ -84,13 +120,176 @@ class TutorialWrapper extends React.Component {
 }
 
 const methods = {
+	// some functions
+	addToActionQueue: function addToActionQueue(action) {
+		this.setState(function(reactState) {
+			return {
+				enemyActionQueue: reactState.enemyActionQueue.concat([action]),
+			};
+		});
+	},
 	
-};
-
-const TutorialGame = withGame(TutorialWrapper, {
-	onMount: function() {
+	// has to be done one at a time
+	shiftActionQueue: function shiftActionQueue() {
+		const first = this.state.enemyActionQueue[0];
+		this.setState({
+			enemyActionQueue: this.state.enemyActionQueue.slice(1),
+		});
+		return first;
+	},
+	
+	// confirm messages
+	displayConfirm: function(message, callback) {
+		this.setState({
+			confirm: true,
+			confirmFunction: callback,
+			confirmText: message,
+		});
+	},
+	cancelConfirm: function() {
+		this.setState({
+			confirm: false,
+			confirmFunction: null,
+			confirmText: null,
+		});
+	},
+	
+	displayStartMessage: function displayStartMessage() {
+		this.setState(function(reactState) {
+			const step = this.props.tutorial.steps[reactState.stepID];
+			return {
+				messages: step.startMessages,
+				messageTitle: step.title || this.props.tutorial.title,
+				messageNumber: 1,
+				showPopup: true,
+			};
+		}.bind(this));
+	},
+	
+	// more functions
+	displayHint: function displayHint() {
+		const step = this.props.tutorial.steps[this.state.stepID];
+		const hint = step.hint;
+		if (hint) {
+			this.setState({
+				// make it an array if it is not already
+				messages: (hint instanceof Array) ? hint : [hint],
+				messageTitle: "Hint",
+				messageNumber: 1,
+			});
+		}
+	},
+	
+	clearMessage: function clearMessage() {
+		this.setState({
+			messages: null,
+			showPopup: false,
+			messageNumber: 1,
+		});
+	},
+	
+	// message navigation
+	nextMessage: function nextMessage() {
+		if (this.state.messageType !== "start") {
+			this.clearMessage();
+		} else {
+			if (this.state.messageNumber >= this.state.messages.length) {
+				this.clearMessage();
+				if (this.state.enemyActionQueue.length > 0) {
+					this.nextEnemyAction();
+				}
+			} else {
+				const step = this.props.tutorial.steps[this.state.stepID];
+				this.setState({
+					messageNumber: this.state.messageNumber + 1,
+				});
+			}
+		}
+	},
+	prevMessage: function prevMessage() {
+		if (this.state.messageNumber > 1) {
+			const step = this.props.tutorial.steps[this.state.stepID];
+			this.setState({
+				messageNumber: this.state.messageNumber - 1,
+			});
+		}
+	},
+	
+	advanceStep: function advanceStep() {
+		const currentStep = this.props.tutorial.steps[this.state.stepID];
+		let nextIndex = this.state.stepID + 1;
+		if (currentStep.nextStep) {
+			// nextStep uses the game state to decide which one is next
+			let result = currentStep.nextStep(this.getCurrentState());
+			if (typeof result === "number") {
+				// offset from the current state
+				nextIndex = this.state.stepID + result;
+			} else if (typeof result === "string") {
+				// loop thru all steps and find the one with the proper ID
+				for (let i = 0; i < this.props.tutorial.steps.length; i++) {
+					const otherStep = this.props.tutorial.steps[i];
+					if (otherStep.id === result) {
+						nextIndex = i;
+						break;
+					}
+				}
+			}
+		}
+		// make things happen
+		console.warn("Moving to step " + nextIndex);
+		// don't go before the start
+		if (nextIndex < 0) nextIndex = 0;
+		if (nextIndex < this.props.tutorial.steps.length) {
+			// move to that index
+			this.setState({
+				stepID: nextIndex,
+			});
+			this.displayStartMessage();
+		} else {
+			// you have finished the step
+			// disable the tutorial
+			console.log("End of Module");
+			this.setState({
+				messageTitle: "Scenario Complete",
+				messages: this.props.tutorial.endMessages,
+				messageNumber: 1,
+				complete: true,
+			});
+		}
+	},
+	nextEnemyAction: function nextEnemyAction(delay) {
+		console.log(this.state.enemyActionQueue);
+		const enemyActionTimeout = setTimeout(function() {
+			// get the state BEFORE shifting the queue
+			const queue = this.state.enemyActionQueue;
+			const action = this.shiftActionQueue();
+			if (action) {
+				if (action.type === "end-turn") {
+					// call this.advanceStep after doing the end-turn
+					this.doEndTurn("enemy", this.advanceStep);
+				} else {
+					this.doAction(action, "enemy");
+					// loop it
+					// queue contains at least this action and possibly more
+					if (queue.length >= 3) {
+						this.nextEnemyAction(1500);
+					} else if (queue.length === 2) {
+						// shorter delay for just an end turn
+						this.nextEnemyAction(750);
+					}
+					// else, do not request another action
+				}
+			}
+			// below: the timer is 0.5s for end-turn and 1.5s for actions
+		}.bind(this), delay || 1500); // will adjust
+		
+		// put the timeout key in the state so we can clear it if needed
+		this.setState({
+			enemyActionTimeout: enemyActionTimeout,
+		});
+	},
+	startTutorial: function startTutorial() {
 		const tutorial = this.props.tutorial;
-		// mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
 		let maxSystem = 0;
 		for (let serial in tutorial.startMap) {
 			const data = tutorial.startMap[serial];
@@ -125,165 +324,28 @@ const TutorialGame = withGame(TutorialWrapper, {
 			history: [[gameState]],
 			viewer: "you",
 			actionInProgress: needsHomeworld ? {type: "homeworld"} : null,
-		});
-		
-		// some functions
-		this.addToActionQueue = function(action) {
-			this.setState(function(reactState) {
-				return {
-					enemyActionQueue: reactState.enemyActionQueue.concat([action]),
-				};
-			});
-		}.bind(this);
-		
-		// has to be done one at a time
-		this.shiftActionQueue = function() {
-			const first = this.state.enemyActionQueue[0];
-			this.setState({
-				enemyActionQueue: this.state.enemyActionQueue.slice(1),
-			});
-			return first;
-		}.bind(this);
-		
-		this.displayStartMessage = function() {
-			this.setState(function(reactState) {
-				const step = this.props.tutorial.steps[reactState.stepID];
-				return {
-					messages: step.startMessages,
-					messageTitle: step.title || this.props.tutorial.title,
-					messageNumber: 1,
-					showPopup: true,
-				};
-			}.bind(this));
-		}.bind(this);
-		
-		// do it when we launch
-		this.displayStartMessage();
-		
-		// more functions
-		this.displayHint = function displayHint() {
-			const step = this.props.tutorial.steps[this.state.stepID];
-			const hint = step.hint;
-			if (hint) {
-				this.setState({
-					// make it an array if it is not already
-					messages: (hint instanceof Array) ? hint : [hint],
-					messageTitle: "Hint",
-					messageNumber: 1,
-				});
-			}
-		}.bind(this);
-		
-		this.clearMessage = function clearMessage() {
-			this.setState({
-				messages: null,
-				showPopup: false,
-				messageNumber: 1,
-			});
-		}.bind(this);
-		
-		// to move to the next help message
-		this.nextMessage = function nextMessage() {
-			if (this.state.messageType !== "start") {
-				this.clearMessage();
-			} else {
-				if (this.state.messageNumber >= this.state.messages.length) {
-					this.clearMessage();
-					if (this.state.enemyActionQueue.length > 0) {
-						this.nextEnemyAction();
-					}
-				} else {
-					const step = this.props.tutorial.steps[this.state.stepID];
-					this.setState({
-						messageNumber: this.state.messageNumber + 1,
-					});
-				}
-			}
-		}.bind(this);
-		
-		this.prevMessage = function prevMessage() {
-			if (this.state.messageNumber > 1) {
-				const step = this.props.tutorial.steps[this.state.stepID];
-				this.setState({
-					messageNumber: this.state.messageNumber - 1,
-				});
-			}
-		}.bind(this);
-		
-		this.advanceStep = function advanceStep() {
-			const currentStep = this.props.tutorial.steps[this.state.stepID];
-			let nextIndex = this.state.stepID + 1;
-			if (currentStep.nextStep) {
-				// nextStep uses the game state to decide which one is next
-				let result = currentStep.nextStep(this.getCurrentState());
-				if (typeof result === "number") {
-					// offset from the current state
-					nextIndex = this.state.stepID + result;
-				} else if (typeof result === "string") {
-					// loop thru all steps and find the one with the proper ID
-					for (let i = 0; i < this.props.tutorial.steps.length; i++) {
-						const otherStep = this.props.tutorial.steps[i];
-						if (otherStep.id === result) {
-							nextIndex = i;
-							break;
-						}
-					}
-				}
-			}
-			// make things happen
-			console.warn("Moving to step " + nextIndex);
-			// don't go before the start
-			if (nextIndex < 0) nextIndex = 0;
-			if (nextIndex < this.props.tutorial.steps.length) {
-				// move to that index
-				this.setState({
-					stepID: nextIndex,
-				});
-				this.displayStartMessage();
-			} else {
-				// you have finished the step
-				// disable the tutorial
-				console.log("End of Module");
-				this.setState({
-					messageTitle: "Scenario Complete",
-					messages: this.props.tutorial.endMessages,
-					messageNumber: 1,
-					complete: true,
-				});
-			}
-		}.bind(this);
-		
-		this.nextEnemyAction = function nextEnemyAction(delay) {
-			console.log(this.state.enemyActionQueue);
-			const enemyActionTimeout = setTimeout(function() {
-				// get the state BEFORE shifting the queue
-				const queue = this.state.enemyActionQueue;
-				const action = this.shiftActionQueue();
-				if (action) {
-					if (action.type === "end-turn") {
-						// call this.advanceStep after doing the end-turn
-						this.doEndTurn("enemy", this.advanceStep);
-					} else {
-						this.doAction(action, "enemy");
-						// loop it
-						// queue contains at least this action and possibly more
-						if (queue.length >= 3) {
-							this.nextEnemyAction(1500);
-						} else if (queue.length === 2) {
-							// shorter delay for just an end turn
-							this.nextEnemyAction(750);
-						}
-						// else, do not request another action
-					}
-				}
-				// below: the timer is 0.5s for end-turn and 1.5s for actions
-			}.bind(this), delay || 1500); // will adjust
+			stepID: 0,
 			
-			// put the timeout key in the state so we can clear it if needed
-			this.setState({
-				enemyActionTimeout: enemyActionTimeout,
-			});
-		}.bind(this);
+			complete: false, // in case we reset
+		});
+		this.displayStartMessage();
+	},
+	
+	resetTutorial: function resetTutorial() {
+		// confirm box
+		this.displayConfirm("Are you sure you want to restart this tutorial?", this.startTutorial.bind(this));
+	},
+};
+
+const TutorialGame = withGame(TutorialWrapper, {
+	onMount: function() {
+		// Bind the methods in the object
+		for (let methodName in methods) {
+			this[methodName] = methods[methodName].bind(this);
+		}
+		
+		// Now, begin the tutorial
+		this.startTutorial();
 	},
 	
 	onUnmount: function() {
@@ -297,11 +359,15 @@ const TutorialGame = withGame(TutorialWrapper, {
 			tutorial: this.props.tutorial,
 			navMethods: this.props.navMethods,
 			
+			resetTutorial: this.resetTutorial,
+			
 			nextMessage: this.nextMessage,
 			prevMessage: this.prevMessage,
 			clearMessage: this.clearMessage,
 			displayStartMessage: this.displayStartMessage,
 			displayHint: this.displayHint,
+			
+			cancelConfirm: this.cancelConfirm,
 		};
 	},
 	
@@ -449,7 +515,7 @@ const TutorialGame = withGame(TutorialWrapper, {
 				}
 			}
 			console.log(1);
-			if (!result[1]) {
+			if (!result[1] || result[1].length === 0) {
 				// length 3 or more includes actions, so we use a longer timer
 				this.nextEnemyAction(result.length >= 3 ? 1500 : 500);
 			}
@@ -476,6 +542,11 @@ const TutorialGame = withGame(TutorialWrapper, {
 	messageTitle: null,
 	messageType: "start",
 	messageNumber: 1,
+	
+	// Confirm boxes (are you sure you want to restart/exit?)
+	confirm: false,
+	confirmFunction: null,
+	confirmText: null,
 	
 	complete: false,
 	

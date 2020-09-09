@@ -8,6 +8,7 @@ import Tutorial from './tutorialConstructor.js';
 
 
 const tutorialList = [
+	// Direct Assault version 2
 	new Tutorial({
 		title: "Direct Assault 2.0",
 		startMap: {
@@ -146,7 +147,8 @@ const tutorialList = [
 			"(Yeah, I know. All colors are important. It's hard to get everything. Hey, it's a strategy game...)",
 		],
 	}),
-
+	
+	// Star Demolition version 2
 	new Tutorial({
 		title: "Star Demolition 2.0",
 		subtitle: "Slow and steady",
@@ -197,10 +199,11 @@ const tutorialList = [
 					"Sorry for the messy map...",
 					"...and I know you can't see all of it because of this popup, but...",
 					"OK, so it's a Star Demolition. But you only have two blues and three yellows!",
-					"But wait... I spy a blue ship hanging out in their homeworld. You could sac(rifice) a yellow to blow up their blues!",
-					"...oh wait. Then you won't have enough yellows for the second part...",
+					"But wait... I spy a blue ship hanging out in their homeworld. If you could get two more, that would make 4 for a catastrophe!",
+					"...oh wait. If you sacrifice yellow, you won't have enough yellows left for the other star...",
+					"...You could try yellow first, but again, you only have three...",
 					"...",
-					"What if you just moved your blue ships in one at a time?",
+					"What if... you just moved your blue ships in one at a time?",
 				],
 				hint: "You don't want to sacrifice yellow (or anything, for that matter), because you'll need them.",
 				checkAction: function(action, oldState) {
@@ -242,7 +245,7 @@ const tutorialList = [
 						// this is a bad move but it's instructive
 						type: "move",
 						oldPiece: "b1A",
-						system: 10, // if they move to 7, you sac an r2 at 14 and steal it
+						system: 10, // moving to system 7 might actually stop the attack
 					}];
 				},
 			},
@@ -253,9 +256,9 @@ const tutorialList = [
 					"In fact... you could even build th3mmin|$y^Q5}/...\n\n[SIGNAL LOST]",
 					"",
 					"",
-					"...and by the way, I intercepted enemy plans to attack your homeworld in about 4 turns. You may want to strike sooner rather than later.",
+					"Just so you know, your homeworld is a little vulnerable, ",
 				],
-				hint: "What if you built blue directly in the enemy's homeworld? (You can, if you do something else first.)",
+				hint: "What if you built blue directly in the enemy's homeworld? (You can't, huh? But can you do anything about that?)",
 				checkAction: function(action, oldState) {
 					if (action.type === "catastrophe") {
 						return [true];
@@ -272,7 +275,11 @@ const tutorialList = [
 							return [false, "Oh, you don't want to sacrifice that, because you'll need it later! You only have three yellows!"];
 						}
 					} else if (action.type === "move") {
-						return [false, "Hmmm... That could work, but it's rather slow. Can you blow up their blue star *this turn*?"]
+						if (action.oldPiece[0] === "g") {
+							return [false, "Ooh, almost! That won't quite work because the ship would just be captured. But you're on the right track with that green..."];
+						} else {
+							return [false, "Hmmm... That could work, but it's rather slow. Can you blow up their blue star *this turn*?"];
+						}
 					} else if (action.type === "discover") {
 						return [false, "Uhhh... where are you going with that? Did you mis-click?"];
 					} else if (action.type === "trade") {
@@ -448,6 +455,31 @@ const tutorialList = [
 			"In fact, I think they could have gotten you first, so don't share this as \"sou" + "th to play and win in 5 turns\" because it isn't.",
 		],
 	}),
+	
+	/*
+	// Sacrifice a yellow to come back home
+	new Tutorial({
+		title: "Homeworld Abandonment",
+		subtitle: "...or not?",
+		startMap: {},
+		steps: [
+			{
+				startMessages: [
+					"So you're not always going to be on the offensive, of course.",
+					"Four of the five offensive modules have been crushing wins for you with no "
+				],
+			}
+		],
+		endMessages: [
+			
+		],
+	}),
+	
+	// Sacrifice a red to attack to avert a red catastrophe
+	new Tutorial({
+		title: "Sacrifice Defense 2",
+	}),
+	*/
 ];
 export default {
 	title: "Advanced Tutorials",

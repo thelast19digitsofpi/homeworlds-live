@@ -228,13 +228,16 @@ class GameState {
 	// Like the above but finds a piece at a system instead.
 	// Only ('b2', 4) and similar is supported.
 	// Please watch out for null returns.
-	getPieceInSystemByType(colorSize, system) {
+	getPieceInSystemByType(colorSize, system, optionalOwner) {
 		const letters = "ABCDE";
 		for (let i = 0; i < letters.length; i++) {
-			let serial = color + size.toString() + letters[i];
+			let serial = colorSize + letters[i];
 			const data = this.map[serial];
+			// They may have requested the ship be of a specific owner
+			const correctOwner = (typeof optionalOwner === "undefined") ||
+				(data.owner === optionalOwner);
 			// it must exist and be at the system
-			if (data && data.at === system) {
+			if (data && data.at === system && correctOwner) {
 				return serial;
 			}
 		}

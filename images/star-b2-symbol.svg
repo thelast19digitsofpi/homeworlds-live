@@ -9,7 +9,7 @@
  		<ellipse cx="21" cy="63" rx="5" ry="3" />
  		<ellipse cx="5" cy="21" rx="3" ry="5" />
  		<ellipse cx="63" cy="47" rx="3" ry="5" />
- 	</g>
+  	</g>
  	<g stroke="#000000" opacity="0.75" stroke-width="3" stroke-linejoin="round" fill="none" transform="translate(34 34) scale(1.4)">
     	
 		<path stroke="white" d="M-10,5 h20 l-7,-7 m0,14 l7,-7" />

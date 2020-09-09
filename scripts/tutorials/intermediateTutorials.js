@@ -56,7 +56,7 @@ const tutorialList = [
 			{
 				disableWarnings: true,
 				startMessages: [
-					"Welcome to the strategy guide modules. Here you'll find some tips on how to play better.",
+					"Welcome to the strategy guide modules! Here I'll shift from explaining rules to giving advice on various situations.",
 					"The first question is, what do you do once you have made your homeworld? Well, it depends in part on what you picked.",
 					"I've given you a B1+Y2 homeworld against an R1+B3, but a lot of these ideas apply to any setup situation.",
 					"Your second turn will almost always be to build a second ship. (You can't capture anything, moving abandons your homeworld, and trading just wastes a turn because you could have picked the new ship to begin with.)",
@@ -96,6 +96,7 @@ const tutorialList = [
 					"Alternatively, you can trade for some other color.",
 					"I'll let you pick which one you want to try. (This tutorial has 3 different branches; you can come back and try a different route.)",
 				],
+				disableWarnings: true,
 				hint: [
 					"Having trouble discovering? Look at your homeworld. Which size do you NOT have? That's the size you can move to.",
 				],
@@ -115,8 +116,15 @@ const tutorialList = [
 								"But remember you only have the color powers at your system, which means you can't trade at this new system.",
 								"I would recommend discovering a BLUE system.",
 							]];
+						} else if (action.oldPiece[1] === "3") {
+							return [false, [
+								"I see you're being adventurous!",
+								"I'm not sure you want to move your large ship away from your homeworld, though...",
+								"You're not in danger of invasion now, but you don't want to forget and suddenly find an enemy R3 in your homeworld...",
+								"How about discovering with the small ship?",
+							]];
 						} else {
-							return [true, "I see you're being adventurous!"];
+							return [true, "I see you're being adventurous. Keep it up!"];
 						}
 					} else if (action.type === "sacrifice") {
 						if (action.oldPiece[1] === "1") {
@@ -355,14 +363,17 @@ const tutorialList = [
 							} else {
 								return [false, [
 									"You probably don't want to trade your green away. If you do, you no longer have build power there.",
-									"That would mean you have to waste a move trading for green later.",
-									"Can you trade a different ship?",
+									"It's better to trade when you have a second ship of the old color, if you can. Can you do that?",
 								]];
 							}
 						} else {
 							// didn't take a red
 							return [false, "Right now it would be better to trade for a red piece, as a deterrent against invasions."];
 						}
+					} else if (action.type === "sacrifice") {
+						return [false, [
+							"Hmmmm... Sacrifices don't really help you here. You already have all the color abilities you need.",
+						]];
 					} else {
 						// didn't trade
 						return [false, [
@@ -377,10 +388,9 @@ const tutorialList = [
 					}
 					
 					return [true, [
-						"There you go!",
-						"The red power is a useful deterrent. Now your opponent won't invade you because you would just sacrifice your red and capture their ship!",
-						"Anyway, the next goal would be to expand your fleet more, maybe discover another system, maybe get some blue ships...",
-						"...but for that you need to play the real game!",
+						"There you go! You have a weapon that you can use (or sacrifice, if needed) to capture invaders!",
+						"Also, it's just often good to diversify your fleet so you have more options.",
+						"Anyway, the next goal would be to build even more ships, maybe discover another system, maybe get some blue ships.",
 					], {
 						type: "discover",
 						oldPiece: "r2C",
@@ -494,9 +504,9 @@ const tutorialList = [
 				startMessages: [
 					"...and then they got a medium of their own, of course.",
 					"Notice how that was actually safe, because they only have 3, and you can't get a fourth in.",
-					"In general, if you open up the mediums, make sure you can get one of your own safely...",
+					"In general, if you open up the mediums, make sure you can get one of your own safely (or your opponent can't)...",
 					"So now you are at another decision point. Your homeworld is getting crowded with yellow.",
-					"This might be a case where you discover a green system, so you don't fall behind getting larges.",
+					"This might be a case where you discover a green system with yellow, so you don't fall behind getting larges.",
 					"But that has the downside that you won't have trade ability there.",
 					"Alternatively, you can trade one of your yellows for blue or red.",
 					"It's your choice between those three options: discover a green star, trade for blue, or trade for red.",
@@ -524,11 +534,13 @@ const tutorialList = [
 								"Ah, you picked red!",
 								"Red is a good color to have because it deters invasions from enemy ships.",
 								"In fact, many players recommend that when your opponent gets red, you should as well.",
+								"And in general, it's good to diversify your fleet so you have more options.",
 							]];
 						} else if (action.newPiece[0] === "b") {
 							return [true, [
 								"Ah, you picked blue!",
 								"Blue is good for exploring. You can discover a green system and then start building AND trading!",
+								"And in general, it's good to diversify your fleet so you have more options.",
 							]];
 						}
 						// you can't trade yellow for yellow so there is no else
@@ -545,6 +557,10 @@ const tutorialList = [
 								"...unless your opponent does something else, of course.",
 							]];
 						}
+					} else if (action.type === "build") {
+						return [false, "That's possible, but I really don't like holding two ships that match one of my home stars. You don't want to forget and find half your homeworld destroyed by a catastrophe..."];
+					} else {
+						return [false, "I don't think sacrificing really helps you right now. You don't need to do multiple moves and you already have green and yellow power anyway."];
 					}
 				},
 				checkEndTurn: function(oldState) {
@@ -574,7 +590,7 @@ const tutorialList = [
 							// you traded for red
 							// move to the "please discover a system" if you did not already do so
 							// (6 = 4 ships + 2 stars)
-							return pieces.length < 6 ? 1 : 6;
+							return pieces.length < 6 ? Infinity : 2;
 						}
 					}
 					
@@ -595,7 +611,9 @@ const tutorialList = [
 					"You only have one yellow at home, but two greens. How about trading a green?",
 				],
 				checkAction: function(action, oldState) {
-					if (action.type !== "trade") {
+					if (action.type === "sacrifice" && action.oldPiece[0] === "g") {
+						return [false, "I like what you're thinking, but I'm afraid it's a bit premature.\nYou don't have very much room to safely store all the ships you would be building."];
+					} else if (action.type !== "trade") {
 						return [false, "That's possible, but you are going to want to get red at some point. Why not get it now?"];
 					} else if (action.newPiece[0] !== "r") {
 						return [false, "I would recommend you trade for *red*, because you can defend yourself better."];
@@ -605,12 +623,12 @@ const tutorialList = [
 							b: "blue",
 							r: "red",
 							y: "yellow",
-						}[action.newPiece[0]];
+						}[action.oldPiece[0]];
 						return [false, "Hmmmm... You only have one " + fullColor + " ship at your homeworld. Do you really want to trade it away? You have two green ships..."];
 					} else if (action.oldPiece[1] !== "1") {
 						// this means they traded the G3, not the G1
 						return [false, [
-							"I don't think it is a good idea to trade away G3s.",
+							"Ooh, that's interesting... But I don't know that you really want to trade away your large green.",
 							"If you keep the large green, you can later sacrifice it for 3 build actions, and hopefully get one or two large ships in the process.",
 							"(Besides, having an R3 as your large homeworld defender can create a false sense of security -- see Direct Assault 2.0 in Advanced for why.)",
 						]];
@@ -618,11 +636,8 @@ const tutorialList = [
 						return [true, "There you go! Your opponent won't be able to cause trouble without a lot more preparation..."];
 					}
 				},
+				requireAction: true,
 				checkEndTurn: function(oldState) {
-					if (oldState.actions.number > 0) {
-						return [false, "You aren't quite ready to end your turn! Do something first!"];
-					}
-					
 					return [true, [], {
 						type: "build",
 						newPiece: oldState.getSmallestPieceInStash("g"),
@@ -643,7 +658,7 @@ const tutorialList = [
 			// ...at least I think so...
 			{
 				startMessages: [
-					"Well... it looks like you never discovered any systems!",
+					"Well... it looks like you have not yet discovered any systems!",
 					"At some point you'll have to do that, so let's do so.",
 					"If possible, your ship should be green or blue, and the star blue or green respectively.",
 					"Of course that's not always convenient or even possible, but at the very least, make sure you at least have one colony with green there.",
@@ -655,18 +670,21 @@ const tutorialList = [
 						const shipGreen = (action.oldPiece[0] === "g");
 						const starGreen = (action.newPiece[0] === "g");
 						if (shipGreen && starGreen) {
-							return [false, "Oh, no, you don't want BOTH the ship and star to be green. That's wasted potential and it is also a catastrophe risk."];
+							return [false, [
+								"Oh, no, you don't want BOTH the ship and star to be green. That's wasted potential and it is also a catastrophe risk.",
+								"Try discovering a blue system instead!",
+							]];
 						} else if (shipGreen || starGreen) {
-							if (action.oldPieece[1] === "3") {
+							if (action.oldPiece[1] === "3") {
 								return [false, [
 									"It's not a good idea to move out your large ship. It leaves you vulnerable if your opponent gets one in.",
-									"The opponent isn't really in position to attack you, but you don't want to forget, either."
+									"I know the opponent isn't really in position to attack you, but you don't want to forget and lose to a yellow sacrifice later...",
 								]];
 							} else {
 								return [true];
 							}
 						} else {
-							return [false, "I wouldn't advise that particular combination. You want to have green there, so that you can build new ships if a good opportunity arises."]
+							return [false, "Hmmmm... I think you would be better off having green there, so that you can build new ships if a good opportunity arises."]
 						}
 					} else {
 						return [false, [
@@ -737,28 +755,31 @@ const tutorialList = [
 			{
 				id: "medium-red-branch",
 				startMessages: [
-					"So...",
+					"...and then they built their own medium red.",
 					"Both you and your opponent have red, so neither side can really get aggressive for a while. (It's good to have red if your opponent does too.)",
-					"You could build *another* medium red...",
+					"So what should you do next? You could build *another* medium red...",
 					"Or you could trade the one you have for a different color, like blue or yellow.",
 					"Blue might actually be good, so that you can still trade when you discover new stars...",
 					"Either that, or just get another red.",
 				],
+				objective: "Build another red or trade for a new color",
 				checkAction: function(action, oldState) {
 					// homeworld should be G3, R1, R2
 					if (action.type === "trade") {
 						if (action.oldPiece[0] === "g") {
 							return [false, "You don't want to trade away your only green ship, because then you won't be able to build!"];
-						} else if (action.newPiece.substring(0, 2) === "g1") {
+						} else if (action.newPiece[0] === "g") {
 							return [false, [
-								"Hmmm... Do you really want to trade for a G1? You could just build one...",
-								"...and if you're building, you may as well get a medium red instead.",
+								"Hmmm... Do you really want to trade for a green? You already have it.",
+								"If you're going to trade, why not get a new color, like blue or yellow?",
 							]];
 						} else {
+							// you traded for not green
 							return [true];
 						}
 					} else if (action.type === "build") {
-						if (action.oldPiece[0] === "r") {
+						if (action.newPiece[0] === "r") {
+							// you built a red
 							return [true];
 						} else {
 							return [false, "You could build green, sure, but why not build a medium red instead? You would only be at 3 reds..."]
@@ -782,16 +803,17 @@ const tutorialList = [
 					}
 				},
 				requireAction: true,
+				// allowed actions: trade red for not green OR build another red
 				checkEndTurn: function(oldState) {
 					// opponent built a medium last turn and wants to trade for a Y2
 					let enemyMedium = null;
 					const pieces = oldState.getAllPiecesAtSystem(2);
 					for (let i = 0; i < pieces.length; i++) {
 						if (pieces[i].serial[1] === "2") {
-							enemyMedium = pieces[i];
+							enemyMedium = pieces[i].serial;
 						}
 					}
-					
+					console.log(enemyMedium, oldState.getPieceInStashByType("y2"));
 					return [true, "There you go. Let's see what happens now...", {
 						type: "trade",
 						oldPiece: enemyMedium,
@@ -799,15 +821,504 @@ const tutorialList = [
 					}];
 				},
 				nextStep: function(oldState) {
+					// if you have two R2s, go to the trade phase, otherwise go to the build phase
+					let r2sAt1 = 0;
+					const pieces = oldState.getAllPiecesAtSystem(1);
+					for (let i = 0; i < pieces.length; i++) {
+						if (pieces[i].serial.substring(0, 2) === "r2") {
+							r2sAt1++;
+						}
+					}
 					
+					if (r2sAt1 === 2) {
+						return "medium-red-2";
+					} else {
+						return "medium-red-1";
+					}
+				}
+			},
+			{
+				id: "medium-red-2", // because you have 2 medium reds
+				startMessages: [
+					"Getting greedy, huh?",
+					"Of course, your opponent just got a Y2, so you need to start being careful of catastrophes.",
+					"So what's next? You *could* try to continue with the red economy by discovering a green system.",
+					"But then you won't be able to do anything when you do get the ships (like trade them). That's not really comfortable...",
+					"Probably a good thing now would be to trade one of the R2s for a different color.",
+				],
+				objective: "Trade away one of the medium reds",
+				checkAction: function(action, oldState) {
+					if (action.type === "build") {
+						if (action.newPiece[0] === "r") {
+							return [false, "You don't want to build a fourth red at the same star system. That would cause a catastrophe!"]
+						} else {
+							return [false, "Building green is possible, but I don't like the look of 3 reds in one system when your opponent has movement abilities."];
+						}
+					} else if (action.type === "trade") {
+						if (action.oldPiece[0] === "g") {
+							return [false, "You don't want to trade away your green! Then you won't be able to build at your homeworld anymore."];
+						} else if (action.newPiece[0] === "g") {
+							return [false, "You could trade for green, but there are still two colors you don't have yet.\nWhy not get into blue or yellow? You'll need them at some point."];
+						} else {
+							// The only good option: trade a non-green (thus red) for a non-green (thus blue or yellow)
+							return [true];
+						}
+					} else if (action.type === "discover") {
+						if (action.oldPiece[0] === "g") {
+							return [false, "You don't want to move your large green out. You won't be able to build at your homeworld! (And leaving your home without a large makes you vulnerable to invasions...)"];
+						} else if (action.newPiece[0] === "g") {
+							return [false, "That's tempting. But you won't have blue power there, so you won't be able to trade (or move!) the ships once you build them."];
+						}
+					} else {
+						return [false, "I don't think a sacrifice really helps you here. (Did you mis-click?)"];
+					}
 				},
-			}
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					return [true, "Good. You are diversifying! That's usually a good thing because you get more options.", {
+						type: "build",
+						oldPiece: oldState.getSmallestPieceInStash("y"), // which is a y1
+					}];
+				},
+			},
+			{
+				id: "please-discover",
+				// NOTE: The next branch also uses this
+				startMessages: [
+					"Hmmm... It looks like you've played the whole game from inside your homeworld!",
+					"That will only get you so far. Let's discover a new star system.",
+					"Now, which ship should lead the way?",
+					"I would recommend sending the one you traded.",
+					"Why? Partly because your homeworld is blue+yellow, so holding blue and yellow ships becomes a catastrophe risk later on (when your opponent is more mobile).",
+					"Additionally, sending red ships to green systems means you won't be able to move OR trade the ships you build.",
+					"So let's discover a new star!",
+				],
+				objective: "Discover a new star system",
+				hint: "You want to make sure you have green power there.",
+				checkAction: function(action, oldState) {
+					if (action.type === "discover") {
+						if (action.oldPiece[1] === "3") {
+							return [false, "Hmmm... I don't think you want to leave your homeworld without a large ship defender! You aren't in danger now, but it is easy to forget."];
+						} else if (action.oldPiece[0] !== "g" && action.newPiece[0] !== "g") {
+							// no green
+							return [false, "You're getting there! That system isn't green, so you won't be able to build there. Can you try a green system?"]
+						} else if (action.oldPiece[0] === "r" || action.newPiece[0] === "r") {
+							// must be a green/red combo, probably the worst
+							return [false, "Almost... but you can neither move nor trade there, which isn't comfortable. How about using a different color?"];
+						} else if (action.oldPiece[0] === "g" && action.newPiece[0] !== "b") {
+							// green ships should go to blue systems
+							return [false, "Hmmm... if you have a green ship, why not discover a BLUE star? Then you'll be able to trade, too!"];
+						} else {
+							return [true];
+						}
+					} else if (action.type === "build") {
+						// 5 = 2 stars + 3 ships
+						if (oldState.getAllPiecesAtSystem(1).length <= 5) {
+							// translation: all right, have it YOUR way...
+							return [true, "Eh, I can see why you might want another ship before you venture out."];
+						} else {
+							// you already have 4 ships
+							return [false, "Hmmm... it's getting crowded in there. You really should expand to new colonies..."];
+						}
+					} else {
+						return [false, "That's possible, but let's discover a new system now before we forget."];
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					if (oldState.nextSystemID === 3) {
+						return [true, [], {
+							type: "build",
+							newPiece: oldState.getPieceInStashByType("g1"),
+							system: 2,
+						}];
+					}
+					return [true];
+				},
+				// always go to the end
+				nextStep: function() {
+					if (oldState.nextSystemID === 3) {
+						return 0; // do it again if they don't discover
+					}
+					return Infinity;
+				},
+			}, // discover a system
+			
+			// Branch 3a but where you trade away a red instead of building
+			{
+				// Here you don't build an R2 but instead trade a red for something
+				// I don't know if you traded the medium or the small red
+				id: "medium-red-1",
+				startMessages: [
+					"You have three colors now!",
+					"You'll probably want to discover a new system at some point, but you don't have to do it right now.",
+					"Personally I would probably just build, but you can also discover with the ship you just traded.",
+				],
+				checkAction: function(action, oldState) {
+					const canBuildR2 = (action.getPieceInStashByType('r1') === null);
+					if (action.type === "build") {
+						if (canBuildR2 && action.newPiece[0] !== "r") {
+							// if you can build R2, allow only that build
+							return [false, "You could build that small, but there's a medium red for the taking!"];
+						} else {
+							// either they built an R2, or else they can't and so any build is perfectly fine
+							return [true];
+						}
+					} else if (action.type === "discover") {
+						if (action.oldPiece[1] === "3") {
+							return [false, "I like what you're thinking, but you don't want to leave your homeworld without a large! Try using the ship you just traded."];
+						}
+						
+						// at this point you have a G3, a red, and a traded piece (blue or yellow)
+						if (action.newPiece[0] !== "g") {
+							return [false, "Ah, you're being adventurous! You might not want *that* particular piece as your star, because you will not be able to build there. Try a green star!"];
+						} else if (action.oldPiece[0] === "r") {
+							return [false, "Ah, you're being adventurous! While you can build there, you won't be able to trade or move the ships once you do. Try using your other ship instead!"];
+						} else {
+							// message because they are going to end the module
+							return [true, "Yay, you are exploring strange new worlds! Good job!"];
+						}
+					} else if (action.type === "trade") {
+						return [false, "Hmmm... Trading doesn't look useful right now because you would no longer have the color you traded out. It's usually better to build a second ship of a color before trading."];
+					} else {
+						return [false, "I'm not really sure what sacrificing does for you... (did you mis-click?)"]
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					return true;
+				},
+				nextStep: function(oldState) {
+					if (oldState.nextSystemID === 3) {
+						return "please-discover";
+					}
+					
+					return Infinity;
+				},
+			}, // (sometimes feeds back to the "please discover")
+			
+			// Branch 3b: Traded for a blue instead.
+			// Are we *done* yet?
+			{
+				id: "medium-blue-branch",
+				startMessages: [
+					"...of course, because THEY can also safely build a medium blue.",
+					"I mean, three of a color is \"safe\", because here neither one of you has enough movement yet to get a 4th blue into the other's homeworld...",
+					"This might be a good time to discover a new system, so you can safely store more blue ships.",
+				],
+				objective: "Discover a new system (other actions are not supported)",
+				checkAction: function(action, oldState) {
+					if (action.type === "build") {
+						if (action.newPiece[0] === "b") {
+							return [false, "You don't want to build any more blue! You would have 4 blues at the same system, which makes a catastrophe!"];
+						} else {
+							// must be green
+							return [false, [
+								"Hmmm... Building a small green is possible here, but it's kind of passive.",
+								"If you discover a new star with one of the blues, you would have room to build mediums and maybe even larges."
+							]];
+						}
+					} else if (action.type === "trade") {
+						// this isn't great User Experience, but a broken tutorial is even worse and never finishing is still worse
+						return [false, [
+							"[searches for an excuse not to allow that, even though the real reason is my laziness]",
+							"I mean, if you do discover now, you can start getting more ships faster.",
+						]];
+					} else if (action.type === "discover") {
+						if (action.oldPiece[1] === "3") {
+							return [false, "You always want to keep a large ship at home. You don't want to forget and get invaded later!"];
+						} else if (action.newPiece[0] !== "g") {
+							return [false, "Almost there! You won't have the ability to build new ships, though. What if you try a green star?"];
+						} else {
+							return [true];
+						}
+					} else {
+						return [false, "I'm not really sure how that would help you..."]
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					// TODO: If statement that checks branches
+					if (true) {
+						return [true, "Of course, you're not going to be the only one grabbing all the blue...", {
+							type: "trade",
+							oldPiece: oldState.getPieceInSystemByType("b2", 2),
+							newPiece: oldState.getPieceInStashByType("y2"),
+						}];
+					} else {
+						// how did you get here?!
+						return [false, "War Is Peace. Freedom Is Slavery. Ignorance Is Strength.\n\n(If you are seeing this, this is a bug.)"];
+					}
+				},
+				nextStep: function(oldState) {
+					if (true) {
+						return "medium-blue-discover";
+					}
+				},
+			},
+			
+			// branch 3b1 (currently the only 3B sub-branch)
+			{
+				id: "medium-blue-discover",
+				startMessages: [
+					"Well, it seems your opponent realized they couldn't leave their home...",
+					"They probably *should* have traded the small, because right now you can grab another medium blue...",
+				],
+				objective: "Build a medium blue",
+				checkAction: function(action, oldState) {
+					if (action.type === "build") {
+						if (action.newPiece[0] === "g") {
+							return [false, "That's possible, but why build a small green when you can build a medium blue?"];
+						} else if (action.system === 1) {
+							// don't build in your homeworld (wasted move)
+							return [false, [
+								"Hmmm... That's interesting, but where is that ship going to go?",
+								"There are no more G3s in the Bank for stars, so you'd probably just move it to the star system that's already on the board.",
+								"So why not save a turn, and build there directly?",
+							]];
+						} else {
+							return [true];
+						}
+					} else {
+						return [false, "That's possible, but there's a medium blue for the taking right now. How about building it?"];
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					// they just discover a star
+					return [true, [], {
+						type: "discover",
+						oldPiece: oldState.getPieceInSystemByType("b1", 2),
+						newPiece: "g2A",
+					}];
+				},
+			},
+			{
+				startMessages: [
+					"OK, they moved out. Now you have to be careful.",
+					"Can you see what bad thing would happen if you built another blue in your homeworld?",
+					"(Maybe you can't because I'm covering it.)",
+					"Probably at this point I would trade one of the blues at system 3 (\"your\" green star) for another color, like yellow or red.",
+				],
+				objective: "Trade one of the blue ships",
+				checkAction: function(action, oldState) {
+					if (action.type === "trade") {
+						if (action.oldPiece[0] === "g") {
+							// trading OUT a green
+							return [false, "Hmmm... You don't really want to trade away your only green. You would not be able to build more ships in your homeworld!"];
+						} else if (action.newPiece[0] === "g") {
+							// trading FOR green
+							return [false, "Hmmm... Trading for green is possible, but you haven't gotten red OR yellow yet. Why not get a new color going?"];
+						} else if (oldState.map[action.oldPiece].at === 1) {
+							// i.e. are you trading at your homeworld?
+							return [false, [
+								"Hmmm... I like how you're thinking about getting blue out of your homeworld.",
+								"But I think you might find that blue helpful later, for example, if you were discovering a second star system.",
+								"You have two blues at the green star -- how about trading one of them, so you have more build options?",
+							]];
+						} else {
+							// it's good
+							return [true];
+						}
+					} else if (action.type === "build") {
+						if (action.oldPiece[0] === "b") {
+							return [false, "You don't want to do that! You would have 3 blue pieces there, and in this case, your opponent DOES have enough movement (by sacrificing their Y2) to get a 4th in for a catastrophe!"];
+						} else {
+							return [false, "That's possible, but it's a bit passive. How about trading one of your ships for a yellow or a red?"]
+						}
+					} else {
+						return [false, "That's possible, but I'm not really sure what that does for you. How about trading to get yellow or red?"];
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					const buildBlue = oldState.getSmallestPieceInStash('b');
+					if (buildBlue[1] === "2") {
+						// they can build a medium
+						return [true, "Good. Looks like you left your opponent a B2, but that's okay...", {
+							type: "build",
+							newPiece: buildBlue,
+							system: 4, // their colony
+						}];
+					} else {
+						return [true, "Good. I like how you traded away your small to stop your opponent from getting medium blue!", {
+							type: "build",
+							// they don't want to build a B1 that would open B2s for you
+							newPiece: oldState.getPieceInStashByType('y1'),
+							system: 2, // their homeworld
+						}];
+					}
+				},
+			},
+			{
+				startMessages: [
+					"I'll let you figure out this one on your own.",
+					"But here's a good rule of thumb for the opening...",
+					"You usually don't want to trade out, or move out, the only ship of a color in some system.",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "trade" || action.type === "move" || action.type === "discover") {
+						// interestingly enough, in this board state you definitely have no repeat colors in any systems (not counting stars)
+						const oldColor = {
+							g: "green",
+							b: "blue",
+							y: "yellow",
+							r: "red",
+						}[action.oldPiece[0]];
+						// "move" makes more sense in the sentence than "discover"
+						const verb = (action.type === "discover" ? "move" : action.type);
+						return [false, [
+							"Hmmm... That's your only " + oldColor + " ship at that system. Do you really want to " + action.type + " it away?",
+						]];
+					} else if (action.type === "build") {
+						const smallestBlue = oldState.getSmallestPieceInStash('b');
+						if (action.system === 1) {
+							return [false, "Hmmm... Building at your homeworld seems rather passive right now. You have a colony that's closer to the action; how about building there?"];
+						} else if (smallestBlue[1] === "2" && action.newPiece[0] !== "b") {
+							return [false, "Hmmm... That's possible, but there's a medium blue for the taking. How about you build it?"];
+						} else {
+							return [true];
+						}
+					} else {
+						return [false, "Hmmm... Sacrificing is just a bit too risky right now. The only sacrifice maybe worth taking is your G3, but you wouldn't really have that much space to store your new ships..."];
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					// They move their Y2 to their colony, to ward off invasions
+					return [true, [], {
+						type: "move",
+						oldPiece: oldState.getPieceInSystemByType("y2", 2),
+						system: 4,
+					}];
+				},
+				/*nextStep: function(gameState) {
+					// Tell them to trade for either red or yellow
+					for (let serial in gameState.map) {
+						const data = gameState.map[serial];
+						if (data && data.owner === "you") {
+							if (serial[0] === "y") {
+								// You have a yellow ship
+								return "medium-blue-with-yellow";
+							}
+							if (serial[0] === "r") {
+								return "medium-blue-with-red";
+							}
+						}
+					}
+					// you HAVE to have yellow or red, right?
+					alert("Hmmm... This is a bug. I was expecting you to have a yellow or a red ship.");
+					return Infinity;
+				},*/
+			},
+			
+			// *sigh* MORE branching... or maybe not?
+			{
+				id: "medium-blue-with-red",
+				startMessages: [
+					"You're doing really well here!",
+					"There's still, however, one color you don't yet have...",
+				],
+				objective: "Trade to unlock the last color!",
+				checkAction: function(action, oldState) {
+					// ok
+					// make sure that after you do the trade you have the right colors
+					if (action.type === "trade") {
+						// block homeworld trades
+						if (action.system === 1) {
+							return [false, [
+								"Hmmm... That's possible, but it's a bit passive. You've got a lot of potential at your green star colony. How about trading there?",
+								"If you trade at the green star, you'll be ready to build ANY of the three colors next turn!",
+							]];
+						}
+						
+						// this was used so rarely
+						// but I need it here
+						// yay for immutable GameStates!
+						const newState = oldState.doTrade("you", action.oldPiece, action.newPiece);
+						const newPowers = newState.getPowersAtSystem("you", 1);
+						// annoyingly difficult routine to get the color you DONT have
+						let missingColor = null;
+						const checkColors = ["b", "r", "y"];
+						for (let i = 0; i < checkColors.length; i++) {
+							const color = checkColors[i];
+							if (!newPowers[color]) {
+								// you don't have that power
+								missingColor = color;
+							}
+						}
+						// all right
+						// if you didn't miss any, you're good
+						if (!missingColor) {
+							// success
+							// let's personalize the message
+							const lastMessage = "Your empire is growing quickly. I think you've picked the best branch out of all of them!";
+							if (action.newPiece[0] === "r") {
+								return [true, [
+									"Great! You have a weapon now, so you're protected from enemy invasions!",
+									lastMessage,
+								]];
+							} else if (action.newPiece[0] === "y") {
+								return [true, [
+									"Great! Now you have movement, so you can discover even more systems!",
+									lastMessage,
+								]];
+							}
+							return [true];
+						} else {
+							// how did this happen?
+							if (newPowers[action.oldPiece[0]]) {
+								// you still have what you traded out.
+								// Must be something like BBY -> BYY.
+								return [false, [
+									"Hmmm... Did you mis-click? It looks like you traded for a color you already have there.",
+								]];
+							} else {
+								// you traded your last blue/red/yellow, noooo!
+								return [false, [
+									"Almost there! You don't want to trade that piece -- you won't have that color anymore! Try trading a different piece.",
+								]];
+							}
+						}
+					} else if (action.type === "build") {
+						if (action.newPiece[0] === "b") {
+							// that's always going to be 3 blues
+							// I think...
+							if (action.system === 3) {
+								return [false, "Oh... that's not safe... your opponent can move in and cause a catastrophe!"];
+							} else {
+								return [false, "Oh... that's three blue pieces in your homeworld... your opponent could sacrifice their Y2 and knock out half your homeworld!"];
+							}
+						} else {
+							return [false, "That's a fine option, but why not trade and get access to the last color? You'll need all four and you'll have more options."];
+						}
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					return [true, [
+						"Just a bit of trivia...",
+						"Some people call a system like that a \"Happy System\". You have one piece of each color, including stars.",
+						"It's good because you have lots of options and are not even close to catastrophe danger.",
+					], {
+						type: "trade",
+						oldPiece: oldState.getPieceInSystemByType("b2", 4),
+						newPiece: oldState.getPieceInStashByType("r2"),
+					}];
+				},
+				nextStep: function() {
+					return Infinity;
+				},
+			},
+			
+			// wow
+			
+			// it's REALLY THE END (and neat, it's on line 1280)
 		],
 		endMessages: [
 			"Well, there you are. You have a solid position. Good job!",
-			"At some point, you'll want to move all the blue and yellow ships out of your homeworld. (This makes it harder for catastrophes to destroy your home stars.)",
 			"I'm sorry to cut this off here, but you have to play the real game for more!",
-			"This module actually has three main branches, and some of them split further.",
+			"This module actually has a LOT of different branches. You're welcome to try to find all of them!",
 			"Anyway, I know there's a lot to keep track of, and you won't have my constant pestering every single move in a real game.",
 			"The two important things are practice and vigilance. Always watch the Bank for opportunities.",
 			"The next tutorial covers a particularly powerful opening trick you should watch out for.",

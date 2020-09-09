@@ -7,10 +7,11 @@ import React from 'react';
 // Expected props: type ("ship" or "star"), serial (e.g. "b2C")
 // Optional props: scaleFactor (default 0.4), rotation, symbolMode (boolean, default false)
 function Piece(props) {
-	// add "-symbol" for use in symbol mode graphics; always use ".svg"
-	const extension = (props.symbolMode ? "-symbol" : "") + ".svg";
+	// basically, "normal" adds nothing but "symbol" and "number" add their name and a hyphen
+	const mode = props.displayMode || "normal";
+	const extension = (mode === "normal") ? "" : `-${mode}`;
 	// e.g. "/images/ship-b3.svg" or "/images/star-r2-symbol.svg"
-	const imageSrc = "/images/" + props.type + "-" + props.serial.substring(0, 2) + extension;
+	const imageSrc = "/images/" + props.type + "-" + props.serial.substring(0, 2) + extension + ".svg";
 	// Use to rotate 0, 90, 180, or 270 degrees for ships
 	const css = {
 		transform: "rotate(" + (props.rotation || 0) + "deg)",
