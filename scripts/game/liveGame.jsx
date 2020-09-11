@@ -418,10 +418,12 @@ const LiveGame = withGame(LiveGameDisplay, {
 	// Warnings.
 	onBeforeEndTurn: function(player, oldState, newState) {
 		// Opponent's turns do not display warnings.
+		console.log(player);
+		// If it's an opponent, let it through no matter what.
 		if (player !== YOUR_USERNAME) return true;
 		
 		// Get the warnings associated with oldState.
-		
+		return true;
 	},
 	
 	onAfterAction: function(action, player, newState) {

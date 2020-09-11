@@ -27,15 +27,16 @@ const passwordOptions = {
 const COOKIE_LIFE = 1000 * 60 * 60;
 
 // these could cause confusion so we declare them as already taken
-const bannedUsernames = ["you", "player", "enemy", "north", "south", "east", "west"]
+const bannedUsernames = ["you", "player", "enemy", "cpu", "computer", "north", "south", "east", "west"]
 async function isUsernameTaken(username) {
 	// these are mostly deceptive ones like "you"
 	if (bannedUsernames.indexOf(username.toLowerCase()) === -1) {
-		return false;
+		return true;
 	}
 	
 	try {
 		const userData = await myUtil.databaseCall(db, "get", "SELECT * FROM users WHERE username = ?", [username]);
+		console.log("[isUsernameTaken] username ->", userData);
 		return userData !== undefined;
 	} catch (error) {
 		console.error("What?!", error);
