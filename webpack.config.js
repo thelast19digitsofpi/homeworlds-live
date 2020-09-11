@@ -72,8 +72,8 @@ module.exports = {
 			}
 		}
 	].concat(simplePages),
-	mode: "development",
-	devtool: "eval",
+	mode: "production",
+	//devtool: "eval",
 	resolve: {
 		symlinks: false,
 	},
