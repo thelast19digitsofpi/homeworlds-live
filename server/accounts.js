@@ -30,7 +30,7 @@ const COOKIE_LIFE = 1000 * 60 * 60;
 const bannedUsernames = ["you", "player", "enemy", "cpu", "computer", "north", "south", "east", "west"]
 async function isUsernameTaken(username) {
 	// these are mostly deceptive ones like "you"
-	if (bannedUsernames.indexOf(username.toLowerCase()) === -1) {
+	if (bannedUsernames.indexOf(username.toLowerCase()) !== -1) {
 		return true;
 	}
 	
