@@ -50,28 +50,6 @@ if (process.env.MADE_WITH === "glitch.com") {
 const port = process.env.PORT || 8443;
 
 
-// For demo purposes
-const authHash = process.env.PASSWORD_HASH;
-console.log(authHash);
-if (authHash) {
-	app.use(async function(req, res, next) {
-		// parse login and password from headers
-		// https://stackoverflow.com/questions/23616371/
-		const b64auth = (req.headers.authorization || '').split(' ')[1] || ''
-		const password = Buffer.from(b64auth, 'base64').toString().split(':')[1] || ''
-		//console.log(password);
-		// Verify login and password are set and correct
-		if (await a2.verify(authHash, password)) {
-			// Access granted...
-			return next()
-		} else {
-			res.set('WWW-Authenticate', 'Basic realm="You need the password to view this demo (ignore the username)"');
-			res.status(401).send('You need the password to view this demo!');
-		}
-	})
-}
-
-
 
 /*
 Beginning of the app.use's
