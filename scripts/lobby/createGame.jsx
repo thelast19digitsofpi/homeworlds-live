@@ -34,7 +34,7 @@ class CreateGame extends React.Component {
 	handleInput(event) {
 		// Very much stolen from reactjs.org/docs/forms.html yet I typed it myself...
 		const target = event.target;
-		let value = (target.name === "isTimed" ? target.checked : target.value);
+		let value = (target.type === "checkbox" ? target.checked : target.value);
 		const name = target.name;
 		if (target.type === "number") {
 			value = Number(value);

@@ -1,1 +1,29 @@
-<!doctype html><html><head> <%- include("headElement") %> <title>Please Log In</title></head><body> <%- include("header") %> <div class="container"><h2>Log In</h2><p class="lead">Don't have an account? <a href="/createAccount">Create one</a>.</p><form id="login-form" method="post" action="/login"> <% if (typeof error !== 'undefined') { _%> <h5 class="text-warning"><%= error %></h5> <% } %> <div class="form-group"><label for="login-username">Username</label> <input name="username" class="form-control" aria-describedby="login-username"/></div><div class="form-group"><label for="login-password">Passphrase</label> <input type="password" name="password" class="form-control" aria-describedby="login-password"/></div><input type="submit" value="Log In" class="btn btn-primary btn-lg"/></form></div> <%- include("footer") %> <script src="/scripts/vendor.js?b3154ef84889e10c6914"></script></body></html>
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Please Log In</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h2>Log In</h2>
+			<p class="lead">Don't have an account? <a href="/createAccount">Create one</a>.</p>
+			<form id="login-form" method="post" action="/login">
+				<% if (typeof error !== 'undefined') { _%>
+				<h5 class="text-warning"><%= error %></h5>
+				<% } %>
+				<div class="form-group">
+					<label for="login-username">Username</label>
+					<input type="text" name="username" class="form-control" aria-describedby="login-username" />
+				</div>
+				<div class="form-group">
+					<label for="login-password">Passphrase</label>
+					<input type="password" name="password" class="form-control" aria-describedby="login-password" />
+				</div>
+				<input type="submit" value="Log In" class="btn btn-primary btn-lg" />
+			</form>
+		</div>
+		<%- include("footer") %>
+	<script src="/scripts/vendor.js?4c4816eeb7704b9b6517"></script></body>
+</html>

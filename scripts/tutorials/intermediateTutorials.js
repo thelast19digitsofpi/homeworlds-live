@@ -955,7 +955,7 @@ const tutorialList = [
 					"Personally I would probably just build, but you can also discover with the ship you just traded.",
 				],
 				checkAction: function(action, oldState) {
-					const canBuildR2 = (action.getPieceInStashByType('r1') === null);
+					const canBuildR2 = (oldState.getPieceInStashByType('r1') === null);
 					if (action.type === "build") {
 						if (canBuildR2 && action.newPiece[0] !== "r") {
 							// if you can build R2, allow only that build

@@ -232,7 +232,7 @@ class MainLobby extends React.Component {
 		
 		return <React.Fragment>
 			<h2>Main Lobby</h2>
-			<p className="lead">Welcome to Homeworlds Live! If you are new, check out the <a onClick={() => alert("TODO")} href="#">tutorial</a>. Please be patient because this is new and probably has many bugs.</p>
+			<p className="lead">Welcome to Homeworlds Live! If you are new, check out the <a href="/tutorial">tutorial</a>. Please be patient because this is new and probably has many bugs.</p>
 			<Alerts list={this.state.alerts} onClick={this.closeAlert.bind(this)} />
 			<div className="row">
 				{mainScreen}

@@ -262,8 +262,6 @@ const tutorialList = [
 						return [false, "Don't end your turn yet!"];
 					}
 					return [true, [
-						"You may have noticed you couldn't trade at system #9, the one on the right.",
-						"That's because you have no blue ships there and the star isn't blue.",
 						"All right, you're doing great! Let's see what your opponent does..."
 					], {
 						type: "trade",
@@ -1419,7 +1417,7 @@ const tutorialList = [
 					if (colorUse['g'] === 0) {
 						techFeedback.push("You didn't pick any green! Now you won't be able to build any new ships.");
 						if (colorUse['b'] === 0) {
-							techFeedback.push("You don't have blue either! Now you can't even trade for green. Fortunately this is ");
+							techFeedback.push("You don't have blue either! Now you can't even trade for green. Your only hope is the Reset Turn button.");
 						}
 					} else if (colorUse['b'] === 0) {
 						techFeedback.push("You didn't pick any blue! You'll have a harder time getting the other three colors.");

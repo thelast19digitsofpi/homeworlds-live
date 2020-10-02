@@ -23,7 +23,8 @@ app.get(/\/archive\/?$/, async function(req, res) {
 				numTurns: row.summary.split("\n").length - 2,
 				options: JSON.parse(row.options),
 			};
-		});
+			// reverse so the most recent game is on top
+		}).reverse();
 		console.log(res.locals.render.archiveList);
 		return res.render("archiveTable.ejs", res.locals.render);
 	} catch (error) {

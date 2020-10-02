@@ -195,11 +195,18 @@ class LiveGameDisplay extends React.Component {
 			);
 		}
 		
+		const drawVotes = this.state.drawVotes.map(function(name, i, array) {
+			return <React.Fragment>
+				<span className={name.length > 12 ? "small" : ""}>{name}</span>
+				{i < array.length - 1 ? ", " : ""}
+			</React.Fragment>;
+		});
+		
 		const offerDraw = <div className="card">
 			{/* Only show the offer-draw button if you are playing */}
 			{innerState.isPlaying && <button className="btn btn-secondary"
 				onClick={() => this.handleClickOfferDraw()}>Offer a Draw</button>}
-			<p className="text-center">Draw votes: {this.state.drawVotes.join(", ")}</p>
+			<p className="text-center">Draw votes: {drawVotes}</p>
 			{
 				this.state.drawVotes.length > 0 && innerState.isPlaying && (
 					<button className="btn btn-primary"

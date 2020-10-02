@@ -242,7 +242,7 @@ class StarMap extends React.Component {
 					classLeft = "d-none";
 				} else if (numLeft === 1) {
 					// just one system, make it only wide enough to fit the system
-					classLeft = "col-auto px-1";
+					classLeft = "col-auto pl-4";
 				} else if (numLeft <= numRight*2/3) {
 					// left is small
 					classLeft = "col-4 col-md-3 col-lg-2";
@@ -258,16 +258,16 @@ class StarMap extends React.Component {
 					classLeft += " d-flex flex-column justify-content-center";
 				}
 				// case (d)
-				// return a mixed view, because we have Both *and* Neither *and* a north or south
+				// return a mixed view, because we have Both *and* Neither *and* north or south
 				return (
-					<div className="row flex-grow">
+					<div className="row flex-grow-1">
 						<div className={classLeft}>{containers.adjNeither}</div>
 						{/* flex-ception */}
 						<div className="col d-flex flex-column justify-content-around">
 							{/* if the north or south containers are empty that messes up the flexing */}
-							{containers.adjNorth && <div>{containers.adjNorth}</div>}
+							{containers.adjNorth && containers.adjNorth.length > 0 && <div>{containers.adjNorth}</div>}
 							<div>{containers.adjBoth}</div>
-							{containers.adjSouth && <div>{containers.adjSouth}</div>}
+							{containers.adjSouth && containers.adjSouth.length > 0 && <div>{containers.adjSouth}</div>}
 						</div>
 					</div>
 				)

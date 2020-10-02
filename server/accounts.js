@@ -50,8 +50,8 @@ function isUsernameValid(username) {
 		console.log("Bad username: not a string. It is good to know that is possible...")
 		return false;
 	}
-	// 3-16 characters
-	if (username.length < 3 || username.length > 16) {
+	// 3-20 characters
+	if (username.length < 3 || username.length > 20) {
 		return false;
 	}
 	
