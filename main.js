@@ -14,3 +14,4 @@ require("./server/gameManager.js");
 require("./server/tutorials.js");
 require("./server/archive.js");
 require("./server/otherPages.js");
+require("./server/errors.js");

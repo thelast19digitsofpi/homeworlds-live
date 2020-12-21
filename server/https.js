@@ -97,7 +97,8 @@ app.use(function(req, res, next) {
 app.get(/favicon\.ico/, function(req, res, next) {
 	console.warn("Favicon requested");
 	res.sendFile(path.join(__dirname, "favicon.ico"));
-})
+});
+
 
 // launch the app!
 const listener = server.listen(port, function() {
