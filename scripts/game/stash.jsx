@@ -10,6 +10,41 @@ function Stash(props) {
 	const colors = ["b", "g", "r", "y"];
 	const specifiers = "ABCDE"; // can't think of a better name!
 	const scaleFactor = props.scaleFactor || 0.4;
+	const aip = props.actionInProgress;
+	
+	// Highlights sizes for trading and discovery
+	// they by default are all on
+	let highlight = {
+		1: true,
+		2: true,
+		3: true,
+	};
+	if (aip) {
+		// size is the second character of the serial
+		// mismatches will fade out
+		if (aip.type === "trade") {
+			// turn them all off
+			highlight[1] = false;
+			highlight[2] = false;
+			highlight[3] = false;
+			// then your size gets turned on
+			highlight[aip.oldPiece[1]] = true;
+		}
+		
+		if (aip.type === "discover") {
+			// turn off anything matching the stars you are at
+			const fromSystem = props.map[aip.oldPiece].at;
+			for (let serial in props.map) {
+				const data = props.map[serial];
+				if (data && data.owner === null && data.at === fromSystem) {
+					// pieces of that size must fade out
+					highlight[serial[1]] = false;
+				}
+			}
+		}
+	}
+	
+	
 	// array of <tr> elements
 	let rows = [];
 	for (let i = 0; i < colors.length; i++) {
@@ -23,8 +58,25 @@ function Stash(props) {
 			for (let which = 0; which < 3; which++) {
 				// serial number is color + size + specifier
 				const serial = color + size + specifiers[which];
-				if (props.data[serial] === null) {
-					// put that data into a <Piece>
+				
+				// try to decide if it should be hidden or faded based on AIP
+				let show = true;
+				let fade = false;
+				if (aip && aip.type === "homeworld") {
+					// making a homeworld
+					// the loop also matches "type" and "player" but those are never serials
+					for (let piece in aip) {
+						if (aip[piece] === serial) {
+							// the piece is part of the AIP, so do not show it
+							show = false;
+							break;
+						}
+					}
+				}
+				
+				// If the map does not have the piece on the board...
+				if (props.map[serial] === null && show) {
+					// put that map into a <Piece>
 					const css = {
 						// height of a ship is 40 + 32*size
 						marginTop: scaleFactor * -(4 + 32 * size),
@@ -49,11 +101,17 @@ function Stash(props) {
 				delete cell[cell.length - 1].style.marginTop;
 			}
 			
+			// check if this column should be highlighted
+			const cellCSS = {
+				opacity: highlight[size] ? 1 : 0.4,
+			};
+			
 			// Turn the props into a React Piece
 			cell = cell.map(subProps => React.createElement(Piece, subProps));
 			// put that cell into a <td>
 			cols.push(
-				<td key={color + size.toString()}>
+				<td key={color + size.toString()}
+					style={cellCSS}>
 					<div className="d-flex flex-column-reverse">{cell}</div>
 				</td>
 			)

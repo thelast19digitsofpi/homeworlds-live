@@ -500,14 +500,15 @@ const TutorialGame = withGame(TutorialWrapper, {
 		if (player === "enemy") {
 			return true;
 		}
+		const current = this.getCurrentState();
+		console.log("Ending with actions:\n", current.actions);
 		// unfortunately I have to do all the same stuff
 		const step = this.props.tutorial.steps[this.state.stepID];
 		if (step.checkEndTurn) {
-			const result = step.checkEndTurn(this.state.current);
+			const result = step.checkEndTurn(current);
 			// do any actions specified
 			for (let i = 0; i < result.length; i++) {
 				const maybeAction = result[i];
-				const current = this.getCurrentState();
 				console.log("possible action", i, maybeAction, typeof maybeAction);
 				// who at JS decided to make typeof not distinguish arrays?!
 				if (typeof maybeAction === "object" && !(maybeAction instanceof Array)) {

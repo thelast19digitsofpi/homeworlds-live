@@ -47,7 +47,7 @@ async function isUsernameTaken(username) {
 
 function isUsernameValid(username) {
 	if (typeof username !== "string") {
-		console.log("Bad username: not a string. It is good to know that is possible...")
+		console.log("Bad username: not a string. It is good to know that is possible...");
 		return false;
 	}
 	// 3-20 characters

@@ -85,6 +85,7 @@ body {
 }
 .stash-table img {
 	display: block;
+	opacity: 0.7; /* makes a cool effect similar to real pyramids */
 }
 
 .end-turn-popup {

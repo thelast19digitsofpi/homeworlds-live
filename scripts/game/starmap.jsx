@@ -303,6 +303,17 @@ class StarMap extends React.Component {
 		}
 	}
 	
+	// 
+	serialToData(serial, type, owner) {
+		return {
+			type: type,
+			owner: owner,
+			serial: serial,
+			size: Number(serial[1]),
+			color: serial[0],
+		};
+	}
+	
 	render() {
 		const props = this.props;
 		
@@ -332,11 +343,7 @@ class StarMap extends React.Component {
 					systems[data.at] = system;
 				}
 				// now add either a ship or a star
-				let pieceData = {
-					serial: serial,
-					size: Number(serial[1]),
-					color: serial[0]
-				};
+				let pieceData = this.serialToData(serial);
 				if (data.owner === null) {
 					// is a star
 					pieceData.type = "star";
@@ -381,11 +388,42 @@ class StarMap extends React.Component {
 				adjNeither: [],
 			};
 			
+			const aip = props.actionInProgress;
+			const activePiece = aip ? aip.oldPiece : null;
+			
+			// if the action in progress is making a homeworld:
+			if (aip && aip.type === "homeworld") {
+				// only include the non-nulls
+				const stars = [aip.star1, aip.star2]
+					.filter(x => x !== undefined)
+					// and also convert them into star objects
+					.map(x => this.serialToData(x, "star"));
+				
+				// also convert the one ship
+				const ships = aip.ship ? [this.serialToData(aip.ship, "ship", aip.player)] : []; // will only ever be one
+				// select the right container to put it in
+				// (you can get AIPs for north in sandbox or maybe archive viewer)
+				const container = containers[aip.player === props.viewer ? 'hwSouth' : 'hwNorth'];
+				container.push(<System
+					key="hw-in-progress"
+					id="..."
+					stars={stars}
+					ships={ships}
+					viewer={props.viewer}
+					homeworld={aip.player}
+					scaleFactor={props.scaleFactor}
+					displayMode={props.displayMode}
+					
+					handleBoardClick={props.handleBoardClick}
+				/>);
+			}
+			
 			// we need to convert the system object into an array of elements
 			let innerDisplay = null;
 			for (let id in systems) {
 				const system = systems[id];
 				const myStars = system.stars.map(dataToSerial);
+				
 				const reactElement = (
 					<System
 						key={id}
@@ -395,7 +433,7 @@ class StarMap extends React.Component {
 						viewer={props.viewer}
 						homeworld={system.homeworld}
 						scaleFactor={props.scaleFactor}
-						activePiece={props.activePiece}
+						activePiece={activePiece}
 						displayMode={props.displayMode}
 						
 						handleBoardClick={props.handleBoardClick}

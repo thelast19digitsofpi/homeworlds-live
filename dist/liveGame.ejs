@@ -1,2 +1,19 @@
-<!doctype html><html><head> <%- include("headElement") %> <title>Game #<%- gameID %></title></head><body> <%- include("header") %> <div id="game-container"></div> <%- include("footer") %> <script>// server-side value injection (of the harmless kind)
-const GAME_ID = <%- gameID %>;</script><script src="/scripts/vendor.js?120a0f2303ddec455ff4"></script><script src="/scripts/liveGame.js?120a0f2303ddec455ff4"></script></body></html>
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Game #<%- gameID %></title>
+	</head>
+	<body>
+		<%- include("header") %>
+		
+		<div id="game-container"></div>
+		
+		<%- include("footer") %>
+		
+		<script>
+// server-side value injection (of the harmless kind)
+const GAME_ID = <%- gameID %>;
+		</script>
+	<script src="/scripts/vendor.js?319ae756ff5aa9be41fc"></script><script src="/scripts/liveGame.js?319ae756ff5aa9be41fc"></script></body>
+</html>

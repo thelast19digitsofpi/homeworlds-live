@@ -77,6 +77,7 @@ const tutorialList = [
 						return [false, "I'm not sure what you did..."];
 					}
 				},
+				requireAction: true,
 				checkEndTurn: function(oldState) {
 					if (oldState.actions.number > 0) {
 						return [false, "You haven't done anything yet!"];
@@ -144,8 +145,9 @@ const tutorialList = [
 					
 					return [false, "I'm not entirely sure what you just did..."];
 				},
+				requireAction: true,
 				checkEndTurn: function(oldState) {
-					if (oldState.actions.length > 0) {
+					if (oldState.actions.number > 0) {
 						return [false, "You haven't done anything yet..."];
 					}
 					
@@ -867,7 +869,12 @@ const tutorialList = [
 						if (action.oldPiece[0] === "g") {
 							return [false, "You don't want to move your large green out. You won't be able to build at your homeworld! (And leaving your home without a large makes you vulnerable to invasions...)"];
 						} else if (action.newPiece[0] === "g") {
-							return [false, "That's tempting. But you won't have blue power there, so you won't be able to trade (or move!) the ships once you build them."];
+							return [false, [
+								"That's tempting. But you won't have blue power there, so you won't be able to trade (or move!) the ships once you build them.",
+								"For now I would advise you consider trading for blue or yellow.",
+								]];
+						} else {
+							return [false, "That's possible, but you don't have the ability to build there. Unless you know what you are doing, you'll find it difficult to advance."];
 						}
 					} else {
 						return [false, "I don't think a sacrifice really helps you here. (Did you mis-click?)"];
@@ -1057,7 +1064,7 @@ const tutorialList = [
 				},
 			},
 			
-			// branch 3b1 (currently the only 3B sub-branch)
+			// branch 3b1 (currently the only 3b sub-branch)
 			{
 				id: "medium-blue-discover",
 				startMessages: [
@@ -1121,8 +1128,8 @@ const tutorialList = [
 							return [true];
 						}
 					} else if (action.type === "build") {
-						if (action.oldPiece[0] === "b") {
-							return [false, "You don't want to do that! You would have 3 blue pieces there, and in this case, your opponent DOES have enough movement (by sacrificing their Y2) to get a 4th in for a catastrophe!"];
+						if (action.newPiece[0] === "b") {
+							return [false, "You don't want to do that! Your opponent could then build a large blue, and you have nowhere safe to build your own!"];
 						} else {
 							return [false, "That's possible, but it's a bit passive. How about trading one of your ships for a yellow or a red?"]
 						}
@@ -1292,6 +1299,8 @@ const tutorialList = [
 						} else {
 							return [false, "That's a fine option, but why not trade and get access to the last color? You'll need all four and you'll have more options."];
 						}
+					} else if (action.type === "discover" || action.type === "move") {
+						return [false, "Hmmm... That's possible, but why not get the last color BEFORE you spread your fleet out? Then you'll have more build options!"]
 					}
 				},
 				requireAction: true,
@@ -1553,14 +1562,17 @@ const tutorialList = [
 					"Can you do that?",
 				],
 				checkAction: function(action, oldState) {
-					if (action.type === "sacrifice") {
-						if (action.oldPiece === "g1A") {
-							return [true];
-						} else {
-							return [false, "Oh, right. You have to sacrifice the green ship in order to build."];
-						}
+					// this is the first of those "check at the end" modules
+					return [true];
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					if (oldState.map.y3B && oldState.map.y3B.owner === "you") {
+						// it's on the board and in your possession
+						return [true];
 					}
-				}
+					return [false, "Looks like you didn't build the Y3. If you need to, click Reset Turn."];
+				},
 			}
 		],
 		endMessages: [

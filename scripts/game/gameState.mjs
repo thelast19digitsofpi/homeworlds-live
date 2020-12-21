@@ -1233,7 +1233,13 @@ class GameState {
 	
 	doCatastrophe(color, system) {
 		// Requires the fewest checks
-		if (this.isSystemOverpopulated(color, system)) {
+		// if the system is a non-number or has no pieces there, fail
+		console.log("System: #", system);
+		if (!system || this.getAllPiecesAtSystem(system).length === 0) {
+			throw new Error("That system does not exist. This is probably a bug.");
+		} else if (!color) {
+			throw new Error("The color for the catastrophe was not declared. This is probably a bug.");
+		} else if (this.isSystemOverpopulated(color, system)) {
 			const newMap = this.catastropheMap(color, system);
 			const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
 			// this is truly all we need

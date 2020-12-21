@@ -759,19 +759,19 @@ function withGame(WrappedComponent, events, additionalState) {
 			const boardScale = baseScale * Math.min(1.1, 1.25 - 0.5 * numPiecesOnBoard/36);
 			const stashScale = baseScale * Math.min(1, 0.75 + numPiecesOnBoard/60);
 			
-			const activePiece = this.state.actionInProgress ? this.state.actionInProgress.oldPiece : null;
 			// I am not sure if sending the entire state object is "correct"
 			const moreProps = events.getProps ? events.getProps.call(this) : {};
 			const sym = (this.state.displayMode === "symbol");
-			const F = React.Fragment;
-			
+			const F = React.Fragment; // the <> </> messes up syntax highlighting in sublime
 			
 			// The Right Column
+			// (stash needs the AIP to be more intelligent)
 			const rightColumn = <div className="stash col-auto" align="right">
 				<Stash
 					scaleFactor={ stashScale }
 					displayMode={this.state.displayMode}
-					data={current.map}
+					map={current.map}
+					actionInProgress={this.state.actionInProgress}
 					handleClick={(serial) => this.handleStashClick(serial)}
 				/>
 				
@@ -840,8 +840,8 @@ function withGame(WrappedComponent, events, additionalState) {
 								viewer={this.state.viewer}
 								displayMode={this.state.displayMode}
 								setDisplayMode={this.state.setDisplayMode}
-								
-								activePiece={activePiece}
+								// for homeworld purposes or possibly another way to handle the active piece
+								actionInProgress={this.state.actionInProgress}
 								
 								handleBoardClick={(piece, event) => this.handleBoardClick(piece, event)}
 							/>

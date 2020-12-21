@@ -69,7 +69,7 @@ GameManager.prototype.startGameByRoom = function(gameRoom) {
 			this.players.push(player);
 		}
 		// Set a timer, in case the player never shows up!
-		player.setTimer(newGame, "forfeit", 300 * 1e3);
+		player.setTimer(newGame, "forfeit", 450 * 1e3);
 	}
 };
 

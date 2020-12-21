@@ -234,7 +234,7 @@ const tutorialList = [
 					"Building ships is important, but you can only build colors you already have. The next ability, trading, allows you to change colors of your ships.",
 					"When you trade, you first click on one of your ships, then click a piece from the Bank *of the same size*.",
 					"This is nice because once you build medium and large ships of one color, you can change them into other colors!",
-					"But remember, the piece has to be available in the Bank!",
+					"But remember, the piece has to be available in the Bank! Your options will be highlighted when you are deciding.",
 					"All right. Your goal this turn is to use a trade to get a red ship. Again, use the hint button (top) for help!",
 				],
 				hint: [
@@ -412,6 +412,7 @@ const tutorialList = [
 					"In fact, you can \"discover\" a star any time you have movement power.",
 					"Here, to discover a system, you first click the piece you want to move, then click the \"Discover a system...\" button in the popup.",
 					"Then you click a piece in the Bank. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
+					"Just like trades, the available pieces are highlighted when you are deciding and you can cancel by clicking the original ship again.",
 					"(Note: Homeworld systems always start out with two stars. All other systems are single stars.)",
 					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home.",
 				],
@@ -719,6 +720,14 @@ const tutorialList = [
 						"It's in the Hint if you forget.",
 					]];
 				},
+				nextStep: function(oldState) {
+					console.log("old state is ", oldState);
+					if (oldState.actions.number === 0) {
+						return 2;
+					} else {
+						return "loop";
+					}
+				}
 			},
 			{
 				id: 'loop',
@@ -747,7 +756,9 @@ const tutorialList = [
 					return [true];
 				},
 				nextStep: function(oldState) {
-					if (oldState.actions.number === 0) {
+					console.log("old state is\n", oldState);
+					console.log("old state actions\n", oldState.actions);
+					if (oldState.actions.number === 0 || oldState.phase === "end") {
 						return 1;
 					} else {
 						return 'loop';
@@ -1045,6 +1056,7 @@ const tutorialList = [
 							], {
 								// you have 4 ships, just immediately catastrophe
 								type: "catastrophe",
+								color: "y",
 								system: system,
 							}];
 						} else if (ships === 3) {
@@ -1123,7 +1135,7 @@ const tutorialList = [
 			"What? How did they destroy your ships?",
 			"Something about concentrations of color, apparently... well, time for the next module!",
 			"By the way, I just wanted to clarify something before we go: You can only sacrifice one piece per turn.",
-			"So even if you sacrifice, you might get multiple moves (if yellow) OR multiple captures (if red), but you can NOT get both in the same turn.",
+			"That piece might give you multiple actions, but they would all be the same type; you can NOT, for example, build and also move in the same turn.",
 			"Also, you can sacrifice ANY piece you have; it does NOT require any specific color like the other four actions do.",
 			"All right, let's learn about catastrophes! I promise, we're done with these surprises.",
 		],
