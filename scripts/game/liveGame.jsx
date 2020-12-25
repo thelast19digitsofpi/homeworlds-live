@@ -283,9 +283,9 @@ class LiveGameDisplay extends React.Component {
 				*/}
 				<div className="col-12 d-flex flex-row justify-content-around
 					col-lg-2 flex-lg-column justify-content-lg-start order-lg-12">
-					{clockElements}
 					{offerDraw}
 					{resignButtons}
+					{clockElements}
 					{showLastTurnButtons}
 				</div>
 				<div className="col-12 col-lg-10 order-lg-1 position-relative">
