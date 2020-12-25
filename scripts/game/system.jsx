@@ -45,6 +45,7 @@ class System extends React.PureComponent {
 				rotation={rotation}
 				scaleFactor={this.props.scaleFactor}
 				highlight={shipData.serial === this.props.activePiece}
+				popOut={shipData.serial === this.props.recentlyUsedPiece}
 				
 				handleClick={this.props.handleBoardClick}
 			/>;

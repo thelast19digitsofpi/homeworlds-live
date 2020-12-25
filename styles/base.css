@@ -23,6 +23,19 @@ body {
 /* Game styling */
 /* For the most part I put here only that which either (1) was done early on, (2) I cannot do with Bootstrap's classes, or (3) I want to be able to adjust more finely than bootstrap's. */
 
+.rewind-overlay {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-image: url("/images/rewind.svg");
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+	z-index: 40;
+}
+
 .systems {
 	min-height: 54vh;
 	display: flex;
@@ -110,6 +123,22 @@ body {
 	animation-iteration-count: infinite;
 }
 
+/* For the piece that just did something */
+@keyframes popout {
+	0% { transform: translateY(0); }
+	33% { transform: translateY(1.5vh); }
+	67% { transform: translateY(-1.5vh); }
+	100% { transform: translateY(0); }
+}
+span[popout] {
+	/* only animate once */
+	display: inline-block;
+	animation-name: popout;
+	animation-duration: 0.75s;
+	animation-direction: normal;
+	animation-iteration-count: 1;
+}
+
 /* Action popup */
 .action-popup {
 	position: absolute;
@@ -142,4 +171,9 @@ body {
 
 .tutorial-popup {
 	max-width: 75%;
+}
+
+
+.test {
+	border: 2px dotted cyan;
 }

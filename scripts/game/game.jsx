@@ -54,6 +54,7 @@ function withGame(WrappedComponent, events, additionalState) {
 				scaleFactor: 0.5,
 				viewer: "south",
 				displayMode: "normal",
+				allowAnimations: true,
 				
 				// Popup data for clicking on a ship.
 				popup: null,
@@ -66,6 +67,9 @@ function withGame(WrappedComponent, events, additionalState) {
 				
 				// the warnings themselves are computed from the GameState
 				showWarningPrompt: false,
+				
+				// whichever piece most recently "did something"
+				recentlyUsedPiece: null,
 			};
 			this.state.current = GameState.recoverFromJSON(this.state.current);
 			// start with a state in the history list!
@@ -194,12 +198,15 @@ function withGame(WrappedComponent, events, additionalState) {
 					history.push([]);
 				}
 				
+				// sometimes newState is a vanilla object
+				const newGameState = (newState instanceof GameState) ? newState : GameState.recoverFromJSON(newState);
+				
 				// Now, the current state onto the stack.
-				history[history.length - 1].push(newState);
+				history[history.length - 1].push(newGameState);
 				// Replace the history array and update the current state.
 				return {
 					history: history,
-					current: newState
+					current: newGameState
 				};
 			}, callback || (() => {})); // use the callback if provided
 		}
@@ -238,6 +245,14 @@ function withGame(WrappedComponent, events, additionalState) {
 			const current = this.getCurrentState();
 			if (current.turn !== player) {
 				throw new Error("It is not your turn!");
+			}
+			
+			// for animations
+			let recentlyUsedPiece = null;
+			if (action.type === "build" || action.type === "trade") {
+				recentlyUsedPiece = action.newPiece;
+			} else if (action.type === "move" || action.type === "discover" || action.type === "steal") {
+				recentlyUsedPiece = action.oldPiece;
 			}
 			
 			let newState;
@@ -298,6 +313,9 @@ function withGame(WrappedComponent, events, additionalState) {
 					if (events.onAfterAction) {
 						events.onAfterAction.call(this, action, player, newState);
 					}
+					this.setState({
+						recentlyUsedPiece: recentlyUsedPiece,
+					});
 				}
 			} catch (error) {
 				// again, a better error system is good
@@ -791,6 +809,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			</div>;
 			
 			const radioHandler = (event) => this.setDisplayMode(event.target.value);
+			const allowAnimationHandler = (event) => this.setState({allowAnimations: event.target.checked});
 			
 			return <WrappedComponent
 					reactState={this.state}
@@ -805,30 +824,25 @@ function withGame(WrappedComponent, events, additionalState) {
 							<strong className="text-danger mr-2">Steal {sym && <F>= &#x2734;;</F>}</strong>
 							<strong className="text-yellow mr-2">Move {sym && <F>= ^.</F>}</strong>
 							{/* inline block to make the text wrap with the checkbox */}
+							<span className="d-inline-block mr-2">
+								Ship display: &nbsp;
+								<select id="displayMode"
+									name="displayMode"
+									value={this.state.displayMode}
+									onChange={radioHandler}>
+									<option value="normal">Normal</option>
+									<option value="symbol">Colorblind</option>
+									<option value="number">Size-blind</option>
+								</select>
+							</span>
+							{/* same deal here for animation controls */}
 							<span className="d-inline-block">
-								<input type="radio"
-									id="displayModeNormal"
-									name="displayMode"
-									value="normal"
-									checked={this.state.displayMode === "normal"}
-									onChange={radioHandler} />
-								<label htmlFor="displayModeNormal" className="mr-2">Normal</label>
-								
-								<input type="radio"
-									id="displayModeSymbol"
-									name="displayMode"
-									value="symbol"
-									checked={this.state.displayMode === "symbol"}
-									onChange={radioHandler} />
-								<label htmlFor="displayModeSymbol" className="mr-2">Colorblind</label>
-								
-								<input type="radio"
-									id="displayModeNumber"
-									name="displayMode"
-									value="number"
-									checked={this.state.displayMode === "number"}
-									onChange={radioHandler} />
-								<label htmlFor="displayModeNumber" className="mr-2">"Size-blind"</label>
+								<input type="checkbox"
+									name="allowAnimations"
+									id="allowAnimations"
+									value={this.state.allowAnimations}
+									onChange={allowAnimationHandler} />
+								<label htmlFor="allowAnimations">Animations</label>
 							</span>
 						</p>
 						<div className="star-map" style={starMapStyle} ref={this.starMapRef}>
@@ -842,6 +856,7 @@ function withGame(WrappedComponent, events, additionalState) {
 								setDisplayMode={this.state.setDisplayMode}
 								// for homeworld purposes or possibly another way to handle the active piece
 								actionInProgress={this.state.actionInProgress}
+								recentlyUsedPiece={this.state.recentlyUsedPiece}
 								
 								handleBoardClick={(piece, event) => this.handleBoardClick(piece, event)}
 							/>

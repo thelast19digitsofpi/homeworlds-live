@@ -413,6 +413,7 @@ class StarMap extends React.Component {
 					homeworld={aip.player}
 					scaleFactor={props.scaleFactor}
 					displayMode={props.displayMode}
+					recentlyUsedPiece={props.recentlyUsedPiece}
 					
 					handleBoardClick={props.handleBoardClick}
 				/>);
@@ -435,6 +436,7 @@ class StarMap extends React.Component {
 						scaleFactor={props.scaleFactor}
 						activePiece={activePiece}
 						displayMode={props.displayMode}
+						recentlyUsedPiece={props.recentlyUsedPiece}
 						
 						handleBoardClick={props.handleBoardClick}
 					/>

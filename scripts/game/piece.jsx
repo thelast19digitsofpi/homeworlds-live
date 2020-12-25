@@ -31,18 +31,25 @@ function Piece(props) {
 	}
 	
 	// Return the image element.
-	return <img className="piece"
-	            piecetype={props.type}
-	            src={imageSrc}
-	            width={props.scaleFactor * baseWidth}
-	            height={props.scaleFactor * baseHeight}
-	            style={css}
-	            title={props.serial}
-	            highlight={
-	            	// why can we not make our own boolean attributes?
-	            	props.highlight ? "yes" : undefined
-	            }
-	            onClick={(evt) => props.handleClick(props.serial, evt)} />
+	const theImage = <img className="piece"
+		piecetype={props.type}
+		src={imageSrc}
+		width={props.scaleFactor * baseWidth}
+		height={props.scaleFactor * baseHeight}
+		style={css}
+		title={props.serial}
+		highlight={
+			// why can we not make our own boolean attributes?
+			props.highlight ? "yes" : undefined
+		}
+		onClick={(evt) => props.handleClick(props.serial, evt)} />;
+	
+	if (props.popOut) {
+		// workaround so that the ship maintains its transform
+		return <span popout={"yes"}>{theImage}</span>;
+	} else {
+		return theImage;
+	}
 }
 
 export default Piece;

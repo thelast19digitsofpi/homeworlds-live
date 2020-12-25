@@ -108,9 +108,9 @@ class LiveGameDisplay extends React.Component {
 				const timeDisplay = (timeLeft < 0 ? "-" : "") + min + ":" + (sec < 10 ? "0" : "") + sec;
 				
 				let usernameClassName = "card-title clock-name d-md-inline-block mr-4 mr-lg-none";
-				if (clock.username.length > 12) {
+				if (clock.username.length >= 12) {
 					usernameClassName += " h6"; // make it small to fit
-				} else if (clock.username.length > 6) {
+				} else if (clock.username.length >= 7) {
 					usernameClassName += " h5";
 				} else {
 					usernameClassName += " h4"; // more room = bigger
@@ -134,9 +134,20 @@ class LiveGameDisplay extends React.Component {
 				if (players[i] === current.turn) {
 					className += " bg-primary text-light";
 				}
+				
+				// can afford slightly more room because wrapping is now an option
+				let usernameClassName = "card-title clock-name";
+				if (players[i].length >= 13) {
+					usernameClassName += " h6"; // make it small to fit
+				} else if (players[i].length >= 8) {
+					usernameClassName += " h5";
+				} else {
+					usernameClassName += " h4"; // more room = bigger
+				}
+				
 				clockElements.push(<div key={players[i]} className={className}>
 					<div className="card-body">
-						<h5 className="card-title clock-name">{players[i]}</h5>
+						<p className={usernameClassName}>{players[i]}</p>
 					</div>
 				</div>)
 			}
@@ -197,7 +208,7 @@ class LiveGameDisplay extends React.Component {
 		
 		const drawVotes = this.state.drawVotes.map(function(name, i, array) {
 			return <React.Fragment>
-				<span className={name.length > 12 ? "small" : ""}>{name}</span>
+				<span className={name.length >= 12 ? "small" : ""}>{name}</span>
 				{i < array.length - 1 ? ", " : ""}
 			</React.Fragment>;
 		});
@@ -218,7 +229,7 @@ class LiveGameDisplay extends React.Component {
 		let resignButtons = null;
 		if (innerState.isPlaying) {
 			if (this.state.confirmResign) {
-				resignButtons = <div className="card">
+				resignButtons = <div className="d-flex flex-column justify-content-between">
 					<button className="btn btn-success"
 						onClick={() => this.handleClickCancelResign()}
 						>CANCEL!</button>
@@ -226,13 +237,42 @@ class LiveGameDisplay extends React.Component {
 						onClick={() => this.handleClickConfirmResign()}>Confirm<br/>RESIGN</button>
 				</div>
 			} else {
-				resignButtons = <div className="card">
+				resignButtons = <div className="d-flex flex-column justify-content-start">
 					<button className="btn btn-warning"
-					onClick={() => this.handleClickResign()}>Resign</button>
+					onClick={() => this.handleClickResign()}><span className="large">Resign</span></button>
 				</div>
 			}
 		}
 		
+		let showLastTurnButtons = null;
+		if (innerState.isPlaying) {
+			if (innerState.viewingPrevious) {
+				showLastTurnButtons = <div className="card">
+					<button type="button"
+						className="btn btn-secondary"
+						onClick={this.props.endViewLastTurn}
+						>Back to Normal</button>
+					<br/>
+					<div className="btn-group" role="group">
+						<button type="button"
+							className="btn btn-primary"
+							onClick={this.props.lastTurnBackward}>&lt; Back</button>
+						<button type="button"
+							className="btn btn-primary"
+							onClick={this.props.lastTurnForward}>Fwd &gt;</button>
+					</div>
+				</div>
+			} else {
+				showLastTurnButtons = <div className="card">
+					<button className="btn btn-secondary btn-sm"
+						onClick={() => this.props.viewLastTurn()}
+						>View Last Turn</button>
+				</div>
+			} 
+		}
+		
+		const gameOverlayClass = (innerState.viewingPrevious) ? "rewind-overlay" : "d-none";
+		// The whole thing!
 		return <React.Fragment>
 			{endGameBanner}
 			<div className="row">
@@ -246,12 +286,98 @@ class LiveGameDisplay extends React.Component {
 					{clockElements}
 					{offerDraw}
 					{resignButtons}
+					{showLastTurnButtons}
 				</div>
-				<div className="col-12 col-lg-10 order-lg-1">{this.props.children}</div>
+				<div className="col-12 col-lg-10 order-lg-1 position-relative">
+					<div className={gameOverlayClass}>&nbsp;</div>
+					{this.props.children}
+				</div>
 			</div>
 		</React.Fragment>
 	}
 }
+
+// will be bound to the game
+function viewLastTurn() {
+	this.setState(function(reactState) {
+		if (reactState.history.length > 1) {
+			return {
+				viewingPrevious: true,
+				previousAction: 0,
+				current: reactState.history[reactState.history.length - 2][0],
+			};
+		} else {
+			// don't do anything
+			return {};
+		}
+	});
+	
+	updateLastTurnView.call(this);
+};
+
+function endViewLastTurn() {
+	this.setState({
+		viewingPrevious: false,
+		previousAction: -1,
+	});
+	updateLastTurnView.call(this);
+};
+
+// time travel... but you cannot change the past.
+function lastTurnTravel(amount) {
+	this.setState(function(reactState) {
+		if (reactState.viewingPrevious) {
+			const newIndex = reactState.previousAction + amount;
+			// moving too far into the past just puts you at the start again
+			if (newIndex < 0) {
+				newIndex = 0;
+			}
+			
+			const oldActions = reactState.history[reactState.history.length - 2];
+			if (newIndex >= oldActions.length) {
+				// go to the present
+				return {
+					previousAction: -1,
+					viewingPrevious: false,
+				};
+			} else {
+				// just advance to the next one
+				return {
+					previousAction: newIndex,
+				};
+			}
+		} else {
+			return {};
+		}
+	});
+	
+	updateLastTurnView.call(this);
+};
+
+function updateLastTurnView() {
+	// sets the `current` property
+	this.setState(function(reactState) {
+		let newCurrent;
+		if (reactState.viewingPrevious && reactState.history.length > 1) {
+			const oldTurn = reactState.history[reactState.history.length - 2];
+			newCurrent = oldTurn[reactState.previousAction];
+		} else {
+			// get the most recent move in case you were mid-turn yourself
+			const thisTurn = reactState.history[reactState.history.length - 1];
+			newCurrent = thisTurn[thisTurn.length - 1];
+		}
+		
+		// ?!
+		if (!(newCurrent instanceof GameState)) {
+			newCurrent = GameState.recoverFromJSON(newCurrent);
+		}
+		
+		console.warn("SETTING STATE TO:\n", newCurrent);
+		return {
+			current: newCurrent,
+		};
+	});
+};
 
 // wrapper component, events, additional state
 const LiveGame = withGame(LiveGameDisplay, {
@@ -345,7 +471,7 @@ const LiveGame = withGame(LiveGameDisplay, {
 				this.setState({
 					turnResets: 0,
 					actionsThisTurn: [],
-				})
+				});
 			} catch (error) {
 				console.error("\n\n\n\n[endTurn] SYNC ERROR!!\n\n");
 				console.error(error);
@@ -412,8 +538,10 @@ const LiveGame = withGame(LiveGameDisplay, {
 	},
 	
 	// this one just generically asks if you can do anything at all
-	canInteract: function(state) {
-		return state.turn === YOUR_USERNAME;
+	canInteract: function(gameState) {
+		// don't allow interaction if viewing the previous move
+		// this.state is the React state
+		return gameState.turn === YOUR_USERNAME && !this.state.viewingPrevious;
 	},
 	// I have to be a little bit careful here
 	// we call doAction when the other player moves, too
@@ -487,6 +615,16 @@ const LiveGame = withGame(LiveGameDisplay, {
 			});
 		}
 	},
+	
+	getProps: function() {
+		return {
+			viewLastTurn: viewLastTurn.bind(this),
+			endViewLastTurn: endViewLastTurn.bind(this),
+			lastTurnBackward: lastTurnTravel.bind(this, -1),
+			lastTurnForward: lastTurnTravel.bind(this, +1),
+			updateLastTurnView: updateLastTurnView.bind(this),
+		};
+	},
 }, {
 	viewer: YOUR_USERNAME,
 	isPlaying: false,
@@ -497,6 +635,10 @@ const LiveGame = withGame(LiveGameDisplay, {
 	// for race condition avoidance
 	actionsThisTurn: [],
 	turnResets: 0,
+	
+	// if you are viewing the opponent's last move
+	viewingPrevious: false,
+	previousAction: 0,
 	
 	endGameInfo: null,
 });
