@@ -65,7 +65,7 @@ class GameState {
 			obj = JSON.parse(obj);
 		}
 		
-		return new GameState(
+		const recovered = new GameState(
 			obj.map,
 			obj.phase,
 			obj.homeworldData,
@@ -75,6 +75,10 @@ class GameState {
 			obj.actions,
 			obj.winner
 		);
+		if (obj.oldRules) {
+			recovered.oldRules = true;
+		}
+		return recovered;
 	}
 	
 	static copyObject(obj) {
@@ -788,7 +792,11 @@ class GameState {
 	
 	// NOTE: This function actually does require oldMap to be passed!
 	// This is because it is often called with the result of buildMap() or so.
-	static clearLonersMap(oldMap, preserveSystem) {
+	
+	// IMPORTANT: Change in v0.2.0: It now attempts to follow the Pyramid Quartet rules that say any homeworld, even the enemy's, survives having zero ships.
+	// https://boardgamegeek.com/thread/2493475
+	// homeworldData is optional; omit it in end-turn checks.
+	static clearLonersMapNewRules(oldMap, homeworldData) {
 		// Data will be organized as { systemID: { ships: true, stars: false }, ... }.
 		
 		// First, get all the systems
@@ -814,6 +822,69 @@ class GameState {
 			}
 		}
 		
+		// if they passed in homeworld data...
+		if (homeworldData) {
+			for (let player in homeworldData) {
+				// homeworlds are not considered ship-abandoned mid turn
+				// but they can be removed for being star-abandoned
+				const system = homeworldData[player];
+				// it's possible a homeworld could be totally vaporized
+				if (systemStatus[system]) {
+					systemStatus[system].ships = true;
+				}
+			}
+		}
+		
+		// Now, for any object (ship or star) at a system with nothing of the other type, delete it.
+		let newMap = {};
+		for (let serial in oldMap) {
+			const data = oldMap[serial];
+			newMap[serial] = data; // copy over either the null or the data.
+			if (data) {
+				// Now check if the ship or star is actually abandoned!
+				const hasShips = systemStatus[data.at].ships;
+				const hasStars = systemStatus[data.at].stars;
+				// If there are no stars OR no ships, then null.
+				if (!hasShips || !hasStars) {
+					newMap[serial] = null;
+				} else {
+					// Copy over the old stuff.
+					newMap[serial] = data;
+				}
+			}
+		}
+		
+		return newMap;
+	}
+	
+	// NOTE: This function actually does require oldMap to be passed!
+    // This is because it is often called with the result of buildMap() or so.
+    static clearLonersMapOldRules(oldMap, preserveSystem) {
+		// Data will be organized as { systemID: { ships: true, stars: false }, ... }.
+
+		// First, get all the systems
+		let systemStatus = {};
+		for (let serial in oldMap) {
+			// If it is in play, record it in the system data.
+			const data = oldMap[serial];
+			if (data) {
+				// It can either be a ship or a star.
+				// If we have not seen that system before, create a template.
+				if (!systemStatus[data.at]) {
+					systemStatus[data.at] = { ships: false, stars: false };
+				}
+
+				// Now, update depending on what type this is
+				if (data.owner === null) {
+					// it is a star, so this system has a star
+					systemStatus[data.at].stars = true;
+				} else {
+					// it is a ship
+					systemStatus[data.at].ships = true;
+				}
+			}
+		}
+
 		// Now, for any object (ship or star) at a system with nothing of the other type, delete it.
 		let newMap = {};
 		for (let serial in oldMap) {
@@ -835,9 +906,20 @@ class GameState {
 				}
 			}
 		}
-		
+
 		return newMap;
-	}
+    }
+    
+    // Unfortunately, the rule conflict means this method can no longer be static.
+    clearLonersMap(oldMap, isEndTurn) {
+    	if (this.oldRules) {
+    		// pass null iff this is called at the end of a turn
+    		return GameState.clearLonersMapOldRules(oldMap, isEndTurn ? null : this.homeworldData[this.turn]);
+    	} else {
+    		// this version needs the entire homeworld data object
+    		return GameState.clearLonersMapNewRules(oldMap, isEndTurn ? null : this.homeworldData);
+    	}
+    }
 	
 	/*
 	Doing actions.
@@ -854,7 +936,7 @@ class GameState {
 	// map, hwData/homeworldData, nextSystemID, turn, actions
 	// e.g. { map: ..., turn: "north", actions: {...} } will make it north's turn
 	updateState(whatUpdated) {
-		return new GameState(
+		const afterward = new GameState(
 			// order is map, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
 			whatUpdated.map || this.map,
 			whatUpdated.phase || this.phase,
@@ -867,6 +949,11 @@ class GameState {
 			// Here we expect "null" as a draw, so we have to compare to "undefined"
 			(whatUpdated.winner === undefined ? this.winner : whatUpdated.winner)
 		);
+		// secret property
+		if (this.oldRules) {
+			afterward.oldRules = true;
+		}
+		return afterward;
 	}
 	
 	// Returns a copy of the actions object with 1 less action. Has no guards.
@@ -1004,7 +1091,7 @@ class GameState {
 					// Congratulations! You can build!
 					const newMap = this.buildMap(player, serial, system);
 					// Standard cleanup
-					const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld())
+					const cleanMap = this.clearLonersMap(newMap);
 					// We have to return the new state. GameStates are immutable!
 					return this.updateState({
 						map: cleanMap,
@@ -1061,7 +1148,7 @@ class GameState {
 				
 				// OK, so now please do the trade.
 				const newMap = this.tradeMap(player, oldSerial, newSerial);
-				const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld())
+				const cleanMap = this.clearLonersMap(newMap);
 				// update!
 				return this.updateState({
 					map: cleanMap,
@@ -1070,14 +1157,14 @@ class GameState {
 			} else {
 				// If you asked for a specific size...
 				if (newShip[1] && newShip[1] !== oldSerial[1]) {
-					throw new Error("You cannot make that trade. The sizes do not match.")
+					throw new Error("You cannot make that trade. The sizes do not match.");
 				} else {
 					// some other issue
 					throw new Error("You cannot make that trade. Probably the piece you want is not in the stash.");
 				}
 			}
 		} else {
-			throw new Error("You do not have access to blue (trade) technology there. You must either have a blue ship there, be at a blue star, or have sacrificed a blue ship anywhere.")
+			throw new Error("You do not have access to blue (trade) technology there. You must either have a blue ship there, be at a blue star, or have sacrificed a blue ship anywhere.");
 		}
 	}
 	
@@ -1104,7 +1191,7 @@ class GameState {
 			if (this.canMove(player, serial, system)) {
 				// Nothing different to pick here
 				const newMap = this.moveMap(serial, system);
-				const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
+				const cleanMap = this.clearLonersMap(newMap);
 
 				return this.updateState({
 					map: cleanMap,
@@ -1145,7 +1232,7 @@ class GameState {
 			if (this.canDiscover(player, ship, star)) {
 				// This has another effect: it increments the system counter by 1
 				const newMap = this.discoverMap(this.nextSystemID, ship, star);
-				const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
+				const cleanMap = this.clearLonersMap(newMap);
 				// we also have to update the system number!
 				return this.updateState({
 					map: cleanMap,
@@ -1188,7 +1275,7 @@ class GameState {
 				// No need to clean up anything, I hope...
 				// ...but maybe a good idea just because
 				return this.updateState({
-					map: GameState.clearLonersMap(newMap, this.activePlayerHomeworld()),
+					map: this.clearLonersMap(newMap),
 					actions: this.oneLessAction(),
 				});
 			} else {
@@ -1226,7 +1313,7 @@ class GameState {
 		const newMap = this.sacrificeMap(ship);
 		const newActions = this.getSacrificeActions(ship);
 		return this.updateState({
-			map: GameState.clearLonersMap(newMap, this.activePlayerHomeworld()),
+			map: this.clearLonersMap(newMap),
 			actions: newActions
 		});
 	}
@@ -1241,7 +1328,7 @@ class GameState {
 			throw new Error("The color for the catastrophe was not declared. This is probably a bug.");
 		} else if (this.isSystemOverpopulated(color, system)) {
 			const newMap = this.catastropheMap(color, system);
-			const cleanMap = GameState.clearLonersMap(newMap, this.activePlayerHomeworld());
+			const cleanMap = this.clearLonersMap(newMap);
 			// this is truly all we need
 			return this.updateState({
 				map: cleanMap
@@ -1448,8 +1535,9 @@ class GameState {
 	// Last and... kind of deserves to be last!
 	doEndTurn() {
 		// OK...
-		// Here we do NOT give special treatment to the active player's homeworld.
-		const cleanMap = GameState.clearLonersMap(this.map);
+		// Here we do NOT give special treatment to homeworld systems.
+		// (i.e. we tell clearLonersMap it is a homeworld)
+		const cleanMap = this.clearLonersMap(this.map, true);
 		// TODO: Check for destroyed homeworld systems
 		// TODO: Check if all players are dead
 		const newActions = {

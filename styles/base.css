@@ -56,6 +56,11 @@ body {
 	margin-right: 0.5vw;
 }
 
+/* in case of, say, a 1 vs 1+2 homeworld situation, side 1 stars go on the left column */
+.left-systems .system-container {
+	display: inline-block;
+}
+
 .homeworld {
 	width: 100%;
 	/* text-align makes it centered */

@@ -28,8 +28,18 @@ const db = new sqlite3.Database(".data/database.db", function(error) {
 					summary TEXT,
 					players TEXT NOT NULL,
 					winner TEXT,
-					options TEXT
+					options TEXT,
+					date INTEGER
 				)`);
+			} else {
+				db.get("SELECT * FROM gameArchive", [], function(error, stuff) {
+					if (stuff) {
+						// because it might return null
+						if (!stuff.hasOwnProperty("date")) {
+							db.run(`ALTER TABLE gameArchive ADD COLUMN date INTEGER`);
+						}
+					}
+				});
 			}
 		});
 	} else {

@@ -117,7 +117,7 @@ GameManager.prototype.onGameEnd = async function(game, cause) {
 		const optionsString = JSON.stringify(game.options);
 		// This is an async function
 		// but we don't need to hold up the execution of onGameEnd
-		db.run("INSERT INTO gameArchive VALUES (?, ?, ?, ?, ?)", [game.id, summary, playersString, winner, optionsString], function(error) {
+		db.run("INSERT INTO gameArchive VALUES (?, ?, ?, ?, ?, ?)", [game.id, summary, playersString, winner, optionsString, Date.now()], function(error) {
 			if (error) {
 				console.warn("Game NOT ADDED to the archive!");
 				return console.error(error);

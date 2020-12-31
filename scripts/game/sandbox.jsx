@@ -12,7 +12,7 @@ import { getCompactSummary } from './gameFunctions.mjs';
 function getMapJSON() {
 	// JSON.stringify is not sufficient
 	// I want it formatted my way
-	let strings = ["{", "\t{",];
+	let strings = ["{", "\t\"map\": {",];
 	const map = this.getCurrentState().map;
 	// mult = multiplicity?
 	const colors = "bgry", sizes = 3, mult = "ABCDE";
@@ -208,6 +208,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 		return {
 			getMap: this.getMap,
 			getLog: this.getLog,
+			loadMap: this.loadMap,
 			textareaValue: this.state.textareaValue,
 			setTextareaValue: this.setTextareaValue,
 			loadError: this.state.loadError,

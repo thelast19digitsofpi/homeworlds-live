@@ -9,9 +9,12 @@
 		<div class="container">
 			<h3 class="title">Archive</h3>
 			<h5 class="subtitle">You can watch the history of the game or get the moves in text form.</h5>
+			<p class="small"><strong class="text-warning">Change effective 2020-12-XX:</strong> The rules have been updated slightly to reflect the <a href="https://www.looneylabs.com/lit/rules/homeworlds-rules">Pyramid Quartet version</a> of the Homeworlds rules. This change only affects rather rare endgame situations (previously <strong>enemy</strong> homeworlds would disappear mid-turn if there were no ships at them; now any homeworld only disappears at the end of a turn).</p>
+			<p class="small">For more on this rule, see <a href="https://boardgamegeek.com/thread/2493475">this BoardGameGeek thread</a>.</p>
 			<table class="table table-hover table-responsive-sm">
 				<thead>
 					<th>ID</th>
+					<th>Date</th>
 					<th>Players</th>
 					<th>Winner</th>
 					<th># Turns</th>
@@ -21,6 +24,8 @@
 				<% 
 					for (let i = 0; i < archiveList.length; i++) {
 						var row = archiveList[i];
+						/* the date recording was added right at the turn of 2021 */
+						var dateString = row.date ? (new Date(row.date)).toDateString() : "some time in 2020";
 				%>
 				<tr>
 					<th>
@@ -28,6 +33,7 @@
 						<br/>
 						<a href="/archive/raw/<%= row.id %>">Raw JSON</a>
 					</th>
+					<th><%= dateString %></th>
 					<!-- unfortunately escaping player names prohibits <br/> as a separator -->
 					<td><%= row.players.join(", ") %></td>
 					<td><%= row.winner || "[Draw]" %></td>

@@ -249,6 +249,8 @@ const methods = {
 			// you have finished the step
 			// disable the tutorial
 			console.log("End of Module");
+			// mark it as complete
+			this.props.onCompleteTutorial(this.props.batch, this.props.tutorial.id);
 			this.setState({
 				messageTitle: "Scenario Complete",
 				messages: this.props.tutorial.endMessages,

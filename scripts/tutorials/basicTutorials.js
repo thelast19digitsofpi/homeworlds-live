@@ -53,6 +53,7 @@ const template = {
 const tutorialList = [
 	// Building
 	new Tutorial({
+		id: "build",
 		title: "Building Ships",
 		disableWarnings: true,
 		startMap: {
@@ -148,8 +149,8 @@ const tutorialList = [
 					"Anyway, when you build, there are two main rules:\n" +
 						"(1) You can only build a ship of the *same color* as a ship you already have at that star, and\n" +
 						"(2) You can only build the smallest *available* piece (i.e. in the Bank) of any given color.",
-					"It's important to note that you do NOT \"grow\" a ship. You only get bigger ones by building when the Bank is out of smaller pieces of that color.",
-					"Given this, your challenge is to build a medium ship (two pips)!\n(Again, hint button is on the top left)",
+					"It's important to note that you do NOT \"grow\" a ship. You only get bigger ones by building them directly, when the Bank is out of smaller pieces of that color.",
+					"Given this, your challenge is to build a medium ship (two pips)!\n(Again, hint button is on the top right)",
 				],
 				hint: [
 					"Look at the Bank. Which color does not have smalls available?",
@@ -185,6 +186,7 @@ const tutorialList = [
 	
 	// Trading
 	new Tutorial({
+		id: "trade",
 		title: "Trading Ships",
 		disableWarnings: true,
 		startMap: {
@@ -319,6 +321,7 @@ const tutorialList = [
 	
 	// Movement (and discovery)
 	new Tutorial({
+		id: "move-discover",
 		title: "Movement",
 		disableWarnings: true,
 		startMap: {
@@ -470,6 +473,7 @@ const tutorialList = [
 
 	// Economic Intermission
 	new Tutorial({
+		id: "economy",
 		title: "It's the Economy, Captain!",
 		disableWarnings: true,
 		startMap: {
@@ -610,6 +614,7 @@ const tutorialList = [
 
 	// What "color power" really means
 	new Tutorial({
+		id: "color-powers",
 		title: "Colors are Powerful",
 		disableWarnings: true,
 		startMap: {
@@ -753,6 +758,14 @@ const tutorialList = [
 					if (pieces.length <= 2) {
 						return [false, "No! Don't abandon your homeworld! That's one thing I can't allow... (In the real game you get a warning, assuming you haven't disabled them)"];
 					}
+					
+					// the r3C is the enemy's homeworld, make sure they still have it before sacrificing
+					if (oldState.actions.number === 1 && oldState.map.r3C && oldState.map.r3C.owner === "enemy") {
+						return [true, [], {
+							type: "sacrifice",
+							oldPiece: "r3C",
+						}];
+					}
 					return [true];
 				},
 				nextStep: function(oldState) {
@@ -776,6 +789,7 @@ const tutorialList = [
 
 	// Capturing
 	new Tutorial({
+		id: "steal",
 		title: "Offense and Defense",
 		disableWarnings: true,
 		startMap: {
@@ -940,6 +954,7 @@ const tutorialList = [
 	
 	// Sacrifices
 	new Tutorial({
+		id: "sacrifice",
 		title: "Sometimes You Have to Make Sacrifices",
 		disableWarnings: true,
 		startMap: {
@@ -1143,6 +1158,7 @@ const tutorialList = [
 	
 	// Catastrophes
 	new Tutorial({
+		id: "catastrophe",
 		title: "Catastrophe!",
 		disableWarnings: true,
 		startMap: {
@@ -1347,6 +1363,7 @@ const tutorialList = [
 	
 	// Homeworld Setup
 	new Tutorial({
+		id: "homeworld",
 		title: "Your Homeworld",
 		disableWarnings: true,
 		startMap: {
@@ -1507,22 +1524,128 @@ const tutorialList = [
 			"Oh wait. I forgot to cover how to win and lose!",
 			"Well, you may have encountered my stern warnings against abandoning your homeworld...",
 			"If, at the end of any turn (yours or your opponent's), you have no ships at your homeworld, you LOSE.",
-			"That's important. You can never abandon your homeworld!",
-			"(Well, actually, you CAN safely abandon it mid-turn, like with a yellow sacrifice, IF you get a ship back home before your turn ends.)",
+			"(You CAN safely abandon it mid-turn, like with a yellow sacrifice, IF you get a ship back home before your turn ends.)",
+			"Conversely, if you can make your opponent abandon their homeworld, you win...",
+		],
+	}),
+
+	// Winning the Game
+	new Tutorial({
+		id: "winning",
+		title: "Winning the Game",
+		disableWarnings: true,
+		startMap: {
+			"b1A": null,
+			"b1B": null,
+			"b1C": null,
+			"b2A": null,
+			"b2B": null,
+			"b2C": {"at": 1, "owner": null},
+			"b3A": null,
+			"b3B": null,
+			"b3C": {"at": 2, "owner": null},
+
+			"g1A": {"at": 1, "owner": "you"},
+			"g1B": null,
+			"g1C": null,
+			"g2A": null,
+			"g2B": null,
+			"g2C": null,
+			"g3A": null,
+			"g3B": {"at": 2, "owner": "enemy"},
+			"g3C": null,
+
+			"r1A": null,
+			"r1B": null,
+			"r1C": {"at": 1, "owner": "you"},
+			"r2A": null,
+			"r2B": null,
+			"r2C": null,
+			"r3A": null,
+			"r3B": null,
+			"r3C": {"at": 2, "owner": "you"},
+
+			"y1A": null,
+			"y1B": {"at": 2, "owner": "enemy"},
+			"y1C": {"at": 1, "owner": null},
+			"y2A": null,
+			"y2B": null,
+			"y2C": null,
+			"y3A": null,
+			"y3B": null,
+			"y3C": null,
+		},
+		steps: [
+			{
+				startMessages: [
+					"I don't want to spend too much time on this here; there are Intermediate tutorials that cover how to actually plan for victory.",
+					"But for now I'll keep things simple. You win if your opponent's homeworld is destroyed or abandoned.",
+					"You also win if your opponent has no ships there.",
+					"Here, you're all set for a simple win by capturing the two ships. You can only steal one per turn, but that's fine because they can't fight back."
+				],
+				hint: [
+					"Your opponent really can't do anything. Just capture their ships one by one!",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice") {
+						if (action.oldPiece === "r3C") {
+							return [false, [
+								"You can't have your ship and sacrifice it too...",
+								"You don't even need to sacrifice, your red ship lets you capture ships right away.",
+							]];
+						} else {
+							return [false, "You don't need to sacrifice here; your red ship already lets you capture."];
+						}
+					} else if (action.type !== "steal") {
+						return [false, "That's possible, but why not capture one of the enemy ships? You're two turns away from winning..."];
+					} else {
+						// the large can't do anything so we dont care what the user plays
+						return [true];
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					return [true];
+				},
+			},
+			{
+				startMessages: [
+					"So they passed... It's not like the enemy really had anything worth doing...",
+					"Anyway... One down, one to go!",
+				],
+				checkAction: function(action, oldState) {
+					if (action.type !== "steal") {
+						return [false, "That's possible, but you can just capture the last enemy ship right away and win!"];
+					} else {
+						return [true, "Good. Now just end your turn..."];
+					}
+				},
+				requireAction: true,
+				checkEndTurn: function() {
+					return [true];
+				},
+			},
+		],
+		endMessages: [
+			"Well done, you won!",
+			"Of course, it's usually more complicated than that...",
+			"I mean, normally your opponent would have red of their own, and they would have captured your invader first.",
+			"The Intermediate and Advanced tutorials have more realistic scenarios of getting to victory.",
 			// somehow I don't feel like using JSX
 			React.createElement("span", {}, 
 				"Well, I think that about covers everything you need to know. I do have some more information on this site itself ",
 				React.createElement("a", {href: "/howThisWorks"}, "here"),
 				", and Looney Labs has the official rules for Homeworlds ",
-				React.createElement("a", {href: "https://www.looneylabs.com/sites/default/files/pyramid_rules/Rules.Homeworlds.pdf"}, "here"),
+				React.createElement("a", {href: "https://www.looneylabs.com/sites/default/files/literature/Homeworlds%20Rules13.pdf"}, "here"),
 				"."
 			),
-			"The next module is designed in case you have found the movement rule confusing. It lets you move all around many different stars.\n\nFurther modules will cover more advanced strategies. Good luck!"
+			"The last Basic module is there in case you found the movement rule confusing. It lets you move all around many different stars.\n\nFurther modules will cover basic and more advanced strategies. Good luck!",
 		],
 	}),
 	
 	// Star Connection Playground
 	new Tutorial({
+		id: "move-playground",
 		title: "Star Connections Playground",
 		startMap: {
 			/*

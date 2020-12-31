@@ -9,6 +9,7 @@ import Tutorial from './tutorialConstructor.js';
 const tutorialList = [
 	// Openings 1
 	new Tutorial({
+		id: "opening-strategy",
 		title: "Basic Opening Strategy",
 		disableWarnings: true,
 		startMap: {
@@ -1336,6 +1337,7 @@ const tutorialList = [
 	
 	// Openings 2
 	new Tutorial({
+		id: "freeze-out",
 		title: "Opening Tricks: The Freeze-Out",
 		startMap: {
 			"b1A": null,
@@ -1451,6 +1453,7 @@ const tutorialList = [
 	
 	// Investment
 	new Tutorial({
+		id: "investment",
 		title: "Keep-Away and Investments",
 		startMap: {
 			"b1A": null,
@@ -1499,6 +1502,7 @@ const tutorialList = [
 					"In Homeworlds, there is a Bank, supply and demand, exchanges...",
 					"In such a heavily economic game, certainly there should be investments, right?",
 					"Investment is a special case of a strategy called the Keep Away, where you turn a piece into a star to stop the enemy from building it as a ship.",
+					"Yeah, Homeworlds is weird: stars and ships come from the same limited supply.",
 					"Here, your opponent wants to sacrifice their large green to build all 3 yellows in the bank.",
 					"But it's your turn. Let's thwart them by discovering one of the large yellows as a star!",
 					"(And use the green ship -- you'll need that for the next step. You might be able to guess why...)",
@@ -1554,15 +1558,22 @@ const tutorialList = [
 			},
 			{
 				startMessages: [
-					"OK, so they did grab the yellows... and a G2 (i.e. medium green) as the third build...",
+					"OK, so they did grab *two* yellows... and a G2 (i.e. medium green) as the third build...",
 					"So here's where the Investment part comes in.",
 					"When you discover a large star with a green ship, you can wait until the Bank runs out of smaller pieces of that color.",
 					"Then you sacrifice the green. This abandons the system, returning the star to the Bank...",
 					"...which means it is immediately available to build!",
 					"Can you do that?",
 				],
+				hint: [
+					"Where do you have a green ship at a yellow system? Start with a sacrifice...",
+				],
 				checkAction: function(action, oldState) {
 					// this is the first of those "check at the end" modules
+					// edit: nope
+					if (action.type === "discover" || action.type === "trade" || action.type === "move") {
+						return [false, "That's possible, but you can build a large yellow if you make a sacrifice first!"];
+					}
 					return [true];
 				},
 				requireAction: true,
@@ -1571,7 +1582,7 @@ const tutorialList = [
 						// it's on the board and in your possession
 						return [true];
 					}
-					return [false, "Looks like you didn't build the Y3. If you need to, click Reset Turn."];
+					return [false, "Looks like you didn't build the Y3. Click Reset Turn and try again (there's also the hint button above the map)..."];
 				},
 			}
 		],
@@ -1587,6 +1598,7 @@ const tutorialList = [
 	
 	// Direct Assault
 	new Tutorial({
+		id: "direct-assault",
 		title: "Direct Assault",
 		subtitle: "Basic Paths to Victory, 1/3",
 		startMap: {
@@ -1690,7 +1702,7 @@ const tutorialList = [
 				hint: "All you need to do is capture one of their ships.",
 				checkAction: function(action, oldState) {
 					if (action.type !== "steal") {
-						return [false, "You need to capture ships at the enemy's homeworld to win!"];
+						return [false, "You need to capture ships at the enemy's homeworld to win (at least in this situation)!"];
 					}
 					return [true, null];
 				},
@@ -1717,6 +1729,9 @@ const tutorialList = [
 							return [false, "Trying to be efficient, eh?\nYou can't have your ship and sacrifice it too...\n\n(you can't capture the large green if you don't have a large anymore)"];
 						}
 					}
+					if (action.type === "build" && action.oldPiece[0] === "g" && action.system === 2) {
+						return [true]; // clever, make an overpopulation
+					}
 					if (action.type === "steal") {
 						return [true]; // let them make the mistake if it's not the G3
 					}
@@ -1726,7 +1741,7 @@ const tutorialList = [
 				checkEndTurn: function(oldState) {
 					// did you find a way to destroy the g3?
 					if (oldState.map.g3C === null) {
-						return [true, "Clever! You could have just attacked the large green, but it's good to think creatively on things like this!"]
+						return [true, "Clever! You could have also just attacked the large green, but it's good to think creatively on things like this!"]
 					} else if (oldState.map.g3C.owner === "you") {
 						return [true, "Good. As soon as they build anything, you just take it."];
 					}
@@ -1736,12 +1751,13 @@ const tutorialList = [
 		endMessages: [
 			"Nice work. Keep in mind this only worked because your opponent did not have a large ship at their home.",
 			"If they had, they could have attacked you when you came in...",
-			"In the next two modules we will look at a few other ways to win. There's also a later module with some more advanced Direct Assaults."
+			"In the next two modules we will look at a few other ways to win. There's also more complicated Direct Assaults in the Advanced section."
 		],
 	}),
 	
 	// Fleet Catastrophe
 	new Tutorial({
+		id: "fleet-catastrophe",
 		title: "Fleet Catastrophe",
 		subtitle: "Basic Paths to Victory, 2/3",
 		startMap: {
@@ -1829,6 +1845,7 @@ const tutorialList = [
 	
 	// Star Demolition
 	new Tutorial({
+		id: "star-catastrophe",
 		title: "Star Demolition",
 		subtitle: "Basic Paths to Victory, 3/3",
 		startMap: {

@@ -245,17 +245,17 @@ class StarMap extends React.Component {
 					classLeft = "col-auto pl-4";
 				} else if (numLeft <= numRight*2/3) {
 					// left is small
-					classLeft = "col-4 col-md-3 col-lg-2";
+					classLeft = "col-auto pl-2";
 				} else if (numLeft >= numRight*3/2) {
 					// left is big
 					classLeft = "col-8 col-sm-7";
 				} else {
 					// roughly same size, make them equal
-					classLeft = "col-6";
+					classLeft = "col-auto";
 				}
 				
 				if (numLeft > 0) {
-					classLeft += " d-flex flex-column justify-content-center";
+					classLeft += " d-flex flex-column justify-content-center left-systems";
 				}
 				// case (d)
 				// return a mixed view, because we have Both *and* Neither *and* north or south

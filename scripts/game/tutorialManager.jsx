@@ -12,16 +12,42 @@ import TutorialGame from './tutorialGame.jsx';
 class TutorialManager extends React.Component {
 	constructor(props) {
 		super(props);
+		const queue = ["basic", "intermediate", "advanced"];
+		
+		// do this now while the loading queue is still full
+		let completion = {};
+		for (let i = 0; i < queue.length; i++) {
+			// retrieve local storage
+			const batch = queue[i];
+			const record = localStorage.getItem("tutorials-" + batch);
+			try {
+				completion[batch] = JSON.parse(record) || {};
+				console.log(batch, record);
+			} catch (error) {
+				console.warn("local storage parse error", error);
+				completion[batch] = {};
+			}
+		}
 		this.state = {
 			tutorial: null,
 			pages: [],
-			loadingQueue: ["basic", "intermediate", "advanced"],
+			loadingQueue: queue,
 			pageID: 0,
 			loading: false,
 			
 			// I've made this an error boundary.
 			error: null,
+			
+			tutorialsCompleted: completion,
 		};
+		
+		// permanent (constant) object
+		// fortunately React does not actually mess with this
+		// although here a .slice() would work either way
+		this.pageNames = queue;
+		
+		// *sigh*
+		this.onCompleteTutorial = this.onCompleteTutorial.bind(this);
 	}
 	
 	// doing this to shorten the length of the bundle file
@@ -152,11 +178,31 @@ class TutorialManager extends React.Component {
 		});
 	}
 	
+	onCompleteTutorial(batch, idOrName) {
+		const oldCompletion = this.state.tutorialsCompleted;
+		// this is a trick to deep copy the object
+		let newCompletion = JSON.parse(JSON.stringify(oldCompletion));
+		
+		console.log(newCompletion[batch]);
+		
+		// now mark this one as true
+		newCompletion[batch][idOrName] = true;
+		
+		this.setState({
+			tutorialsCompleted: newCompletion,
+		});
+		// also put it into local storage
+		localStorage.setItem("tutorials-" + batch, JSON.stringify(newCompletion[batch]));
+	}
+	
 	render() {
+		const headerText = "Interactive Tutorials";
+		// not quite, it's localStorage, but people don't know the difference
+		const subtitle = <p className="subtitle">If you prefer to learn by doing, here are my tutorial modules which cover the basics of gameplay. I recommend at least doing the basic ones in order. (Tutorial progress is saved in a cookie, not your account.)</p>;
 		if (this.state.loading || this.state.pages.length === 0) {
 			return <React.Fragment>
-				<h3>Interactive Tutorials</h3>
-				<p className="subtitle">If you prefer to learn by doing, here are my tutorial modules which cover the basics of gameplay.</p>
+				<h4>{headerText}</h4>
+				{subtitle}
 				<div className="d-flex justify-content-center align-items-center">
 					<h1 align="center">Loading . . .</h1>
 				</div>
@@ -167,20 +213,30 @@ class TutorialManager extends React.Component {
 			// display menu
 			const tutorialList = this.getTutorialList();
 			const listItems = [];
+			// for which tutorials you have finished
+			const completion = this.state.tutorialsCompleted;
+			console.log(completion);
+			const record = completion[this.pageNames[this.state.pageID]];
+			console.log(record);
 			for (let i = 0; i < tutorialList.length; i++) {
-				listItems.push(<a className="list-group-item"
-					onClick={() => this.startTutorial(tutorialList[i])}
+				const tutorial = tutorialList[i];
+				const finished = record[tutorial.id || tutorial.title];
+				const className = (finished ? "tutorial-finished text-success " : "text-dark ") + "list-group-item";
+				
+				listItems.push(<a className={className}
+					onClick={() => this.startTutorial(tutorial)}
 					key={i}
 					href={"#" + (i+1)}>
-					{tutorialList[i].title}
+					{finished && <i className="material-icons md-18 align-middle mr-1">check</i>}
+					{tutorial.title}
 				</a>)
 			}
 			
 			// include non-loaded pages in the queue
 			const totalPages = this.state.pages.length + this.state.loadingQueue.length;
 			return <React.Fragment>
-				<h3>Interactive Tutorials</h3>
-				<p className="subtitle">If you prefer to learn by doing, here are my tutorial modules which cover the basics of gameplay.</p>
+				<h4>{headerText}</h4>
+				{subtitle}
 				{/* Nav Buttons */}
 				<div className="btn-group d-flex" role="group">
 					<button className="btn btn-secondary"
@@ -214,7 +270,9 @@ class TutorialManager extends React.Component {
 				disableWarnings={this.state.tutorial.disableWarnings}
 				tutorial={this.state.tutorial}
 				key={this.state.tutorial.title}
-				navMethods={navMethods} />;
+				navMethods={navMethods}
+				batch={this.pageNames[this.state.pageID]}
+				onCompleteTutorial={this.onCompleteTutorial} />;
 		}
 	}
 }

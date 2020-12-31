@@ -2,6 +2,8 @@
 //
 // Some more advanced tutorials.
 // Here I include more advanced defenses and the "move two larges" direct assault strategy.
+//
+// Spoiler alert...
 
 import React from 'react';
 import Tutorial from './tutorialConstructor.js';
@@ -10,6 +12,7 @@ import Tutorial from './tutorialConstructor.js';
 const tutorialList = [
 	// Direct Assault version 2
 	new Tutorial({
+		id: "direct-assault-2",
 		title: "Direct Assault 2.0",
 		startMap: {
 			"b1A": {"at": 6, "owner": "enemy"},
@@ -150,6 +153,7 @@ const tutorialList = [
 	
 	// Star Demolition version 2
 	new Tutorial({
+		id: "star-catastrophe-2",
 		title: "Star Demolition 2.0",
 		subtitle: "Slow and steady",
 		startMap: {
@@ -253,12 +257,12 @@ const tutorialList = [
 				startMessages: [
 					"Oh, no! They moved their blue out! Now you don't have enough blues for the catastrophe...",
 					"But wait. There are two blues in the bank. You could build some.",
-					"In fact... you could even build th3mmin|$y^Q5}/...\n\n[SIGNAL LOST]",
+					"In fact... you could even build th3mmm|$y^Q5}/...\n\n[SIGNAL LOST]",
 					"",
 					"",
-					"Just so you know, your homeworld is a little vulnerable, ",
+					"Just so you know, your homeworld is a little vulnerable, so don't take *too* long.",
 				],
-				hint: "What if you built blue directly in the enemy's homeworld? (You can't, huh? But can you do anything about that?)",
+				hint: "It's possible to destroy the blue star this turn. I'm not going to tell you how, though... seeing stuff on your own is an important skill!",
 				checkAction: function(action, oldState) {
 					if (action.type === "catastrophe") {
 						return [true];
@@ -316,7 +320,7 @@ const tutorialList = [
 					"But unfortunately, you can't have your ship and sacrifice it too!",
 					"...",
 					"I'll let you in on a little secret...",
-					"With three ships, you have to do it in a certain way.",
+					"With three ships, you CAN move them one at a time... but there's a trick.",
 					"The *SECOND* ship has to be the large one.",
 					"Wait... why? Well, move your small or medium yellow in now (or click the Hint if you really want to know now)...",
 				],
@@ -369,8 +373,7 @@ const tutorialList = [
 			{
 				startMessages: [
 					"Hmmm... so they're playing defense.",
-					"(Not like they had enough time for their own attack...)",
-					"All right, so I told you the second ship had to be large.",
+					"This is good, because now we learn why you need to move the large in second.",
 					"You see, after you move, your opponent would like to move the first yellow out...",
 					"...but if you invade with a large now, and they do that, you'll be able to sacrifice red and do a Direct Assault!",
 					"Or, if they capture the large yellow, you just move your third and final ship in and call catastrophe!",
@@ -384,7 +387,13 @@ const tutorialList = [
 							return [false, "You need to move the large YELLOW ship, in order to cause a yellow catastrophe and destroy the star."];
 						} else if (action.oldPiece[1] !== "3") {
 							return [false, "You need to move the LARGE yellow ship, because that threatens to win by Direct Assault."];
+						} else if (action.system !== 2) {
+							return [false, "Where are you going? (did you mis-click?) You need to invade the enemy's homeworld... and do it soon..."];
+						} else {
+							return [true];
 						}
+					} else {
+						return [false, "Now is not the time to " + action.type + "... you only have two yellow ships left and your homeworld is weak. Strike while the iron is hot!"]
 					}
 				},
 				checkEndTurn: function(oldState) {
@@ -401,47 +410,68 @@ const tutorialList = [
 						}
 					}
 					
-					return [true, "Good. See the double threat? For example, if your opponent tries to leave now...", {
-						type: "discover",
+					let response = [true, "Good. See the double threat? For example, if your opponent tries to leave now...", {
+						type: "sacrifice",
 						oldPiece: theirYellow,
-						system: 7,
+					}, {
+						type: "move",
+						oldPiece: "r1B",
+						system: 9,
 					}];
+					// is it a medium?
+					if (theirYellow[1] === "2") {
+						response.push({
+							type: "move",
+							oldPiece: "r1C",
+							system: 12,
+						});
+					}
+					return response;
 				},
 			},
 			{
 				startMessages: [
 					"So... It looks like you don't get to do a Star Demolition after all!",
-					"But I think you know what you have to do now.",
+					"And your opponent is lining up more and more reds against your home...",
+					"Fortunately, you can win this turn anyway.",
 					"Just don't abandon your own homeworld!",
 				],
-				objective: "Win the game",
+				objective: "Win the game this turn.",
 				hint: [
-					"I gave you two hints in the intro. Click the Show Intro button to read it again.",
+					"It does not involve a yellow catastrophe. What other ways are there to win?",
 				],
 				checkAction: function(action) {
 					if (action.type === "sacrifice") {
 						if (action.oldPiece === "r3C") {
-							return [false, "You did that on purpose, didn't you... If you abandon your homeworld AND destroy the enemy it's a draw."];
+							return [false, "If you abandon your homeworld AND destroy the enemy, it's a draw. Can you win?"];
 						} else if (action.oldPiece[0] !== "r") {
-							return [false, "Ah, you see, you need to sacrifice a *RED* ship here, and capture the enemy ships."];
+							return [false, "Ah, you see, you need to sacrifice a *RED* ship here, in order to capture the enemy ships."];
 						} else {
-							return [true];
+							return [true]; // you don't have small reds and a medium is enough
 						}
+					} else if (action.type === "move") {
+						return [false, "With the other yellow gone, you don't have enough yellows for a catastrophe. Are there other ways to win?"];
 					} else if (action.type === "steal") {
 						return [true];
+					} else if (action.type === "trade" && action.oldPiece === "r3C") {
+						return [false, "Yes, that does neutralize the threat, but your Y3 will get captured and you will have six ships against 14. Can you win this turn?"]
 					} else {
-						return [false, "Actually, you can win right away via Direct Assault. Try a red sacrifice."];
+						return [false, "That's possible, but the situation is sort of urgent. Can you win this turn?"];
 					}
 				},
 				checkEndTurn: function(oldState) {
-					if (oldState.r3A.owner !== "you" || oldState.g3C.owner !== "you") {
+					const enemySurvived = (
+						(oldState.map.r3A && oldState.map.r3A.owner !== "you") ||
+						(oldState.map.g3C && oldState.map.g3C.owner !== "you")
+					);
+					if (enemySurvived) {
 						if (oldState.actions.number > 0) {
-							return [false, "You're not quite done yet... (or you found 1 more way not to win, and should Reset Turn)"];
+							return [false, "You're not quite done yet. Don't end your turn!"];
 						} else {
 							return [false, "Hmmm... looks like you ran out of ammo. Let's try again."];
 						}
 					} else {
-						return [true, "You have won! Whew that was a lot."];
+						return [true];
 					}
 				},
 			},
@@ -449,17 +479,287 @@ const tutorialList = [
 		endMessages: [
 			"Wow...",
 			"That was a lot to take in.",
-			"Notice how your opponent responded to everything you did?",
-			"Their \"attack\" never got off the ground.",
+			"And it ended with you winning by direct assault instead!",
+			"Of course, I had to program sub-optimal moves for instructive value, but the opponent could have definitely put up more resistance.",
 			// I do a find-and-replace to change s-o-u-t-h into "you" when the maps come out of the sandbox
-			"In fact, I think they could have gotten you first, so don't share this as \"sou" + "th to play and win in 5 turns\" because it isn't.",
+			"In fact, they maybe could have gotten you first with better play, so don't share this as \"sou" + "th to play and win in 5 turns\" because it likely isn't.",
+			"The important thing is that you don't need 2 large yellows plus 6 more ships to win, IF you have the right set of circumstances.",
+			"In fact, the very next tutorial shows how this can sometimes go wrong...",
+		],
+	}),
+	
+	// Sacrifice a red to attack to avert a red catastrophe
+	new Tutorial({
+		id: "red-defense",
+		title: "Star Demolition Defense",
+		startMap: {
+			"b1A": null,
+			"b1B": {"at": 2, "owner": null},
+			"b1C": null,
+			"b2A": {"at": 3, "owner": "you"},
+			"b2B": null,
+			"b2C": null,
+			"b3A": null,
+			"b3B": {"at": 10, "owner": null},
+			"b3C": null,
+
+			"g1A": null,
+			"g1B": {"at": 2, "owner": "enemy"},
+			"g1C": {"at": 3, "owner": null},
+			"g2A": {"at": 10, "owner": "enemy"},
+			"g2B": null,
+			"g2C": null,
+			"g3A": {"at": 9, "owner": null},
+			"g3B": {"at": 7, "owner": "enemy"},
+			"g3C": null,
+
+			"r1A": {"at": 1, "owner": "enemy"},
+			"r1B": null,
+			"r1C": {"at": 7, "owner": "enemy"},
+			"r2A": {"at": 9, "owner": "you"},
+			"r2B": null,
+			"r2C": {"at": 1, "owner": null},
+			"r3A": {"at": 10, "owner": "enemy"},
+			"r3B": {"at": 3, "owner": "you"},
+			"r3C": {"at": 2, "owner": "enemy"},
+
+			"y1A": {"at": 1, "owner": "you"},
+			"y1B": {"at": 10, "owner": "enemy"},
+			"y1C": {"at": 7, "owner": null},
+			"y2A": {"at": 9, "owner": "you"},
+			"y2B": {"at": 3, "owner": "you"},
+			"y2C": {"at": 2, "owner": null},
+			"y3A": {"at": 1, "owner": "you"},
+			"y3B": {"at": 3, "owner": "you"},
+			"y3C": {"at": 9, "owner": "you"},
+		},
+		steps: [
+			{
+				startMessages: [
+					"I hope you've played the Star Demolition 2.0 tutorial already -- there's several important themes there.",
+					"So you're not always going to be on the offensive, of course.",
+					"This situation you're about to see looks a little bleak. You've already lost half of your homeworld.",
+					"Worse yet, your opponent has several reds ripe for invasion...",
+					"Fortunately, you have all the medium and large yellows.",
+					"If you remember the previous module, they're about to send their large ship into your homeworld.",
+					"But there's one way you can survive. Can you find it?",
+				],
+				objective: "How do you survive this?",
+				hint: [
+					"Process of elimination might help here. What can you absolutely not afford to let happen?",
+					"Keep in mind that your opponent is planning to move in the large red (from their blue star) next turn.",
+				],
+				checkAction: function(action, oldState) {
+					// I don't want to have to deal with this
+					if (action.type === "move" && action.system === 2) {
+						return [false, [
+							"Hmmm... Counter-attacking like that doesn't quite work here. Your opponent can just sacrifice their other large red and steal everything.",
+							"(I'm only blocking this move to save myself some effort. You'll have to see what happens to other wrong moves...)",
+						]];
+					}
+					return [true];
+				},
+				checkEndTurn: function(oldState) {
+					// If there is a Y2 or Y3 for building...
+					
+					// If they still control the invader red and at least one red exists in the stash...
+					if (oldState.map.r1A && oldState.map.r1A.owner === "enemy") {
+						let redsInStash = [];
+						for (let serial in oldState.map) {
+							if (serial[0] === "r" && !oldState.map[serial]) {
+								redsInStash.push(serial);
+							}
+						}
+						
+						redsInStash.sort(); // put them in order of size
+						if (redsInStash.length >= 2) {
+							// you lose
+							return [true, "Hmmm... There seems to be a slight problem with that...",
+								{
+									type: "sacrifice",
+									oldPiece: "g2A",
+								},
+								{
+									type: "build",
+									newPiece: redsInStash[0],
+									system: 1,
+								},
+								{
+									type: "build",
+									newPiece: redsInStash[1],
+									system: 1,
+								},
+								{
+									type: "catastrophe",
+									color: "r",
+									system: 1,
+								},
+							];
+						}
+						// else fall through to below
+					}
+					
+					return [true, "All right, let's see if that worked...", {
+						type: "move",
+						oldPiece: "r3A",
+						system: 1,
+					}];
+					
+				},
+				nextStep: function(newState) {
+					if (newState.map.r2C === null) {
+						return "loss";
+					} else {
+						return 1;
+					}
+				},
+			},
+			{
+				startMessages: [
+					"OK...",
+					"Let's see if that worked...",
+					"If you planned correctly, you should be able to survive...",
+					"I'm not going to tell you if your previous turn was correct...",
+					"You can Restart if you think you failed (it's above the map)...",
+					"And maybe I'll stop ending my sentences with three dots?"
+				],
+				objective: "Survive, if you can.",
+				hint: [
+					"",
+					"If you need to, you can click the orange Restart button (upper left, above the map) to start over.",
+				],
+				checkAction: function(action, oldState) {
+					return [true];
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					// can they win by catastrophe?
+					let enemyActions = [];
+					let yellowCatastrophe = false;
+					if (oldState.isSystemOverpopulated('y', 1)) {
+						yellowCatastrophe = true;
+						enemyActions.push({
+							type: "catastrophe",
+							color: "y",
+							system: 1
+						});
+					}
+					if (oldState.map.r3A && oldState.map.r3A.owner === "enemy") {
+						enemyActions.push({
+							type: "sacrifice",
+							oldPiece: "r3A",
+						});
+						
+						// it's possible that you have more than 3 ships at home
+						let captures = 0;
+						for (let serial in oldState.map) {
+							const data = oldState.map[serial];
+							// if it exists, is yours, at your HW, and it's not yellow if there was a catastrophe
+							if (data && data.owner === "you" && data.system === 1 && !(yellowCatastrophe && serial[0] === 'y')) {
+								// it's in your homeworld so steal it
+								enemyActions.push({
+									type: "steal",
+									oldPiece: serial,
+								});
+								captures++;
+							}
+							
+							// don't capture 4 ships
+							if (captures >= 3) {
+								break;
+							}
+						}
+					} else if (oldState.map.r1C && oldState.map.r1C.owner === "enemy") {
+						// spoiler alert: in the correct solution, the catastrophe doesn't happen
+						enemyActions.push({
+							type: "move",
+							oldPiece: "r1C",
+							system: 1,
+						});
+						if (oldState.map.r1A && oldState.map.r1A.at === 1) {
+							enemyActions.push({
+								type: "catastrophe",
+								system: 1,
+								color: 'r',
+							});
+						}
+					} else {
+						// the enemy is confused!
+						return [true, [
+							"The enemy is confused!",
+							"This is a bug in the tutorial. I'm not sure if you defended correctly or not, but this message shouldn't be possible."
+						]];
+					}
+					
+					// no messages!
+					return [true, []].concat(enemyActions);
+				},
+				nextStep: function(newState) {
+					// if they sacrificed the R3 or you lost your home star, you lost
+					if (!newState.map.r3C || !newState.map.r2C) {
+						return "loss";
+					} else {
+						return 1;
+					}
+				},
+			},
+			
+			{
+				startMessages: [
+					"If you got here, then you almost certainly survived...",
+					"Maybe take care of that other invader ship while you're at it.",
+				],
+				objective: "Thwart the opponent's last threat",
+				checkAction: function(action, oldState) {
+					if (action.type === "sacrifice" && action.oldPiece === "r3A") {
+						return [false, "You don't need to do that this time. The only other enemy red left isn't connected to your homeworld. Keep your material advantage!"];
+					}
+					return [true];
+				},
+				requireAction: true,
+				checkEndTurn: function(oldState) {
+					if (oldState.map.r1C && oldState.map.r1C.owner === "enemy") {
+						return [false, "Hmmm... If you leave that ship there, your opponent can still sacrifice a green! (Reset Turn if needed)"];
+					}
+					if (!oldState.map.r2C || oldState.isSystemOverpopulated('r', 1)) {
+						return [false, "Not sure how you almost managed to self-destruct... Maybe try again. (Reset Turn if needed)"];
+					}
+					return [true];
+				},
+				nextStep: function() {
+					// skip over the loss phase
+					return Infinity;
+				},
+			},
+			
+			
+			// if you fail
+			{
+				id: "loss",
+				startMessages: [
+					"It looks like you've found one (more?) way not to win this.",
+					"Good job, that's one less possibility for the real solution...",
+					"You can examine what happened and then click Restart above the map to try again.",
+				],
+				objective: "Click Restart ^^",
+				checkAction: function() {
+					return [false];
+				},
+				checkEndTurn: function() {
+					return [false];
+				},
+			}
+		],
+		endMessages: [
+			"Well done. You have survived and have superior mobility! If you can prevent the opponent from building red, you'll probably win.",
+			"Some people have called this trick the \"red ram\", imagining the sacrificed red as a battering ram against the invaders...",
 		],
 	}),
 	
 	/*
 	// Sacrifice a yellow to come back home
 	new Tutorial({
-		title: "Homeworld Abandonment",
+		title: "Sacrifice Defense 2: Yellow",
 		subtitle: "...or not?",
 		startMap: {},
 		steps: [
@@ -475,10 +775,7 @@ const tutorialList = [
 		],
 	}),
 	
-	// Sacrifice a red to attack to avert a red catastrophe
-	new Tutorial({
-		title: "Sacrifice Defense 2",
-	}),
+	
 	*/
 ];
 export default {
