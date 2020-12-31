@@ -52,6 +52,7 @@ app.get("/archive/view/:gameID", async function(req, res) {
 			id: Number(row.id),
 			players: JSON.parse(row.players),
 			summary: row.summary,
+			date: row.date,
 		};
 		console.log("ROW PLAYERS\n", JSON.parse(row.players), typeof row.players);
 		

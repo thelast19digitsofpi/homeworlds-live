@@ -7,6 +7,7 @@ import ReactDOM from 'react-dom';
 import withGame from './game.jsx';
 import GameState from './gameState.mjs';
 import { getCompactSummary } from './gameFunctions.mjs';
+import unpackSummary from './unpackSummary.js';
 
 // gets the JSON for the map, specifically in a format I can use when building tutorials
 function getMapJSON() {
@@ -32,6 +33,9 @@ function getMapJSON() {
 		// break line after each color
 		strings.push("");
 	}
+	// remove the comma from the second to last line
+	const lastPiece = strings[strings.length - 2];
+	strings[strings.length - 2] = lastPiece.substring(0, lastPiece.length - 1);
 	// the last newline becomes the closing brace
 	strings[strings.length - 1] = "\t},";
 	// now, add the homeworld data
@@ -43,11 +47,21 @@ function getMapJSON() {
 function SandboxDisplay(props) {
 	return <div className="sandbox">
 		<div className="upper-row">
-			<button onClick={props.getMap} className="btn btn-secondary">Get Map</button>
-			<button onClick={props.getLog} className="btn btn-secondary">Get Log</button>
+			<div className="d-inline-block">
+				<div>
+					<button onClick={props.getMap} className="btn btn-info">Get Map</button>
+					<button onClick={props.getLog} className="btn btn-info">Get Log</button>
+				</div>
+				<div>
+					<span>Import: </span>
+					<button onClick={() => props.loadMap(props.textareaValue)}
+						className="btn btn-secondary">Map</button>
+					<button onClick={() => props.loadGame(props.textareaValue)}
+						className="btn btn-secondary">Log</button>
+				</div>
+			</div>
 			<textarea style={{resize: "none"}} className="small" value={props.textareaValue} onChange={event => props.setTextareaValue(event.target.value)} placeholder={'Map and log appear here'}></textarea>
-			<button onClick={() => props.loadMap(props.textareaValue)}>Load Map</button>
-			<button onClick={() => props.loadGame(props.textareaValue)}>Load Game Log</button>
+			
 			{props.loadError && <p className="text-danger">Error: {props.loadError}</p>}
 		</div>
 		{props.children}
@@ -90,7 +104,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 				
 				// parse the map manually
 				const newMap = {};
-				const letters = "ABCDE", colors = "bgry";
+				const letters = "ABC", colors = "bgry";
 				let players = [];
 				let maxSystem = 0;
 				for (let i = 0; i < colors.length; i++) {
@@ -98,11 +112,13 @@ const GameSandbox = withGame(SandboxDisplay, {
 						for (let j = 0; j < letters.length; j++) {
 							// form a serial number with the color, size, and letter
 							const serial = colors[i] + String(s) + letters[j];
-							if (jsonMap[serial]) {
-								newMap[serial].at = Number(jsonMap[serial].at);
+							if (dataMap[serial]) {
 								// parse the owner and do some extra stuff with it
-								const owner = jsonMap[serial].owner;
-								newMap[serial].owner = owner || null;
+								const owner = dataMap[serial].owner;
+								newMap[serial] = {
+									at: Number(dataMap[serial].at),
+									owner: owner || null,
+								};
 								// check for players
 								if (owner && players.indexOf(owner) === -1) {
 									players.push(owner);
@@ -112,6 +128,9 @@ const GameSandbox = withGame(SandboxDisplay, {
 								if (newMap[serial].at > maxSystem) {
 									maxSystem = newMap[serial].at;
 								}
+							} else {
+								// we need the explicit null
+								newMap[serial] = null;
 							}
 						}
 					}
@@ -168,7 +187,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 							hwData[players[0]] = 1;
 							hwData[players[1]] = 2;
 						} else {
-							// it's probably this way
+							// it's probably the other way
 							hwData[players[1]] = 1;
 							hwData[players[0]] = 2;
 						}
@@ -180,20 +199,28 @@ const GameSandbox = withGame(SandboxDisplay, {
 					});
 				}
 				
+				const gameState = new GameState(
+					newMap,
+					players.length > 1 ? "playing" : "end",
+					hwData,
+					maxSystem + 1,
+					players,
+					players[0] || "south", // turn
+					{number: 1, sacrifice: null},
+					// declare a winner if only 1 player was found
+					players.length === 1 ? players[0] : null
+				);
+				let viewer = players[0] || "south";
+				// more conventional first/second players
+				if (players[1] === "south" || players[1] === "you") {
+					viewer = players[1];
+				}
 				this.setState({
 					// mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
-					gameState: new GameState(
-						newMap,
-						players.length > 1 ? "playing" : "end",
-						hwData,
-						maxSystem + 1,
-						players,
-						players[0] || "south", // turn
-						{number: 1, sacrifice: null},
-						// declare a winner if only 1 player was found
-						players.length === 1 ? players[0] : null
-					),
-					viewer: players[0] || "south",
+					current: gameState,
+					// since we don't know the past, this is assumed as the start point
+					history: [[gameState]],
+					viewer: viewer,
 				});
 			} catch (error) {
 				console.log(error);
@@ -202,6 +229,40 @@ const GameSandbox = withGame(SandboxDisplay, {
 				});
 			}
 		}.bind(this);
+		
+		this.loadGame = function() {
+			// safety first
+			try {
+				// read off lines
+				const lines = this.state.textareaValue.split("\n");
+				const playerLine = lines[0];
+				// remove the "Players: " and then split by commas
+				const players = playerLine.split("Players: ")[1].split(",");
+				// I knew I had already done this somewhere...
+				let results = unpackSummary(players, this.state.textareaValue);
+				if (results.error) {
+					this.setState({
+						loadError: results.error,
+					});
+				}
+				
+				this.setState({
+					history: results.history,
+					current: results.currentState,
+					actionInProgress: results.currentState.phase === "setup" ? {type: "homeworld"} : null,
+				});
+			} catch (error) {
+				console.log(error);
+				this.setState({
+					loadError: "There was a problem with that game log, and it prevented me from showing a partial map (this is probably a bug). The message was: " + error.message,
+				});
+			}
+		}.bind(this);
+	},
+	
+	// not sure how THIS never showed up...
+	canInteract: function() {
+		return true;
 	},
 	
 	getProps: function() {
@@ -209,6 +270,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 			getMap: this.getMap,
 			getLog: this.getLog,
 			loadMap: this.loadMap,
+			loadGame: this.loadGame,
 			textareaValue: this.state.textareaValue,
 			setTextareaValue: this.setTextareaValue,
 			loadError: this.state.loadError,

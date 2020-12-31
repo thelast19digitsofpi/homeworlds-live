@@ -3,7 +3,6 @@
 // Generic immutable single game state.
 // Designed to work with both client and server. No React code here!
 
-
 class GameState {
 	// Call as (map, phase, hwData, nextSystemID, turnOrder, turn, actions, winner)
 	// or just as (players)

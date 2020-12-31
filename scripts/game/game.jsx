@@ -840,7 +840,7 @@ function withGame(WrappedComponent, events, additionalState) {
 								<input type="checkbox"
 									name="allowAnimations"
 									id="allowAnimations"
-									value={this.state.allowAnimations}
+									checked={this.state.allowAnimations}
 									onChange={allowAnimationHandler} />
 								<label htmlFor="allowAnimations">Animations</label>
 							</span>
@@ -858,6 +858,7 @@ function withGame(WrappedComponent, events, additionalState) {
 								actionInProgress={this.state.actionInProgress}
 								recentlyUsedPiece={this.state.recentlyUsedPiece}
 								
+								allowAnimations={this.state.allowAnimations}
 								handleBoardClick={(piece, event) => this.handleBoardClick(piece, event)}
 							/>
 							{/* Display the actions popup if applicable */}
