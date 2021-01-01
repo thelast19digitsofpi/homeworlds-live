@@ -8,6 +8,8 @@ import withGame from './game.jsx';
 import GameState from './gameState.mjs';
 import { getCompactSummary } from './gameFunctions.mjs';
 import unpackSummary from './unpackSummary.js';
+import {moveToIndex, moveToBeginning, backTurn, backAction, forwardTurn, forwardAction, moveToEnd} from './gameHistory.js';
+
 
 // gets the JSON for the map, specifically in a format I can use when building tutorials
 function getMapJSON() {
@@ -45,26 +47,68 @@ function getMapJSON() {
 }
 
 function SandboxDisplay(props) {
-	return <div className="sandbox">
-		<div className="upper-row">
-			<div className="d-inline-block">
-				<div>
-					<button onClick={props.getMap} className="btn btn-info">Get Map</button>
-					<button onClick={props.getLog} className="btn btn-info">Get Log</button>
-				</div>
-				<div>
-					<span>Import: </span>
-					<button onClick={() => props.loadMap(props.textareaValue)}
-						className="btn btn-secondary">Map</button>
-					<button onClick={() => props.loadGame(props.textareaValue)}
-						className="btn btn-secondary">Log</button>
-				</div>
+	const textarea = <textarea
+		rows="4"
+		style={{resize: "none"}}
+		className="small"
+		value={props.textareaValue}
+		onChange={event => props.setTextareaValue(event.target.value)}
+		placeholder={'Map and log appear here'}></textarea>;
+	
+	const popupButtons = props.importing ? [
+		<button onClick={() => props.load(props.textareaValue)}
+			className="btn btn-secondary" key="load">Load</button>
+	] : [
+		<button onClick={props.getMap} className="btn btn-info" key="map">Get Map</button>,
+		<button onClick={props.getLog} className="btn btn-info" key="log">Get Log</button>
+	];
+	popupButtons.push(<button onClick={props.closePort} className="btn btn-danger" key="cancel">Cancel</button>)
+	
+	// note to self: importing is dominant over exporting
+	const popup = (props.importing || props.exporting) ? <div className="tutorial-popup-wrapper">
+		<div className="tutorial-popup card bg-light text-dark border border-primary">
+			<div className="card-body">
+				<h5 className="card-title text-center">
+					{props.importing ? "Open" : "Save"} Map or Game
+				</h5>
+				<p>{
+					// I probably could let it detect which one it is...
+					props.importing ? "Paste your map or game log below, then click the button to import." : "Click the buttons below to get either just the map, or the entire game log."
+				}</p>
+				{textarea}
 			</div>
-			<textarea style={{resize: "none"}} className="small" value={props.textareaValue} onChange={event => props.setTextareaValue(event.target.value)} placeholder={'Map and log appear here'}></textarea>
-			
-			{props.loadError && <p className="text-danger">Error: {props.loadError}</p>}
+			{/* Control Buttons */}
+			<div className="card-footer align-center btn-group">
+				{popupButtons}
+			</div>
 		</div>
-		{props.children}
+	</div> : null;
+	
+	const upperRow = <div className="upper-row">
+		<p>
+			<button onClick={props.showImport} className="btn btn-info">Import</button>
+			<button onClick={props.showExport} className="btn btn-info">Export</button>
+			<span className="mr-4">&nbsp;</span>
+			{/* Undo/Redo buttons */}
+			<button onClick={() => backTurn.call(props.parent)} className="btn btn-secondary">
+				<i className="material-icons md-18 align-middle">skip_previous</i>
+				Undo
+			</button>
+			<button onClick={() => forwardTurn.call(props.parent)} className="btn btn-secondary">
+				Redo
+				<i className="material-icons md-18 align-middle">skip_next</i>
+			</button>
+		</p>
+		
+		{props.loadError && <p className="text-danger">Error: {props.loadError}</p>}
+	</div>;
+		
+	return <div className="sandbox">
+		<div className="position-relative">
+			{upperRow}
+			{props.children}
+			{popup}
+		</div>
 	</div>;
 }
 // the empty object is because we have no events
@@ -259,10 +303,83 @@ const GameSandbox = withGame(SandboxDisplay, {
 				});
 			}
 		}.bind(this);
+		
+		// tries to intelligently predict if it is a map or a game
+		this.load = function() {
+			const entry = this.state.textareaValue.trim();
+			// allow for some minor corruption
+			if (entry[0] === "{" || entry[1] === "{") {
+				// probably JSON
+				this.loadMap();
+			} else {
+				this.loadGame();
+			}
+			
+			// close the import/export window
+			this.closePort();
+		}.bind(this);
+		
+		
+		this.showImport = function() {
+			this.setState({importing: true});
+		}.bind(this);
+		this.showExport = function() {
+			this.setState({
+				exporting: true,
+				textareaValue: "",
+			});
+		}.bind(this);
+		// Port = the common letters from "import" and "export"
+		this.closePort = function() {
+			this.setState({
+				importing: false,
+				exporting: false,
+			});
+		}.bind(this);
+		
+		this.clipFuture = function() {
+			if (this.state.turnIndex < this.state.history.length - 1) {
+				// you undid the action, drop all that other state
+				console.log(this.state.turnIndex, this.state.history);
+				
+				let shrunkHistory = this.state.history.slice(0, this.state.turnIndex);
+				// we want to include up to the current state
+				const thisTurn = this.state.history[this.state.turnIndex].slice(0, this.state.actionIndex + 1);
+				shrunkHistory.push(thisTurn);
+				
+				this.setState({
+					history: shrunkHistory,
+				});
+				// I don't want to deal with state update batching
+				this.forceUpdate();
+			}
+		}.bind(this);
+		
+		this.adjustCursor = function() {
+			this.setState(function(reactState) {
+				const lastEntry = reactState.history[reactState.history.length - 1];
+				return {
+					turnIndex: reactState.history.length - 1,
+					actionIndex: lastEntry.length - 1,
+				};
+			});
+		}.bind(this);
 	},
 	
-	// not sure how THIS never showed up...
-	canInteract: function() {
+	onBeforeAction: function() {
+		this.clipFuture();
+		return true;
+	},
+	onBeforeEndTurn: function() {
+		this.clipFuture();
+		return true;
+	},
+	onAfterAction: function() {
+		this.adjustCursor();
+		return true;
+	},
+	onAfterEndTurn: function() {
+		this.adjustCursor();
 		return true;
 	},
 	
@@ -270,11 +387,20 @@ const GameSandbox = withGame(SandboxDisplay, {
 		return {
 			getMap: this.getMap,
 			getLog: this.getLog,
-			loadMap: this.loadMap,
-			loadGame: this.loadGame,
+			load: this.load,
 			textareaValue: this.state.textareaValue,
 			setTextareaValue: this.setTextareaValue,
 			loadError: this.state.loadError,
+			
+			showImport: this.showImport,
+			showExport: this.showExport,
+			closePort: this.closePort,
+			
+			importing: this.state.importing,
+			exporting: this.state.exporting,
+			
+			// for the .call() of the navigation functions
+			parent: this,
 		};
 	},
 }, {
@@ -288,6 +414,13 @@ const GameSandbox = withGame(SandboxDisplay, {
 	textareaValue: "",
 	loadError: null,
 	showSwitchHomeworlds: false,
+	
+	// for map loading and saving
+	importing: false,
+	exporting: false,
+	
+	turnIndex: 0,
+	actionIndex: 0,
 });
 
 
