@@ -315,8 +315,15 @@ const GameSandbox = withGame(SandboxDisplay, {
 				this.loadGame();
 			}
 			
+			this.setState(function(reactState) {
+				return {
+					viewer: reactState.current.turnOrder[0] || "south",
+				};
+			});
+			
 			// close the import/export window
 			this.closePort();
+			this.adjustCursor();
 		}.bind(this);
 		
 		
