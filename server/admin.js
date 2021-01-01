@@ -24,7 +24,6 @@ async function isAuthenticated(req) {
 		if (!login || !password) {
 			return false;
 		}
-		console.log("attempted password is ", password);
 		
 		// a password that I know and no one else does
 		const adminHash = "$argon2i$v=19$m=12800,t=8,p=4$bHE/CEDOpbga9sta8Y+mhlN9hCCt1QDl$eiZ7FR5tB5Q1CDJuVFCDk0QbKPUrEtrK4eXwU6AAmYttJFwHkFGfXALGoq5evL7p";
@@ -53,8 +52,10 @@ app.get("/admin", async function(req, res, next) {
 					players: game.players.map(player => player.username),
 				};
 			});
-			let users = await databaseCall(db, "all", "SELECT username FROM users");
-			res.locals.render.users = Array.prototype.map.call(users, user => user.username);
+			let usersRated = await databaseCall(db, "all", "SELECT username, rating FROM users INNER JOIN elo on elo.userID = users.id");
+			let usersUnrated = await databaseCall(db, "all", "SELECT username, id FROM users WHERE id not in (SELECT userID FROM elo)")
+			console.log(usersUnrated);
+			res.locals.render.users = Array.prototype.concat.call(usersRated, usersUnrated);
 			
 			console.log("rendering admin");
 			

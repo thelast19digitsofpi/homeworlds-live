@@ -327,11 +327,8 @@ function endViewLastTurn() {
 function lastTurnTravel(amount) {
 	this.setState(function(reactState) {
 		if (reactState.viewingPrevious) {
-			const newIndex = reactState.previousAction + amount;
 			// moving too far into the past just puts you at the start again
-			if (newIndex < 0) {
-				newIndex = 0;
-			}
+			const newIndex = Math.max(0, reactState.previousAction + amount);
 			
 			const oldActions = reactState.history[reactState.history.length - 2];
 			if (newIndex >= oldActions.length) {

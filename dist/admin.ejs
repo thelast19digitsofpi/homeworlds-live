@@ -21,7 +21,7 @@ body {
 		<h3>Users</h3>
 		<ul id="userlist">
 		<% for (let i = 0; i < users.length; i++) { %>	
-			<li><%= users[i] %></li>
+			<li><%= users[i].username %> (<%= users[i].rating || "no rating" %>)</li>
 		<% } %>
 		</ul>
 		
@@ -54,5 +54,5 @@ body {
 		</table>
 		
 		<%- include("footer") %>
-	<script src="/scripts/vendor.js?91e0d7aafd53faba7a63"></script></body>
+	<script src="/scripts/vendor.js?7832aad1b56b85482c54"></script></body>
 </html>

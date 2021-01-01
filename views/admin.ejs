@@ -21,7 +21,7 @@ body {
 		<h3>Users</h3>
 		<ul id="userlist">
 		<% for (let i = 0; i < users.length; i++) { %>	
-			<li><%= users[i] %></li>
+			<li><%= users[i].username %> (<%= users[i].rating || "no rating" %>)</li>
 		<% } %>
 		</ul>
 		

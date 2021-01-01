@@ -28,7 +28,7 @@ function Game(id, options, players, manager) {
 	
 	// For offering a draw.
 	// Right now draw votes expire only when someone clicks cancel draw.
-	// Anyone can (draws must be unanimous).
+	// Anyone can do so (draws must be unanimous).
 	this.drawVotes = [];
 	
 	// Clocks!

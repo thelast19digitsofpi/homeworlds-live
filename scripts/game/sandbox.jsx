@@ -238,6 +238,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 				const playerLine = lines[0];
 				// remove the "Players: " and then split by commas
 				const players = playerLine.split("Players: ")[1].split(",");
+				console.error("Unpacking summary", players);
 				// I knew I had already done this somewhere...
 				let results = unpackSummary(players, this.state.textareaValue);
 				if (results.error) {

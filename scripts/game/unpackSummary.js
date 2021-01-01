@@ -23,13 +23,10 @@ function unpackSummary(players, summary) {
 			winner = line.split(" ")[1];
 			continue;
 		}
-		// ignore blank lines
-		if (line.trim().length === 0) {
-			continue;
-		}
 		
 		// otherwise assume it is a turn
-		const turnActions = line.split(";");
+		// blank lines are allowed (if someone passes)
+		const turnActions = line.length > 0 ? line.split(";") : [];
 		for (let j = 0; j < turnActions.length; j++) {
 			const parts = turnActions[j].split(",");
 			// convert build/move/catastrophe systems to numbers
@@ -59,6 +56,9 @@ function unpackSummary(players, summary) {
 			if (parts[0] !== "c" && parts[0] !== "e") {
 				params.unshift(currentState.turn);
 			}
+			
+			console.log("action: ", actionMethod, params);
+			console.log(currentState.map);
 			
 			try {
 				const newState = currentState[actionMethod].apply(currentState, params);
