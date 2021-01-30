@@ -373,7 +373,7 @@ const tutorialList = [
 					"You can move between two star systems if they have NO SIZES in common.",
 					"For example, if your ships is at a Large system, you can move to any Small or Medium system, or a Small+Medium homeworld.",
 					"But you can *NOT* move from a Large to another Large, nor to any homeworld that has a Large star.",
-					"Now, this website tries to smartly arrange the stars in rows, to help you visualize the connections. However, this is *only* a visual aid.",
+					"Now, this website tries to smartly arrange the stars in rows, to help you visualize the connections. Legal moves will also be highlighted. However, this is *only* a visual aid.",
 					"Anyway, to do a move, click the ship, then click the \"move\" button, then click the system you want to move to.",
 					"How about we get started with a simple move: Move one of your yellow ships to your homeworld (the system with two stars).",
 				],
@@ -390,6 +390,8 @@ const tutorialList = [
 				checkAction: function(action, oldState) {
 					if (action.type === "move") {
 						return [true];
+					} else if (action.type === "discover") {
+						return [false, "You're getting ahead of me here! Can you first make sure you can move between two existing systems?"];
 					} else {
 						return [false, "That's all well and good, but we're doing movement now. Can you try moving to your homeworld?"];
 					}
@@ -400,7 +402,7 @@ const tutorialList = [
 					}
 					return [true, [
 						"By the way, if you click the wrong piece, just click the flashing ship again to cancel.",
-						"Or use the Reset Turn at right to undo your whole turn. This even works in real games.",
+						"Or use the Reset Turn at right to undo your whole turn. Both of those work in real games.",
 						"Now, how do you find new stars? It's pretty simple...",
 					], {
 						type: "discover",
@@ -412,23 +414,22 @@ const tutorialList = [
 			{
 				startMessages: [
 					"Oh neat, a new star just appeared on the map!",
-					"In fact, you can \"discover\" a star any time you have movement power.",
-					"Here, to discover a system, you first click the piece you want to move, then click the \"Discover a system...\" button in the popup.",
-					"Then you click a piece in the Bank. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
+					"In fact, you can \"discover\" a star when you move, instead of moving to an existing one. You may have figured this out already.",
+					"To do this, click a piece in the Bank. Just like with normal movement, it must be a different size to the star you started in. (The STAR, not the ship.)",
 					"Just like trades, the available pieces are highlighted when you are deciding and you can cancel by clicking the original ship again.",
 					"(Note: Homeworld systems always start out with two stars. All other systems are single stars.)",
 					"Now, your task is to discover a new system. You can use either yellow, but keep the large green home.",
 				],
 				objective: "Discover a new system",
 				hint: [
-					"First click the ship, then click a star in the Bank.",
+					"First click the ship, then Move/Discover, then click a star in the Bank.",
 				],
 				checkAction: function(action, oldState) {
 					if (action.type === "discover") {
 						if (action.oldPiece[1] === "3") {
-							return [false, "Yep, that's it! However, as we'll see later, it's a good habit to keep your largest ship at your homeworld (for defense).\n\nTry moving one of the yellow ships."];
+							return [false, "Yep, that's it! However, as we'll see later, it's a good habit to keep your largest ship at your homeworld for defense.\n\nTry moving one of the yellow ships."];
 						}
-						return [true, "Good job. End your turn and I'll show you something interesting..."];
+						return [true, "Good job. End your turn..."];
 					} else {
 						return [false, "That's legal, but I'd like you to discover a new star system instead."];
 					}
@@ -465,6 +466,7 @@ const tutorialList = [
 		],
 		endMessages: [
 			"There you go. If you find that unintuitive, the last module in the Basic collection is a \"playground\" where you can practice moving around.",
+			"By the way, if you ever played chess, you probably used the terms \"move\" and \"turn\" interchangeably. In Homeworlds, however, \"move\" refers to specifically moving a ship to another system.",
 			"Anyway, did you notice how the star system disappeared when it was abandoned? Stars get added to the map via discovery, and go back to the Bank when the last ship leaves.",
 			"It may seem weird at first, but it's actually a very crucial part of how the game works.",
 			"It can be used to manipulate the Bank. That's important enough to emphasize in another module...",

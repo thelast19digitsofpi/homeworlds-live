@@ -140,6 +140,8 @@ function withGame(WrappedComponent, events, additionalState) {
 			if (events.onComponentUpdate) {
 				events.onComponentUpdate.call(this);
 			}
+			
+			// this is also a 
 		}
 		
 		/*
@@ -390,7 +392,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			// change the history
 			this.setState({
 				history: newHistory,
-				current: startOfTurn,
+				current: GameState.recoverFromJSON(startOfTurn),
 				// remove the last array from the list, then append an empty array
 				allActions: this.state.allActions.slice(0, -1).concat([[]]),
 				
@@ -590,7 +592,7 @@ function withGame(WrappedComponent, events, additionalState) {
 						break;
 					case "trade":
 					case "move":
-					case "discover":
+					//case "discover":
 						// Trades and movements are done by later clicking a different piece
 						this.setState({
 							actionInProgress: actionData,
@@ -631,9 +633,9 @@ function withGame(WrappedComponent, events, additionalState) {
 			
 			if (aip) {
 				try {
-					if (aip.type === "trade" || aip.type === "discover") {
+					if (aip.type === "trade" || aip.type === "discover" || aip.type === "move") {
 						this.doAction({
-							type: aip.type,
+							type: aip.type === "move" ? "discover" : aip.type,
 							player: current.turn,
 							oldPiece: aip.oldPiece,
 							newPiece: serial,
@@ -738,6 +740,8 @@ function withGame(WrappedComponent, events, additionalState) {
 				};
 			});
 		}
+		
+		
 		
 		// The grand finale method, as I call it
 		render() {
@@ -869,7 +873,7 @@ function withGame(WrappedComponent, events, additionalState) {
 							/>
 						</div>
 						{current.phase === "end" ? winBanner : null}
-						<p className="info">
+						<p className="info black-background">
 							Turn: {current.turn} &bull;
 							Actions left: {current.actions.number}
 						</p>

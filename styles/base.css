@@ -36,6 +36,11 @@ body {
 	z-index: 40;
 }
 
+.black-background {
+	/* mostly so that the background stars don't interfere with the turn/action indicator or other things */
+	background-color: #060606;
+}
+
 .systems {
 	min-height: 54vh;
 	display: flex;
@@ -161,8 +166,9 @@ span[popout] {
 	min-height: 3.5em;
 }
 
-/* Tutorials */
-.tutorial-popup-wrapper {
+/* Tutorials and Sandbox Import/Export, and possibly other things */
+.control-popup-wrapper {
+	user-select: none; /* dumb fix to stop the whole element from being selected */
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -174,8 +180,13 @@ span[popout] {
 	background-color: rgba(32, 32, 32, 0.5);
 }
 
-.tutorial-popup {
+.control-popup {
 	max-width: 75%;
+}
+
+/* in case you want the user to be allowed to select text... */
+.control-allow-select {
+	user-select: text;
 }
 
 

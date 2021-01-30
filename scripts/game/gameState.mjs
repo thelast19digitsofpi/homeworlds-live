@@ -19,7 +19,7 @@ class GameState {
 			this.actions = {
 				sacrifice: null,
 				number: 1
-			}
+			};
 			this.phase = "setup";
 			this.winner = null;
 		} else {

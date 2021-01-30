@@ -268,12 +268,13 @@ class LiveGameDisplay extends React.Component {
 						onClick={() => this.props.viewLastTurn()}
 						>View Last Turn</button>
 				</div>
-			} 
+			}
+			
 		}
 		
 		const gameOverlayClass = (innerState.viewingPrevious) ? "rewind-overlay" : "d-none";
 		// The whole thing!
-		return <React.Fragment>
+		return <div className="container-fluid">
 			{endGameBanner}
 			<div className="row">
 				{/*
@@ -288,12 +289,22 @@ class LiveGameDisplay extends React.Component {
 					{clockElements}
 					{showLastTurnButtons}
 				</div>
+				
+				{
+					// in large screens, make it display first so it is always directly above the map
+					this.props.isConnected ? null : <div className="col-12 order-lg-first">
+						<p className="alert alert-danger">
+							<strong>You have been disconnected!</strong> If this banner does not go away, try refreshing the page. <span className="text-muted">You will forfeit if you remain disconnected for 7 minutes.</span>
+						</p>
+					</div>
+				}
+				
 				<div className="col-12 col-lg-10 order-lg-1 position-relative">
 					<div className={gameOverlayClass}>&nbsp;</div>
 					{this.props.children}
 				</div>
 			</div>
-		</React.Fragment>
+		</div>
 	}
 }
 
@@ -316,6 +327,7 @@ function viewLastTurn() {
 };
 
 function endViewLastTurn() {
+	setTimeout(this.advanceQueue, 750);
 	this.setState({
 		viewingPrevious: false,
 		previousAction: -1,
@@ -332,7 +344,8 @@ function lastTurnTravel(amount) {
 			
 			const oldActions = reactState.history[reactState.history.length - 2];
 			if (newIndex >= oldActions.length) {
-				// go to the present
+				// go to the present and read off anything that changed while we were gone
+				setTimeout(this.advanceQueue, 750);
 				return {
 					previousAction: -1,
 					viewingPrevious: false,
@@ -346,7 +359,7 @@ function lastTurnTravel(amount) {
 		} else {
 			return {};
 		}
-	});
+	}.bind(this));
 	
 	updateLastTurnView.call(this);
 };
@@ -380,6 +393,21 @@ function updateLastTurnView() {
 const LiveGame = withGame(LiveGameDisplay, {
 	// These methods will be run on the wrapped component
 	onMount: function() {
+		socket.on("disconnect", function() {
+			this.setState({
+				isConnected: false,
+			});
+		}.bind(this));
+		
+		// same handler for connect and reconnect
+		const setConnected = function() {
+			this.setState({
+				isConnected: true,
+			});
+		}.bind(this);
+		socket.on("connect", setConnected);
+		socket.on("reconnect", setConnected);
+		
 		socket.on("gamePosition", function(data) {
 			console.log(data.viewer);
 			console.log(YOUR_USERNAME);
@@ -387,6 +415,14 @@ const LiveGame = withGame(LiveGameDisplay, {
 			const game = data.game;
 			const isYourTurn = (game.currentState.turn === YOUR_USERNAME);
 			const isHomeworldSetup = (game.currentState.phase === "setup");
+			
+			// Turn them into GameStates
+			for (let i = 0; i < data.history.length; i++) {
+				for (let j = 0; j < data.history[i].length; j++) {
+					data.history[i][j] = GameState.recoverFromJSON(data.history[i][j]);
+				}
+			}
+			
 			this.setState({
 				// we want a GameState object, not a vanilla object
 				current: GameState.recoverFromJSON(game.currentState),
@@ -405,13 +441,35 @@ const LiveGame = withGame(LiveGameDisplay, {
 				// flag for if you are playing and thus have access to draw offer and resign buttons
 				isPlaying: data.viewer === YOUR_USERNAME,
 			});
+			
+			if (data.gameOver) {
+				this.setState({
+					endGameInfo: {
+						winner: data.winner,
+						summary: data.summary,
+						ratingData: data.ratingData,
+					},
+				});
+			}
 		}.bind(this));
-		
-		// race conditions are going to seriously mess this up...
 		
 		// Largely the same logic is used for action and endTurn.
 		// The only difference is that endTurn also calls doEndTurn.
 		const resolveActions = function(data) {
+			if (data.resetTurn) {
+				console.log(data);
+				console.log(this.state.turnResets);
+				// only do anything if they are actually ahead of us
+				if (data.turnResets > this.state.turnResets) {
+					this.doResetTurn(data.player);
+					this.setState({
+						turnResets: data.turnResets,
+						actionsThisTurn: [],
+					});
+				}
+				return; // reset turn never has anything else
+			}
+			// otherwise...
 			try {
 				// Which turn attempt is this?
 				const theirResets = data.turnResets;
@@ -447,48 +505,88 @@ const LiveGame = withGame(LiveGameDisplay, {
 						});
 					}
 				}
-				// else, this message came from an outdated turn
-				// do nothing
+				// else, this message came from an outdated turn, do nothing
+				
+				// now, if this was an end-turn message...
+				// (NOTE: The endTurn properties are added in the socket handlers!)
+				// (They do NOT COME FROM THE SERVER!!)
+				if (data.endTurn) {
+					this.doEndTurn(data.player);
+					this.setState({
+						turnResets: 0,
+						actionsThisTurn: [],
+					});
+					this.queueTurnResets = 0;
+				}
 			} catch (error) {
 				// Uh oh, this is really bad. We are out of sync.
 				// Ask for the game state again.
 				console.error("\n\n\n\n[resolveActions] SYNC ERROR!!\n\n");
 				console.error(error);
+				console.log(data);
 				console.log("\n\n\n");
 				socket.emit("getGame", GAME_ID);
 			}
 		}.bind(this);
+		
+		// If actions come in while you are viewing the previous turn.
+		this.futureQueue = [];
+		this.queueTurnResets = 0;
+		
+		this.advanceQueue = function() {
+			// Don't advance anything if we are looking at the past
+			if (this.state.viewingPrevious) {
+				console.log("Queue advance blocked -- viewing previous turn");
+				return;
+			}
+			
+			if (!this.futureQueue.length) {
+				console.log("Queue advance failed -- out of stuff");
+				return;
+			}
+			
+			console.log("Advancing Queue");
+			
+			const nextAction = this.futureQueue.shift();
+			resolveActions(nextAction);
+			if (this.futureQueue.length > 0) {
+				// do them quickly but with some gap so you can see
+				// end-turn should be very fast
+				setTimeout(this.advanceQueue, this.futureQueue[0].endTurn ? 200 : 500);
+			}
+		}.bind(this);
+		
+		const addToQueue = function(data) {
+			// we can do this since futureQueue is not React state
+			if (data.turnResets > this.queueTurnResets) {
+				// drop all those actions because they reset the turn and it's not worth showing it
+				this.futureQueue = [];
+				this.queueTurnResets = data.turnResets;
+				console.log("Clearing the future queue!");
+			}
+			if (data.turnResets < this.queueTurnResets) {
+				return; // it's not useful at all
+			}
+			this.futureQueue.push(data);
+			// at least try to do it immediately
+			this.advanceQueue();
+		}.bind(this);
+		
+		// race conditions are going to seriously mess this up... actually, no.
 		// Actions are easy
-		socket.on("action", resolveActions);
-		// Turn ending is more involved
+		socket.on("action", addToQueue);
+		// Turn ending and resetting are also handled by the resolveActions function
+		// but we need to tell resolveActions what to expect
 		socket.on("endTurn", function(data) {
-			resolveActions(data);
-			try {
-				this.doEndTurn(data.player);
-				this.setState({
-					turnResets: 0,
-					actionsThisTurn: [],
-				});
-			} catch (error) {
-				console.error("\n\n\n\n[endTurn] SYNC ERROR!!\n\n");
-				console.error(error);
-				console.log("\n\n\n");
-				socket.emit("getGame", GAME_ID);
-			}
+			data.endTurn = true;
+			addToQueue(data);
 		}.bind(this));
-		// Turn resetting is less involved
 		socket.on("resetTurn", function(data) {
-			// this is very simple
+			// this is still simple here
 			console.warn("They Reset the Turn");
-			console.log(data);
-			console.log(this.state.turnResets);
-			if (data.turnResets > this.state.turnResets) {
-				this.doResetTurn(data.player);
-				this.setState({
-					turnResets: data.turnResets,
-					actionsThisTurn: [],
-				});
-			}
+			data.resetTurn = true;
+			// the function knows how to handle turn resets
+			addToQueue(data);
 		}.bind(this));
 		
 		// whenever you receive clock data
@@ -620,6 +718,8 @@ const LiveGame = withGame(LiveGameDisplay, {
 			lastTurnBackward: lastTurnTravel.bind(this, -1),
 			lastTurnForward: lastTurnTravel.bind(this, +1),
 			updateLastTurnView: updateLastTurnView.bind(this),
+			
+			isConnected: this.state.isConnected,
 		};
 	},
 }, {
@@ -628,6 +728,8 @@ const LiveGame = withGame(LiveGameDisplay, {
 	clocks: [],
 	clocksReceived: Date.now(),
 	pingMS: 0,
+	
+	isConnected: true,
 	
 	// for race condition avoidance
 	actionsThisTurn: [],

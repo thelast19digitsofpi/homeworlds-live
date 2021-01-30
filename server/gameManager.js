@@ -109,6 +109,9 @@ GameManager.prototype.onGameEnd = async function(game, cause) {
 		console.log(game.options);
 	}
 	
+	// in case someone refreshes
+	game.ratingData = ratingData;
+	
 	// Get the synopsis of the game.
 	let summary = "something went wrong, we are sorry";
 	try {
@@ -196,7 +199,7 @@ const gameManager = new GameManager();
 
 // Opening specific games like /game/5.
 // Unfortunately socket.io has different req/res from Express...
-app.get("/game/:gameID", function(req, res) {
+app.get("/game/:gameID", function(req, res, next) {
 	const requestedID = Number(req.params.gameID);
 	console.log(requestedID);
 	const game = gameManager.getGameById(requestedID);
@@ -204,8 +207,11 @@ app.get("/game/:gameID", function(req, res) {
 		res.locals.render.gameID = req.params.gameID;
 		res.render("liveGame", res.locals.render);
 	} else {
-		//res.render("error", res.locals.render);
-		res.status(404).send("That game was not found.")
+		next({
+			status: 404,
+			isGame: true,
+			id: requestedID
+		});
 	}
 });
 
@@ -233,7 +239,8 @@ ioGame.on("connection", function(socket) {
 				yourPlayer.connect(socket, game);
 			}
 			// maybe this could be more refined? hmmm...
-			socket.emit("gamePosition", {
+			const gameOver = (game.currentState.phase === "end");
+			let sendData = {
 				game: game.getClientData(),
 				history: game.history,
 				viewer: viewer,
@@ -242,7 +249,15 @@ ioGame.on("connection", function(socket) {
 				
 				actionsThisTurn: game.actionsThisTurn,
 				turnResets: game.turnResets,
-			});
+				
+				gameOver: gameOver,
+			};
+			if (gameOver) {
+				sendData.winner = game.getWinner();
+				sendData.summary = game.getSummary(true);
+				sendData.ratingData = game.ratingData;
+			}
+			socket.emit("gamePosition", sendData);
 			socket.join(game.socketRoom);
 		} else {
 			// Game does not exist
@@ -254,7 +269,6 @@ ioGame.on("connection", function(socket) {
 	// Event listeners
 	socket.on("doAction", function onDoAction(data) {
 		console.log("doAction");
-		// TODO: Obviously, delete this!!
 		// you are still connected
 		renewCookie(thisUsername);
 		// ok now actually find the requested game
@@ -268,7 +282,7 @@ ioGame.on("connection", function(socket) {
 						socket.emit("actionError", {
 							message: "Nice try.",
 						});
-						console.log("Well, it happened. Someone tried to send an \"eliminate\" action.")
+						console.log("Well, it happened. Someone tried to send an \"eliminate\" action.");
 						return false;
 					}
 					

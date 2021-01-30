@@ -7,6 +7,7 @@ import GameState from './gameState.mjs';
 function unpackSummary(players, summary) {
 	let currentState = new GameState(players);
 	let history = [[currentState]];
+	let allActions = [];
 	let winner = null;
 	// read from the summary
 	const lines = summary.split("\n");
@@ -26,8 +27,28 @@ function unpackSummary(players, summary) {
 		
 		// otherwise assume it is a turn
 		// blank lines are allowed (if someone passes)
+		if (i === lines.length - 1 && line.length === 0) {
+			// ...but blank lines at the end are ignored
+			continue;
+		}
+		
+		allActions.push([]);
+		
+		// if we hit a "...", we assume this is the current state of the game
+		let turnOngoing = false;
+		
 		const turnActions = line.length > 0 ? line.split(";") : [];
 		for (let j = 0; j < turnActions.length; j++) {
+			// 2 special cases: "pass" and "..."
+			if (turnActions[j] === "pass") {
+				continue;
+			}
+			if (turnActions[j] === "...") {
+				// this is not an action but signals that the turn is ongoing
+				turnOngoing = true;
+				continue;
+			}
+			
 			const parts = turnActions[j].split(",");
 			// convert build/move/catastrophe systems to numbers
 			if (parts[0] === "b" || parts[0] === "m" || parts[0] === "c") {
@@ -63,6 +84,62 @@ function unpackSummary(players, summary) {
 			try {
 				const newState = currentState[actionMethod].apply(currentState, params);
 				history[history.length - 1].push(newState);
+				switch (parts[0]) {
+					case 'h':
+						allActions[allActions.length - 1].push({
+							type: "homeworld",
+							star1: params[1],
+							star2: params[2],
+							ship: params[3],
+						});
+						break;
+					case 'b':
+						allActions[allActions.length - 1].push({
+							type: "build",
+							newPiece: params[1],
+							system: params[2],
+						});
+						break;
+					case 't':
+					case 'd':
+						allActions[allActions.length - 1].push({
+							type: parts[0] === 't' ? "trade" : "discover",
+							oldPiece: params[1],
+							newPiece: params[2],
+						});
+						break;
+					case 'm':
+						allActions[allActions.length - 1].push({
+							type: "move",
+							oldPiece: params[1],
+							system: params[2],
+						});
+						break;
+					case 'x':
+					case 's':
+						allActions[allActions.length - 1].push({
+							type: parts[0] === 'x' ? "steal" : "sacrifice",
+							oldPiece: params[1],
+						});
+						break;
+					case 'c':
+					console.warn("CATASTROPHE", params);
+						allActions[allActions.length - 1].push({
+							type: "catastrophe",
+							color: parts[1],
+							system: parts[2],
+						});
+						break;
+					case 'e':
+						allActions[allActions.length - 1].push({
+							type: "eliminate",
+							player: parts[1],
+						});
+						break;
+					default:
+						alert("Error! " + actionMethod);
+						throw "...";
+				}
 				currentState = newState;
 			} catch (error) {
 				// end it here and display the error
@@ -76,25 +153,38 @@ function unpackSummary(players, summary) {
 				};
 			}
 		}
-		// now end the turn
-		try {
-			const endTurnState = currentState.doEndTurn();
-			history.push([endTurnState]);
-			currentState = endTurnState;
-		} catch (error) {
-			return {
-				history: history,
-				currentState: currentState,
-				winner: winner,
-				
-				error: `There is a problem with that game archive! Something happened at the end of ${currentState.turn}'s turn: ${error.message}. (This could be a bug.)`,
-			};
+		// now end the turn unless it is ongoing
+		if (!turnOngoing) {
+			try {
+				const endTurnState = currentState.doEndTurn();
+				history.push([endTurnState]);
+				currentState = endTurnState;
+			} catch (error) {
+				return {
+					history: history,
+					currentState: currentState,
+					winner: winner,
+					
+					error: `There is a problem with that game archive! Something happened at the end of ${currentState.turn}'s turn: ${error.message}. (This could be a bug.)`,
+				};
+			}
+		} else {
+			// so turn is ongoing
+			// the log must be finished; mostly this break is a safety measure
+			// so it stops at the first ... instead of trying to have multiple
+			break;
 		}
+	}
+	
+	if (winner !== "none") {
+		currentState.phase = "end";
+		currentState.winner = winner;
 	}
 	
 	// now return everything
 	return {
 		history: history,
+		allActions: allActions,
 		currentState: currentState,
 		winner: winner,
 		error: null

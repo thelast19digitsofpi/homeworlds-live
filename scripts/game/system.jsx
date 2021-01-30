@@ -94,7 +94,7 @@ class System extends React.PureComponent {
 		
 		// stars will be inserted in the middle of course
 		return (
-			<div className={className}>
+			<div className={className} style={ {opacity: this.props.opacity !== undefined ? this.props.opacity : 1} }>
 				{this.props.id}
 				{enemyShips}
 				{stars}

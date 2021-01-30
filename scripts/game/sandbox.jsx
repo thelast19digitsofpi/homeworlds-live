@@ -6,48 +6,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import withGame from './game.jsx';
 import GameState from './gameState.mjs';
-import { getCompactSummary } from './gameFunctions.mjs';
+import { getCompactSummary, getMapJSON } from './gameFunctions.mjs';
 import unpackSummary from './unpackSummary.js';
 import {moveToIndex, moveToBeginning, backTurn, backAction, forwardTurn, forwardAction, moveToEnd} from './gameHistory.js';
 
-
-// gets the JSON for the map, specifically in a format I can use when building tutorials
-function getMapJSON() {
-	// JSON.stringify is not sufficient
-	// I want it formatted my way
-	let strings = ["{", "\t\"map\": {",];
-	const map = this.getCurrentState().map;
-	// mult = multiplicity?
-	const colors = "bgry", sizes = 3, mult = "ABCDE";
-	for (let i = 0; i < colors.length; i++) {
-		for (let s = 1; s <= sizes; s++) {
-			for (let k = 0; k < 3; k++) {
-				const serial = `${colors[i]}${s}${mult[k]}`;
-				const data = map[serial];
-				if (data) {
-					const ownerString = (data.owner === null ? "null" : `"${data.owner}"`);
-					strings.push(`\t"${serial}": {"at": ${data.at}, "owner": ${ownerString}},`);
-				} else {
-					strings.push(`\t"${serial}": null,`);
-				}
-			}
-		}
-		// break line after each color
-		strings.push("");
-	}
-	// remove the comma from the second to last line
-	const lastPiece = strings[strings.length - 2];
-	strings[strings.length - 2] = lastPiece.substring(0, lastPiece.length - 1);
-	// the last newline becomes the closing brace
-	strings[strings.length - 1] = "\t},";
-	// now, add the homeworld data
-	strings.push("\"homeworldData\": " + JSON.stringify(this.getCurrentState().homeworldData));
-	strings.push("}");
-	return strings.join("\n");
-}
-
-function SandboxDisplay(props) {
+function SandboxPopup(props) {
 	const textarea = <textarea
+		key={props.importing ? "import-textarea" : "export-textarea"}
 		rows="4"
 		style={{resize: "none"}}
 		className="small"
@@ -62,11 +27,12 @@ function SandboxDisplay(props) {
 		<button onClick={props.getMap} className="btn btn-info" key="map">Get Map</button>,
 		<button onClick={props.getLog} className="btn btn-info" key="log">Get Log</button>
 	];
-	popupButtons.push(<button onClick={props.closePort} className="btn btn-danger" key="cancel">Cancel</button>)
+	// you don't "cancel" an export
+	popupButtons.push(<button onClick={props.closePort} className="btn btn-danger" key="cancel">{props.importing ? "Cancel" : "Close"}</button>)
 	
 	// note to self: importing is dominant over exporting
-	const popup = (props.importing || props.exporting) ? <div className="tutorial-popup-wrapper">
-		<div className="tutorial-popup card bg-light text-dark border border-primary">
+	return (props.importing || props.exporting) ? <div className="control-popup-wrapper" key={Math.random()}>
+		<div className="control-popup card bg-light text-dark border border-primary">
 			<div className="card-body">
 				<h5 className="card-title text-center">
 					{props.importing ? "Open" : "Save"} Map or Game
@@ -83,18 +49,34 @@ function SandboxDisplay(props) {
 			</div>
 		</div>
 	</div> : null;
+}
+
+function SandboxDisplay(props) {
+	console.error("Incineration Counter:", props.popupIncinerationCounter);
+	// forcefully force React to utterly incinerate the previous popup each time
+	const popup = <SandboxPopup key={props.popupIncinerationCounter} {...props} />;
 	
 	const upperRow = <div className="upper-row">
 		<p>
-			<button onClick={props.showImport} className="btn btn-info">Import</button>
-			<button onClick={props.showExport} className="btn btn-info">Export</button>
+			<button onClick={props.showImport} className="btn btn-info">
+				<i className="material-icons md-18 align-middle">open_in_browser</i>
+				Import
+			</button>
+			<button onClick={props.showExport} className="btn btn-info">
+				<i className="material-icons md-18 align-middle">save_alt</i>
+				Export
+			</button>
 			<span className="mr-4">&nbsp;</span>
 			{/* Undo/Redo buttons */}
-			<button onClick={() => backTurn.call(props.parent)} className="btn btn-secondary">
+			<button onClick={() => backTurn.call(props.parent)}
+				className="btn btn-secondary"
+				disabled={props.turnIndex === 0}>
 				<i className="material-icons md-18 align-middle">skip_previous</i>
 				Undo
 			</button>
-			<button onClick={() => forwardTurn.call(props.parent)} className="btn btn-secondary">
+			<button onClick={() => forwardTurn.call(props.parent)}
+				className="btn btn-secondary"
+				disabled={props.turnIndex === props.maxTurnIndex}>
 				Redo
 				<i className="material-icons md-18 align-middle">skip_next</i>
 			</button>
@@ -111,6 +93,7 @@ function SandboxDisplay(props) {
 		</div>
 	</div>;
 }
+
 // the empty object is because we have no events
 const GameSandbox = withGame(SandboxDisplay, {
 	onConstructor: function() {
@@ -125,7 +108,8 @@ const GameSandbox = withGame(SandboxDisplay, {
 		this.getLog = function() {
 			const gs = this.getCurrentState();
 			this.setState({
-				textareaValue: getCompactSummary(this.state.allActions, gs.turnOrder, gs.winner),
+				// assume game is in progress unless phase is "end"
+				textareaValue: getCompactSummary(this.state.allActions, gs.turnOrder, gs.winner, gs.phase !== "end"),
 			});
 		}.bind(this);
 		
@@ -182,6 +166,7 @@ const GameSandbox = withGame(SandboxDisplay, {
 				
 				// ugh I'm not sure how to do this...
 				let hwData = jsonData.homeworldData;
+				let viewer = players[0] || "south";
 				if (!hwData) {
 					// darn, we have to guess
 					hwData = {};
@@ -189,12 +174,12 @@ const GameSandbox = withGame(SandboxDisplay, {
 					const youIndex = players.indexOf("you");
 					if (southIndex >= 0) {
 						// oh good
-						hwData.south = 1;
+						hwData["south"] = 1;
 						// the other player (presumably north?) gets system 2
 						hwData[players[1 - southIndex]] = 2;
 					} else if (youIndex >= 0) {
 						// also good
-						hwData.you = 1;
+						hwData["you"] = 1;
 						hwData[players[1 - youIndex]] = 2;
 					} else {
 						// ok now we really have to guess
@@ -243,22 +228,32 @@ const GameSandbox = withGame(SandboxDisplay, {
 					});
 				}
 				
-				const gameState = new GameState(
-					newMap,
-					players.length > 1 ? "playing" : "end",
-					hwData,
-					maxSystem + 1,
-					players,
-					players[0] || "south", // turn
-					{number: 1, sacrifice: null},
-					// declare a winner if only 1 player was found
-					players.length === 1 ? players[0] : null
-				);
-				let viewer = players[0] || "south";
-				// more conventional first/second players
+				// preferred viewers
 				if (players[1] === "south" || players[1] === "you") {
 					viewer = players[1];
 				}
+				
+				if (players.length === 1) {
+					players.push({
+						// table of common opponents
+						south: "north",
+						north: "south",
+						you: "enemy",
+						enemy: "you",
+					}[players[0]] || "unknown");
+				}
+				
+				const gameState = new GameState(
+					newMap,
+					jsonData.phase || (players.length > 1 ? "playing" : "end"),
+					hwData,
+					maxSystem + 1,
+					players,
+					jsonData.turn || players[0] || "south", // turn
+					jsonData.actions || {number: 1, sacrifice: null},
+					// declare a winner if only 1 player was found
+					players.length === 1 ? players[0] : null
+				);
 				this.setState({
 					// mapOrPlayers, phase, hwData, nextSystemID, turnOrder, turn, actions, winner
 					current: gameState,
@@ -291,10 +286,17 @@ const GameSandbox = withGame(SandboxDisplay, {
 					});
 				}
 				
+				let aip = null;
+				// don't launch homeworld construction if they already made one
+				if (results.currentState.phase === "setup" && results.currentState.actions.number > 0) {
+					aip = {type: "homeworld"};
+				}
+				
 				this.setState({
 					history: results.history,
+					allActions: results.allActions,
 					current: results.currentState,
-					actionInProgress: results.currentState.phase === "setup" ? {type: "homeworld"} : null,
+					actionInProgress: aip,
 				});
 			} catch (error) {
 				console.log(error);
@@ -313,13 +315,12 @@ const GameSandbox = withGame(SandboxDisplay, {
 				this.loadMap();
 			} else {
 				this.loadGame();
+				this.setState(function(reactState) {
+					return {
+						viewer: reactState.current.turnOrder[0] || "south",
+					};
+				});
 			}
-			
-			this.setState(function(reactState) {
-				return {
-					viewer: reactState.current.turnOrder[0] || "south",
-				};
-			});
 			
 			// close the import/export window
 			this.closePort();
@@ -328,12 +329,16 @@ const GameSandbox = withGame(SandboxDisplay, {
 		
 		
 		this.showImport = function() {
-			this.setState({importing: true});
+			this.setState({
+				importing: true,
+				popupIncinerationCounter: this.state.popupIncinerationCounter + 1,
+			});
 		}.bind(this);
 		this.showExport = function() {
 			this.setState({
 				exporting: true,
 				textareaValue: "",
+				popupIncinerationCounter: this.state.popupIncinerationCounter + 1,
 			});
 		}.bind(this);
 		// Port = the common letters from "import" and "export"
@@ -354,8 +359,15 @@ const GameSandbox = withGame(SandboxDisplay, {
 				const thisTurn = this.state.history[this.state.turnIndex].slice(0, this.state.actionIndex + 1);
 				shrunkHistory.push(thisTurn);
 				
+				// same for actions
+				let shrunkActions = this.state.allActions.slice(0, this.state.turnIndex);
+				// but keep one less thing because actions go between history states
+				const thisTurn2 = this.state.allActions[this.state.turnIndex].slice(0, this.state.actionIndex);
+				shrunkActions.push(thisTurn2);
+				
 				this.setState({
 					history: shrunkHistory,
+					allActions: shrunkActions,
 				});
 				// I don't want to deal with state update batching
 				this.forceUpdate();
@@ -399,12 +411,17 @@ const GameSandbox = withGame(SandboxDisplay, {
 			setTextareaValue: this.setTextareaValue,
 			loadError: this.state.loadError,
 			
+			turnIndex: this.state.turnIndex,
+			maxTurnIndex: this.state.history.length - 1,
+			
 			showImport: this.showImport,
 			showExport: this.showExport,
 			closePort: this.closePort,
 			
 			importing: this.state.importing,
 			exporting: this.state.exporting,
+			
+			popupIncinerationCounter: this.state.popupIncinerationCounter,
 			
 			// for the .call() of the navigation functions
 			parent: this,
@@ -428,6 +445,9 @@ const GameSandbox = withGame(SandboxDisplay, {
 	
 	turnIndex: 0,
 	actionIndex: 0,
+	
+	// For preventing the popup from being selected when you close and reopen it.
+	popupIncinerationCounter: 0,
 });
 
 

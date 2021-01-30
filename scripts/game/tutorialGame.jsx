@@ -58,11 +58,11 @@ class TutorialWrapper extends React.Component {
 			showPopup = false;
 		}
 		
-		const popup = showPopup ? <div className="tutorial-popup-wrapper">
-			<div className="tutorial-popup card bg-light text-dark border border-primary">
+		const popup = showPopup ? <div className="control-popup-wrapper">
+			<div className="control-popup card bg-light text-dark border border-primary">
 				<div className="card-body">
 					<h5 className="card-title text-center">{popupTitle}</h5>
-					<p style={{whiteSpace: "pre-line"}} className="mb-0">
+					<p style={{whiteSpace: "pre-line"}} className="mb-0 control-allow-select">
 						{popupMessage}
 					</p>
 				</div>

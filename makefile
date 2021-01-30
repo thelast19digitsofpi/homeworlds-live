@@ -12,8 +12,10 @@ run:
 watch:
 	npm run watch &
 
+# This was also partially to give me a quick way to build the SVG files needed
 build-svgs:
 	node build_scripts/build-svgs.js
 
 build-background:
 	node build_scripts/build-background.js
+	

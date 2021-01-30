@@ -18,7 +18,7 @@ function ActionInProgress(props) {
 	if (aip) {
 		const message = "Click on " + (
 			aip.type === "trade" ? "a piece in the stash to TRADE for" :
-			aip.type === "move" ? "any star on the board to MOVE there" :
+			aip.type === "move" ? "a star to MOVE there, or a piece in the stash to DISCOVER" :
 			aip.type === "discover" ? "a piece in the stash to DISCOVER" :
 			aip.type === "homeworld" ? (
 				(!aip.star1) ? "a piece in the stash for your FIRST star" :

@@ -10,7 +10,7 @@ app.get(/\/archive\/?$/, async function(req, res) {
 	try {
 		const rows = await databaseCall(db, "all", "SELECT * FROM gameArchive", []);
 		if (!rows) {
-			return res.status(500).send("Something went wrong, the archive database does not seem to be working.");
+			return res.status(500).send("500 Internal Server Error: Something went wrong, the archive database does not seem to be working.");
 		}
 		// I don't trust "rows" to be a legit array
 		res.locals.render.archiveList = Array.prototype.map.call(rows, function(row) {
@@ -22,6 +22,7 @@ app.get(/\/archive\/?$/, async function(req, res) {
 				// the first two rows have the players and winner
 				numTurns: row.summary.split("\n").length - 2,
 				options: JSON.parse(row.options),
+				date: row.date,
 			};
 			// reverse so the most recent game is on top
 		}).reverse();
@@ -34,7 +35,7 @@ app.get(/\/archive\/?$/, async function(req, res) {
 	}
 });
 
-app.get("/archive/view/:gameID", async function(req, res) {
+app.get("/archive/view/:gameID", async function(req, res, next) {
 	const id = Number(req.params.gameID);
 	if (isNaN(id)) {
 		return res.status(400).send("Invalid archive game.");
@@ -44,7 +45,10 @@ app.get("/archive/view/:gameID", async function(req, res) {
 		const row = await databaseCall(db, "get", "SELECT * FROM gameArchive WHERE id = ?", [id]);
 		console.log(row);
 		if (!row) {
-			return res.status(404).send("That game does not exist and never existed.");
+			return next({
+				status: 404,
+				isArchive: true,
+			});
 		}
 		
 		// Get the information.
@@ -63,7 +67,7 @@ app.get("/archive/view/:gameID", async function(req, res) {
 	}
 });
 
-app.get("/archive/raw/:gameID", async function(req, res) {
+app.get("/archive/raw/:gameID", async function(req, res, next) {
 	const id = Number(req.params.gameID);
 	if (isNaN(id)) {
 		return res.status(400).send("Invalid archive game.");
@@ -73,7 +77,7 @@ app.get("/archive/raw/:gameID", async function(req, res) {
 		const row = await databaseCall(db, "get", "SELECT * FROM gameArchive WHERE id = ?", [id]);
 		console.log(row);
 		if (!row) {
-			return res.status(404).send("That game does not exist and never existed.");
+			return res.status(404).send("That game does not exist.");
 		}
 		
 		// for now, just send it as json

@@ -31,7 +31,7 @@ function Stash(props) {
 			highlight[aip.oldPiece[1]] = true;
 		}
 		
-		if (aip.type === "discover") {
+		if (aip.type === "discover" || aip.type === "move") {
 			// turn off anything matching the stars you are at
 			const fromSystem = props.map[aip.oldPiece].at;
 			for (let serial in props.map) {

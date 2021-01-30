@@ -20,6 +20,10 @@ function ActionsPopup(props) {
 		let buttons = [];
 		for (let i = 0; i < popup.actions.length; i++) {
 			let ac = popup.actions[i];
+			// discover and move are in the same thing
+			if (ac.type === "discover") {
+				continue;
+			}
 			let className = "btn btn-outline-";
 			let message;
 			if (ac.type === "build") {
@@ -30,10 +34,7 @@ function ActionsPopup(props) {
 				message = "Trade...";
 				className += "primary";
 			} else if (ac.type === "move") {
-				message = "Move...";
-				className += "warning";
-			} else if (ac.type === "discover") {
-				message = "Discover a system...";
+				message = "Move / Discover...";
 				className += "warning";
 			} else if (ac.type === "steal") {
 				message = "Capture this ship";

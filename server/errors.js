@@ -7,7 +7,8 @@ const errorHandler = require("express-error-handler");
 const handler = errorHandler({
 	handlers: {
 		404: function notFound(error, req, res) {
-			console.log(arguments);
+			console.log(error);
+			res.locals.render.error = error;
 			return res.status(404).render("404", res.locals.render);
 		},
 	},

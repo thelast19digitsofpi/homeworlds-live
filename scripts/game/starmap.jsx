@@ -404,6 +404,7 @@ class StarMap extends React.Component {
 				// select the right container to put it in
 				// (you can get AIPs for north in sandbox or maybe archive viewer)
 				const container = containers[aip.player === props.viewer ? 'hwSouth' : 'hwNorth'];
+				// the "..." means the homeworld is being built but is not official
 				container.push(<System
 					key="hw-in-progress"
 					id="..."
@@ -425,6 +426,23 @@ class StarMap extends React.Component {
 				const system = systems[id];
 				const myStars = system.stars.map(dataToSerial);
 				
+				// if moving, fade illegal systems
+				let opacity = 1;
+				if (aip && aip.type === "move") {
+					try {
+						const oldSystemID = map[aip.oldPiece].at;
+						const oldStars = systems[oldSystemID].stars.map(star => star.serial);
+						// if not connected, and not our system, fade it out
+						console.warn(oldSystemID, id);
+						if (!GameState.areStarsConnected(oldStars, myStars) && oldSystemID !== Number(id)) {
+							opacity = 0.6;
+						}
+						// if error, don't fade anything
+					} catch (error) {
+						console.error(error);
+					};
+				}
+				
 				const reactElement = (
 					<System
 						key={id}
@@ -437,6 +455,7 @@ class StarMap extends React.Component {
 						activePiece={activePiece}
 						displayMode={props.displayMode}
 						recentlyUsedPiece={props.allowAnimations ? props.recentlyUsedPiece : null}
+						opacity={opacity}
 						
 						handleBoardClick={props.handleBoardClick}
 					/>

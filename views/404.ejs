@@ -9,7 +9,14 @@
 		<div class="container">
 			<h2>404</h2>
 			<p class="lead">Looks like that star system does not exist! It may have been abandoned.</p>
-			<p>Maybe try returning to your <a href="/index.html">homeworld</a>?</p>
+			
+		<% if (error.isGame) { %>
+			<p>Or perhaps this game already finished -- you can find it in the <a href="/archive/view/<%= error.id %>">archive</a> if so.</p>
+		<% } else if (error.isArchive) { %>
+			<p>Hmmm... Try looking in the <a href="/archive">archive table</a>.</p>
+		<% } else { %>
+			<p>Maybe try returning to your <a href="/index.html">homeworld</a>, or to the <a href="lobby">game lobby</a>?</p>
+		<% } %>
 		</div>
 		
 		<%- include("footer") %>

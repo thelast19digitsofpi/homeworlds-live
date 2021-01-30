@@ -15,4 +15,5 @@ require("./server/tutorials.js");
 require("./server/archive.js");
 require("./server/otherPages.js");
 require("./server/admin.js");
+// this has to be last
 require("./server/errors.js");
