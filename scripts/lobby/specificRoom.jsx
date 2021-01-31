@@ -207,7 +207,14 @@ class SpecificRoom extends React.Component {
 				Or, if you want, you can &#160;
 				<button onClick={() => this.cancelStart()} className="btn btn-danger">cancel</button> the game starting.
 			</React.Fragment>)}
-		</p>
+		</p>;
+		
+		
+		const turnOrderMessage = " " + {
+			0: (room.players[0] || {username: "??"}).username + " will go first",
+			1: (room.players[0] || {username: "??"}).username + " will go second",
+			"random": "Turn order is random",
+		}[options.turnOrder] || "Turn order is random";
 		
 		// Render!
 		if (room.isStarting) {
@@ -220,15 +227,15 @@ class SpecificRoom extends React.Component {
 					&bull;
 					Players: {room.players.map(player => player.username).join(", ")}
 				</p>
+				<p>{turnOrderMessage}</p>
 				{launchSequenceUI}
 			</div>;
 		} else {
 			return <div className="container">
 				<h4>Game Room #{room.id}</h4>
 				<h5 className="text-muted">
-					This table fits {room.numPlayers} players
-					&bull;
-					Time control: {this.getTimeControlString()}
+					Time control: {this.getTimeControlString()}; 
+					{turnOrderMessage}
 				</h5>
 				
 				{ /* Rendering the Error Message */

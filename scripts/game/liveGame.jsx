@@ -245,31 +245,28 @@ class LiveGameDisplay extends React.Component {
 		}
 		
 		let showLastTurnButtons = null;
-		if (innerState.isPlaying) {
-			if (innerState.viewingPrevious) {
-				showLastTurnButtons = <div className="card">
+		if (innerState.viewingPrevious) {
+			showLastTurnButtons = <div className="card">
+				<button type="button"
+					className="btn btn-secondary"
+					onClick={this.props.endViewLastTurn}
+					>Back to Normal</button>
+				<br/>
+				<div className="btn-group" role="group">
 					<button type="button"
-						className="btn btn-secondary"
-						onClick={this.props.endViewLastTurn}
-						>Back to Normal</button>
-					<br/>
-					<div className="btn-group" role="group">
-						<button type="button"
-							className="btn btn-primary"
-							onClick={this.props.lastTurnBackward}>&lt; Back</button>
-						<button type="button"
-							className="btn btn-primary"
-							onClick={this.props.lastTurnForward}>Fwd &gt;</button>
-					</div>
+						className="btn btn-primary"
+						onClick={this.props.lastTurnBackward}>&lt; Back</button>
+					<button type="button"
+						className="btn btn-primary"
+						onClick={this.props.lastTurnForward}>Fwd &gt;</button>
 				</div>
-			} else {
-				showLastTurnButtons = <div className="card">
-					<button className="btn btn-secondary btn-sm"
-						onClick={() => this.props.viewLastTurn()}
-						>View Last Turn</button>
-				</div>
-			}
-			
+			</div>
+		} else {
+			showLastTurnButtons = <div className="card">
+				<button className="btn btn-secondary btn-sm"
+					onClick={() => this.props.viewLastTurn()}
+					>View Last Turn</button>
+			</div>
 		}
 		
 		const gameOverlayClass = (innerState.viewingPrevious) ? "rewind-overlay" : "d-none";

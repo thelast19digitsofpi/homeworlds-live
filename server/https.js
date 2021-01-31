@@ -68,6 +68,10 @@ app.use('/images', express.static("images"));
 app.use('/styles', express.static("styles"));
 app.use('/scripts', express.static("dist"));
 
+app.get('/scripts/bootstrap.min.js.map', function(req, res) {
+	return res.sendFile(path.join(__dirname, "../scripts/bootstrap/bootstrap.min.js.map"));
+});
+
 // Use EJS
 const ejs = require("ejs");
 ejs.fileLoader = function(filePath) {

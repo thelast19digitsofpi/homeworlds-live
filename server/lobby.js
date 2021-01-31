@@ -303,6 +303,7 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 					type: data.tcType,
 				} : null,
 				isRated: data.isRated,
+				turnOrder: data.turnOrder,
 			}
 		);
 		console.error("NOTE: Adding current player to player list -- should be better.");
@@ -473,7 +474,6 @@ ioLobby.on("connection", function onSocketConnect(socket) {
 	
 	socket.on("disconnect", function onSocketDisconnect() {
 		console.warn("DISCONNECT");
-		//console.dir(socket);
 		
 		gameLobby.onSocketDisconnect(socket);
 	});

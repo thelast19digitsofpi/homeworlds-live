@@ -56,9 +56,16 @@ GameManager.prototype.getPlayerByUsername = function(username) {
 
 // Note that this does not require lobbyGameRoom.js...
 GameManager.prototype.startGameByRoom = function(gameRoom) {
-	// This can NOT POSSIBLY be all there is...
-	// .slice() to copy the array
-	const newGame = new Game(gameRoom.id, gameRoom.options, gameRoom.players.slice(), this);
+	// Shuffle or remap the player list
+	let players = gameRoom.players;
+	const turnOrder = gameRoom.options.turnOrder;
+	console.log("\x1b[31;1m" + "Turn Order is", turnOrder, "\x1b[30;0m");
+	const startIndex = (turnOrder === "random" ? Math.floor(Math.random() * players.length) : turnOrder);
+	console.log("\x1b[34;1mStarting with", startIndex, "\x1b[30;0m");
+	players = players.slice(startIndex).concat(players.slice(0, startIndex));
+	
+	// make the game
+	const newGame = new Game(gameRoom.id, gameRoom.options, players, this);
 	this.games.push(newGame);
 	// Add the new players to the list of players in our game collection
 	// But is this really needed?

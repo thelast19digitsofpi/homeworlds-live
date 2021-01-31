@@ -16,6 +16,8 @@ class CreateGame extends React.Component {
 			
 			isRated: true,
 			
+			turnOrder: "random",
+			
 			// tc stands for time control
 			isTimed: false,
 			tcMinutes: 10,
@@ -107,12 +109,23 @@ class CreateGame extends React.Component {
 					<div className="form-group">
 						{errorMessage}
 						<label htmlFor="selectNumPlayers">Number of Players</label>
-						<select className="custom-select" id="selectNumPlayers" name="numPlayers"    value={this.state.numPlayers}
+						<select className="custom-select" id="selectNumPlayers" name="numPlayers" value={this.state.numPlayers}
 						        onChange={this.handleInput}>
 							<option value={2}>2</option>
 							{/* more coming... */}
 						</select>
 						<p className="form-text small">Currently only 2-player games are supported.</p>
+					</div>
+					
+					<div className="input-group mb-3">
+						<div className="input-group-prepend">
+							<label className="input-group-text" htmlFor="selectTurnOrder">First Player:</label>
+						</div>
+						<select className="custom-select" id="selectTurnOrder" name="turnOrder" value={this.state.turnOrder} onChange={this.handleInput}>
+							<option value="random">Random</option>
+							<option value={0}>I go First</option>
+							<option value={1}>Opponent First</option>
+						</select>
 					</div>
 					
 					{/* Is game rated? */}

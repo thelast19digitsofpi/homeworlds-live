@@ -55,8 +55,6 @@ class MainLobby extends React.Component {
 	}
 	
 	showSpecificRoom(newRoomID) {
-		console.warn(`showSpecificRoom(${newRoomID})`);
-		console.log(this.state.gameRooms);
 		const rooms = this.state.gameRooms;
 		for (let i = 0; i < rooms.length; i++) {
 			if (rooms[i].id === newRoomID) {
@@ -78,7 +76,7 @@ class MainLobby extends React.Component {
 			whosPlaying: data.whosPlaying,
 			gameRooms: data.gameRooms,
 		});
-		console.log("Received server update response");
+		//console.log("Received server update response");
 		
 		// If you are inside a room, watch for changes to that room
 		let foundRoom = false;
