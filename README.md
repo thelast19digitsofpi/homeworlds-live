@@ -10,9 +10,12 @@ Requires Node.js version 12 or higher.
 
 To run this locally you need a self-signed certificate which can be generated if you have **OpenSSL**. You need to be in the main directory (the one with the `makefile` and `package.json`). [Here's how](https://stackoverflow.com/a/10176685). 
 
-You probably also want to run `npm run dev` to make the development version of the bundles.
+After that, if you plan to make changes to client-side code, you need to run `npm run watch-dev` to start the automatic build process. Whenever you make changes to client-side code, it will automatically recompile. (This uses a bit of CPU so you might want to ^C it when you take a break.)
 
-If you have GNU Make, simply do `make run` to start the server locally on port 8443. Otherwise, you need `node --experimental-modules main.js` on Node 12, and simply `node main.js` on Node 13+. At least, I think so.
+Otherwise, run `npm run start-dev` to launch the server. Then navigate to `https://localhost:8443` and begin.
+
+For production mode (i.e. before committing), make sure to do `npm run build` to make optimized versions of the scripts. This takes a bit longer.
+
 
 ### Star map implementation
 Should there be need for it, here is how I organized the star map (arrangement of pieces):

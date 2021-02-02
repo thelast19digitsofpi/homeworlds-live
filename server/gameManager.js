@@ -59,6 +59,7 @@ GameManager.prototype.startGameByRoom = function(gameRoom) {
 	// Shuffle or remap the player list
 	let players = gameRoom.players;
 	const turnOrder = gameRoom.options.turnOrder;
+	// it looks messy because I'm using color escape codes
 	console.log("\x1b[31;1m" + "Turn Order is", turnOrder, "\x1b[30;0m");
 	const startIndex = (turnOrder === "random" ? Math.floor(Math.random() * players.length) : turnOrder);
 	console.log("\x1b[34;1mStarting with", startIndex, "\x1b[30;0m");

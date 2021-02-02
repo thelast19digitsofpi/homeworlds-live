@@ -42,10 +42,11 @@
 		"webpack-dev-server": "^3.11.2"
 	},
 	"scripts": {
-		"dev": "webpack --mode development",
 		"start": "node --experimental-modules main.js",
+		"start-dev": "NODE_ENV=dev node --experimental-modules main.js",
 		"build": "webpack --mode production",
-		"watch": "webpack --watch",
-		"watch-dev": "webpack --mode development --watch"
+		"watch-dev": "webpack --mode development --watch",
+		"build-svgs": "node build_scripts/build-svgs.js",
+		"build-background": "node build_scripts/build-background.js"
 	}
 }
