@@ -8,7 +8,7 @@ const CopyPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 // All these pages use only the basic scripting
-const simplePages = ["index", "howThisWorks", "login", "createAccount", "changePassword", "orDidI", "404", "admin"].map(function(page) {
+const simplePages = ["index", "howThisWorks", "login", "createAccount", "changePassword", "orDidI", "404", "admin", "complain", "complainSuccess"].map(function(page) {
 	return new HtmlWebpackPlugin({
 		hash: true,
 		chunks: ["vendor"],

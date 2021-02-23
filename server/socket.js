@@ -28,7 +28,7 @@ async function checkSocketCookie(socket, next) {
 	if (auth === null) {
 		// You are not supposed to be here! Disconnect.
 		socket.disconnect(true);
-		console.error("Unauthenticated Socket!");
+		//console.error("Unauthenticated Socket!");
 		return;
 	} else {
 		socket._username = auth;

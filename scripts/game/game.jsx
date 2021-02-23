@@ -82,6 +82,8 @@ function withGame(WrappedComponent, events, additionalState) {
 			
 			// we need the coordinates of the star map
 			this.starMapRef = React.createRef();
+			// and access to the warning box
+			this.warningRef = React.createRef();
 			
 			// for my debugging!
 			window._g = this;
@@ -722,7 +724,18 @@ function withGame(WrappedComponent, events, additionalState) {
 					if (warnings[i].level === "warning" || warnings[i].level === "danger") {
 						this.setState({
 							showWarningPrompt: true,
-						});
+						}, function() {
+							// After showing the prompt, focus the End Turn DOM element
+							console.log(this.warningRef);
+							const warningButton = this.warningRef.current;
+							if (warningButton) {
+								console.log("Focusing on", warningButton);
+								warningButton.focus();
+							}
+							
+							// and also scroll down for more emphasis
+							window.scrollBy(0, 100);
+						}.bind(this));
 						return;
 					}
 				}
@@ -732,6 +745,7 @@ function withGame(WrappedComponent, events, additionalState) {
 			this.doEndTurn(current.turn);
 		}
 		
+		// For the popup that sort of covers the map when you deliberately click "1 warning(s)".
 		toggleWarningPopup() {
 			this.setState(function(reactState) {
 				// Toggle the popup, but don't show it over the confirm prompt
@@ -882,6 +896,7 @@ function withGame(WrappedComponent, events, additionalState) {
 							this.state.showWarningPrompt && 
 							<WarningPrompt
 								warnings={warnings}
+								warningRef={this.warningRef}
 								onClose={() => this.dismissWarnings()}
 								onEndTurn={() => this.doEndTurn(current.turn)} />
 						}

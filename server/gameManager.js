@@ -8,6 +8,7 @@
 const {app} = require("./https.js");
 const Game = require("./oneGame.js");
 const db = require("./database.js");
+const {databaseCall} = require("./my-util.js");
 const {io, checkSocketCookie} = require("./socket.js");
 const {renewCookie} = require("./accounts.js");
 const elo = require("./elo.js");
@@ -215,10 +216,17 @@ app.get("/game/:gameID", function(req, res, next) {
 		res.locals.render.gameID = req.params.gameID;
 		res.render("liveGame", res.locals.render);
 	} else {
-		next({
-			status: 404,
-			isGame: true,
-			id: requestedID
+		// see if there is one in the archive
+		db.get("SELECT id FROM gameArchive WHERE id = ?", [requestedID], function(err, content) {
+			if (content) {
+				res.redirect("/archive/view/" + requestedID);
+			} else {
+				next({
+					status: 404,
+					isGame: true,
+					id: requestedID,
+				});
+			}
 		});
 	}
 });

@@ -59,6 +59,7 @@ class LiveGameDisplay extends React.Component {
 	render() {
 		// get the state object of the game
 		const innerState = this.props.reactState;
+		const gameGoing = (innerState.isPlaying && !innerState.endGameInfo);
 		
 		const clocks = innerState.clocks; // somehow get these
 		let clockElements = [];
@@ -215,19 +216,19 @@ class LiveGameDisplay extends React.Component {
 		
 		const offerDraw = <div className="card">
 			{/* Only show the offer-draw button if you are playing */}
-			{innerState.isPlaying && <button className="btn btn-secondary"
+			{gameGoing && <button className="btn btn-secondary"
 				onClick={() => this.handleClickOfferDraw()}>Offer a Draw</button>}
 			<p className="text-center">Draw votes: {drawVotes}</p>
 			{
-				this.state.drawVotes.length > 0 && innerState.isPlaying && (
+				this.state.drawVotes.length > 0 && gameGoing && (
 					<button className="btn btn-primary"
 						onClick={() => this.handleClickCancelDraw()}>Cancel Draw</button>
 				)
 			}
-		</div>
+		</div>;
 		
 		let resignButtons = null;
-		if (innerState.isPlaying) {
+		if (gameGoing) {
 			if (this.state.confirmResign) {
 				resignButtons = <div className="d-flex flex-column justify-content-between">
 					<button className="btn btn-success"

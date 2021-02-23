@@ -10,7 +10,7 @@ function WarningPrompt(props) {
 	return <div className="alert alert-light">
 		<span className="float-right">
 			<button className="btn btn-secondary" onClick={props.onClose}>Cancel</button>
-			<button className="btn btn-primary" onClick={props.onEndTurn}>End Turn</button>
+			<button className="btn btn-primary" onClick={props.onEndTurn} ref={props.warningRef}>End Turn</button>
 		</span>
 		<h4 className="text-warning">Are you sure?</h4>
 		{warningElements}

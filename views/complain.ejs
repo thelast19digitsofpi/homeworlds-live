@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Bugs and Requests</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h3>Bug Reports and Feature Requests</h3>
+			<p class="lead">I prefer bug reports and feature requests to be delivered through <a href="https://github.com/thelast19digitsofpi/homeworlds-live/issues/new">GitHub</a>, but if you do not have an account there (or wish to be anonymous) you can use my form here:</p>
+			<form id="complain-form" method="post" action="/complain">
+				<% if (typeof error !== 'undefined') { _%>
+				<h5 class="text-warning"><%= error %></h5>
+				<% } %>
+				<div class="form-group">
+					<label for="description" id="length-counter">Description</label>
+					<br/>
+					<textarea id="description" name="description" maxlength="1000" style="width: 100%"></textarea>
+				</div>
+				<p class="form-text mb-1">Limit 1000 characters. If reporting a bug, please state what happened, a link to the game if possible, and what (if any) unusual things you did (e.g. was this a multi-action turn?).</p>
+				<input type="submit" value="Submit" class="btn btn-primary btn-lg" />
+			</form>
+		</div>
+		<script>
+
+const p = document.getElementById("length-counter");
+const textarea = document.getElementById("description");
+textarea.addEventListener("input", function() {
+	p.textContent = "Description (" + String(this.value.length) + "/1000)";
+});
+
+		</script>
+		<%- include("footer") %>
+	</body>
+</html>
