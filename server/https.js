@@ -84,7 +84,9 @@ app.set('views', path.join(__dirname, "../dist"));
 const nodeEnv = process.env.NODE_ENV;
 console.log(nodeEnv);
 app.use(function(req, res, next) {
-	res.locals.render = {};
+	res.locals.render = {
+		launchTime: launchTime,
+	};
 	
 	crypto.randomBytes(24, function(err, buf) {
 		if (err) {

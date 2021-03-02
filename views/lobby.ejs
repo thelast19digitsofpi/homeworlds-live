@@ -7,7 +7,8 @@
 	<body>
 		<%- include("header") %>
 		<div class="container">
-			
+			<% const minutes = Math.round((Date.now() - launchTime) / 60e3); %>
+			<p class="text-warning">Time since server launch: <%= Math.floor(minutes/60) %> hours <%= minutes % 60 %> minutes. (I think 12 hours is bad.)</p>
 			<!-- looks like we need some React -->
 			<div id="lobby-container"></div>
 			

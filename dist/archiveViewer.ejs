@@ -1,29 +1,6 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<%- include("headElement") %>
-		<title>Archive Game <%- archiveGame.id %></title>
-	</head>
-	<body>
-		<%- include("header") %>
-		
-		<h3 class="title">Archive Viewer for Game #<%- archiveGame.id %></h3>
-		<h5 class="subtitle"><%= archiveGame.players.join(" vs ") %></h5>
-		<% if (!archiveGame.date) { %>
-		<p class="small">Note: This game was played in 2020, when I used an outdated version of the rules, where enemy homeworlds would be returned to the stash mid-turn. The <a href="https://www.looneylabs.com/sites/default/files/literature/Homeworlds%20Rules13.pdf">Pyramid Quartet rules</a>, which this website follows since 2021, say such stars remain until the end of the turn.</p>
-		<% } %>
-		<div id="game-container"></div>
-		
-		<%- include("footer") %>
-		<script>
-const GAME_INFO = {
-	id: <%- archiveGame.id %>,
-	<%# this is somewhat unfortunate that I have to json it both ways
-	but I have to count on React to not actually set any innerHTML's %>
-	players: JSON.parse(`<%- JSON.stringify(archiveGame.players) %>`),
+<!doctype html><html><head> <%- include("headElement") %> <title>Archive Game <%- archiveGame.id %></title></head><body> <%- include("header") %> <h3 class="title">Archive Viewer for Game #<%- archiveGame.id %></h3><h5 class="subtitle"><%= archiveGame.players.join(" vs ") %></h5> <% if (!archiveGame.date) { %> <p class="small">Note: This game was played in 2020, when I used an outdated version of the rules, where enemy homeworlds would be returned to the stash mid-turn. The <a href="https://www.looneylabs.com/sites/default/files/literature/Homeworlds%20Rules13.pdf">Pyramid Quartet rules</a>, which this website follows since 2021, say such stars remain until the end of the turn.</p> <% } %> <div id="game-container"></div> <%- include("footer") %> <script>const GAME_INFO = {
+	id: <%- archiveGame.id %>, <%# this is somewhat unfortunate that I have to json it both ways
+	but I have to count on React to not actually set any innerHTML's %> players: JSON.parse(`<%- JSON.stringify(archiveGame.players) %>`),
 	summary: `<%- archiveGame.summary %>`,
 };
-console.log(GAME_INFO);
-		</script>
-	<script src="/scripts/vendor.js?020324f1140531b2f379"></script><script src="/scripts/archiveGame.js?020324f1140531b2f379"></script></body>
-</html>
+console.log(GAME_INFO);</script><script src="/scripts/vendor.js?6a693da0c55ac5ab56d9"></script><script src="/scripts/archiveGame.js?6a693da0c55ac5ab56d9"></script></body></html>

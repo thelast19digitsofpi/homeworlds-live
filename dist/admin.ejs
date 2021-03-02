@@ -1,9 +1,4 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<title>Admin</title>
-		<style>
-body {
+<!doctype html><html><head><title>Admin</title><style>body {
 	font-family: monospace;
 }
 
@@ -29,84 +24,6 @@ body {
 	padding: 5px;
 	margin: none;
 	border: 1px solid black;
-}
-
-
-		</style>
-	</head>
-	<body>
-		<h1>Administrator</h1>
-		<p>Welcome to the admin panel.</p>
-		
-		<h3>Complaints (<%= complaints.length %>)</h3>
-		<form method="POST" action="/admin/complaint">
-			<table id="complaints" cellspacing="0">
-				<thead>
-					<tr>
-						<th>?</th>
-						<th>ID</th>
-						<th>Date</th>
-						<th>Description</th>
-						<th>Completed?</th>
-					</tr>
-				</thead>
-			<% for (let i = 0; i < complaints.length; i++) {
-				var complaint = complaints[i]; %>
-				<tr>
-					<td><input type="checkbox" name="<%= complaint.id %>" /></td>
-					<td><%= complaint.id %></td>
-					<td><%= new Date(complaint.date).toUTCString() %></td>
-					<td>
-						<!-- wrap in a div to ensure sane sizing -->
-						<div class="complaint-text"><%= complaint.description %></div>
-					</td>
-					<td><%= complaint.completed ? "Yes" : "No" %></td>
-				</tr>
-			<% } %>
-			</table>
-			<select name="action">
-				<option value="mark-complete" selected>Mark Complete</option>
-				<option value="mark-incomplete">Mark Incomplete</option>
-				<option value="delete">Delete</option>
-			</select>
-			<input type="submit" />
-		</form>
-		
-		<h3>Games in Progress (<%= games.length %>)</h3>
-		<table>
-			<thead>
-				<tr>
-					<th>ID</th>
-					<th colspan="2">Players</th>
-				</tr>
-			</thead>
-			<tbody>
-			<% for (let i = 0; i < games.length; i++) {
-				const game = games[i]; %>
-				<tr>
-					<td>
-						<a href="/game/<%= game.id %>"><%= game.id %></a>
-					</td>
-				<% for (let j = 0; j < players.length; j++) { %>
-					<td><%= players[j] %></td>
-				<% } %>
-				</tr>
-			<% } %>
-			<% if (games.length === 0) { %>
-				<tr>
-					<td colspan="3" align="center">No games being played at this time</td>
-				</tr>
-			<% } %>
-			</tbody>
-		</table>
-		
-		<h3>Users</h3>
-		<ul id="userlist">
-		<% for (let i = 0; i < users.length; i++) { %>	
-			<li><%= users[i].username %> (<%= users[i].rating || "no rating" %>)</li>
-		<% } %>
-		</ul>
-		
-		<%- include("footer") %>
-	<script src="/scripts/vendor.js?020324f1140531b2f379"></script></body>
-</html>
+}</style></head><body><h1>Administrator</h1><p>Welcome to the admin panel.</p><h3>Complaints (<%= complaints.length %>)</h3><form method="POST" action="/admin/complaint"><table id="complaints" cellspacing="0"><thead><tr><th>?</th><th>ID</th><th>Date</th><th>Description</th><th>Completed?</th></tr></thead> <% for (let i = 0; i < complaints.length; i++) {
+				var complaint = complaints[i]; %> <tr><td><input type="checkbox" name="<%= complaint.id %>"/></td><td><%= complaint.id %></td><td><%= new Date(complaint.date).toUTCString() %></td><td><div class="complaint-text"><%= complaint.description %></div></td><td><%= complaint.completed ? "Yes" : "No" %></td></tr> <% } %> </table><select name="action"><option value="mark-complete" selected="selected">Mark Complete</option><option value="mark-incomplete">Mark Incomplete</option><option value="delete">Delete</option></select> <input type="submit"/></form><h3>Games in Progress (<%= games.length %>)</h3><table><thead><tr><th>ID</th><th colspan="2">Players</th></tr></thead><tbody> <% for (let i = 0; i < games.length; i++) {
+				const game = games[i]; %> <tr><td><a href="/game/<%= game.id %>"><%= game.id %></a></td> <% for (let j = 0; j < players.length; j++) { %> <td><%= players[j] %></td> <% } %> </tr> <% } %> <% if (games.length === 0) { %> <tr><td colspan="3" align="center">No games being played at this time</td></tr> <% } %> </tbody></table><h3>Users</h3><ul id="userlist"> <% for (let i = 0; i < users.length; i++) { %> <li><%= users[i].username %> (<%= users[i].rating || "no rating" %>)</li> <% } %> </ul> <%- include("footer") %> <script src="/scripts/vendor.js?6a693da0c55ac5ab56d9"></script></body></html>
