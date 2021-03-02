@@ -58,7 +58,7 @@ function TurnControls(props) {
 					</div>
 				}
 				<button className={"end-turn mt-2 btn btn-lg btn-" + endTurnClass}
-				        onClick={props.handleEndTurnClick}>End Turn</button>
+				        onClick={props.handleEndTurnClick}>{props.actionCount > 0 ? "Pass" : "End"} Turn</button>
 			</div>
 			{warningContent}
 			{!props.disableWarnings && <button className={"text-light mt-3 btn btn-" + warningClass} onClick={props.toggleWarningPopup}>{warnings.length} warning(s)</button>}

@@ -1528,6 +1528,8 @@ class GameState {
 			}
 		}
 		
+		// todo: warning at catastrophes
+		
 		return warnings;
 	}
 	

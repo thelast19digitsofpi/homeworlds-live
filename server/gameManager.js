@@ -246,7 +246,7 @@ ioGame.on("connection", function(socket) {
 		const game = gameManager.getGameById(id);
 		if (game) {
 			// You are allowed to watch games in progress.
-			let viewer = game.players[0].username;
+			let viewer = game.players[1].username;
 			const yourPlayer = game.getPlayerByUsername(thisUsername);
 			if (yourPlayer !== null) {
 				// They see it from their own perspective.

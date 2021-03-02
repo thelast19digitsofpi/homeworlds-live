@@ -54,7 +54,7 @@ app.get("/admin", async function(req, res, next) {
 			});
 			let usersRated = await databaseCall(db, "all", "SELECT username, rating FROM users INNER JOIN elo on elo.userID = users.id");
 			let usersUnrated = await databaseCall(db, "all", "SELECT username, id FROM users WHERE id not in (SELECT userID FROM elo)")
-			console.log(usersUnrated);
+			//console.log(usersUnrated);
 			res.locals.render.users = Array.prototype.concat.call(usersRated, usersUnrated);
 			
 			res.locals.render.complaints = await databaseCall(db, "all", "SELECT * FROM complaints", []);

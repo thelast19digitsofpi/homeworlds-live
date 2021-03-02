@@ -1,1 +1,50 @@
-<!doctype html><html><head> <%- include("headElement") %> <title>Create Account</title></head><body> <%- include("header") %> <div class="container"><h2>Create Account</h2><p class="lead">Already have an account? <a href="/createAccount">Log in</a>.</p><form id="create-account-form" method="post" action="/createAccount"><div class="form-group"> <% if (typeof error !== 'undefined' && error.type === "username") { %> <h4 class="text-warning"><%= error.message %></h4> <% } %> <label for="create-username" class="lead">Username</label> <input name="username" class="form-control" aria-describedby="login-username" value="<%= typeof username !== 'undefined' ? username : '' %>"/><p class="form-text">Username must contain 3-20 characters. Letters, numbers, and <code>.!@#$%^&*()_+-=</code> are allowed. Spaces are allowed, but not at the beginning or end.</p></div><div class="form-group"> <% if (typeof error !== 'undefined' && error.type === "password") { %> <h6 class="text-warning"><%= error.message %> <% } %> <label for="create-password" class="lead">Passphrase</label> <input type="password" name="password" class="form-control" aria-describedby="login-password" required/><p class="form-text">Must be between 12 and 99 characters and please <strong class="text-danger">do NOT use anything you have used on another site</strong>.<br/>No, really. I am just a college student who made this as a summer project. I probably have a security hole somewhere. Your best recourse is simply to pick a unique passphrase.</p></h6></div><div class="form-group"> <% if (typeof error !== 'undefined' && error.type === "confirmPassword") { %> <h6 class="text-warning"><%= error.message %> <% } %> <label for="create-confirm-password" class="lead">Confirm Passphrase</label> <input type="password" name="confirmPassword" class="form-control" aria-describedby="login-password" required/><p class="form-text">I really mean it. <strong class="text-warning">DO. NOT. REUSE. PASSWORDS.</strong> (You really should not be reusing them at all, but especially not on some security novice's random project. You might want to look into password managers.)</p></h6></div><p>Note that there is currently no way to reset your password if you forget.</p><input type="submit" class="btn btn-primary btn-lg"/></form></div> <%- include("footer") %> <script src="/scripts/vendor.js?2ccf97625a28e44c833c"></script></body></html>
+<!DOCTYPE html>
+<html>
+	<head>
+		<%- include("headElement") %>
+		<title>Create Account</title>
+	</head>
+	<body>
+		<%- include("header") %>
+		<div class="container">
+			<h2>Create Account</h2>
+			<p class="lead">Already have an account? <a href="/createAccount">Log in</a>.</p>
+			<form id="create-account-form" method="post" action="/createAccount">
+				<div class="form-group">
+					<% if (typeof error !== 'undefined' && error.type === "username") { %>
+					<h4 class="text-warning"><%= error.message %></h4>
+					<% } %>
+					<label for="create-username" class="lead">Username</label>
+					<input type="text" name="username" class="form-control" aria-describedby="login-username" value="<%= typeof username !== 'undefined' ? username : '' %>" />
+					<p class="form-text">Username must contain 3-20 characters. Letters, numbers, and <code>.!@#$%^&*()_+-=</code> are allowed. Spaces are allowed, but not at the beginning or end.</p>
+				</div>
+				<div class="form-group">
+					<!-- Error -->
+					<% if (typeof error !== 'undefined' && error.type === "password") { %>
+					<h6 class="text-warning"><%= error.message %></h4>
+					<% } %>
+					<!-- Content -->
+					<label for="create-password" class="lead">Passphrase</label>
+					<input type="password" name="password" class="form-control" aria-describedby="login-password" required />
+					<p class="form-text">
+						Must be between 12 and 99 characters and please <strong class="text-danger">do NOT use anything you have used on another site</strong>. <br/>
+						No, really. I am just a college student who made this as a summer project. I probably have a security hole somewhere. Your best recourse is simply to pick a unique passphrase.
+					</p>
+				</div>
+				<div class="form-group">
+					<% if (typeof error !== 'undefined' && error.type === "confirmPassword") { %>
+					<h6 class="text-warning"><%= error.message %></h4>
+					<% } %>
+					<label for="create-confirm-password" class="lead">Confirm Passphrase</label>
+					<input type="password" name="confirmPassword" class="form-control" aria-describedby="login-password" required />
+					<p class="form-text">
+						I really mean it. <strong class="text-warning">DO. NOT. REUSE. PASSWORDS.</strong> (You really should not be reusing them at all, but especially not on some security novice's random project. You might want to look into password managers.)
+					</p>
+				</div>
+				<p>Note that there is currently no way to reset your password if you forget.</p>
+				<input type="submit" class="btn btn-primary btn-lg" />
+			</form>
+		</div>
+		<%- include("footer") %>
+	<script src="/scripts/vendor.js?020324f1140531b2f379"></script></body>
+</html>

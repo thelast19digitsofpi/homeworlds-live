@@ -26,7 +26,7 @@ app.get(/\/archive\/?$/, async function(req, res) {
 			};
 			// reverse so the most recent game is on top
 		}).reverse();
-		console.log(res.locals.render.archiveList);
+		//console.log(res.locals.render.archiveList);
 		return res.render("archiveTable.ejs", res.locals.render);
 	} catch (error) {
 		console.log("GET /archive");
@@ -43,7 +43,7 @@ app.get("/archive/view/:gameID", async function(req, res, next) {
 	
 	try {
 		const row = await databaseCall(db, "get", "SELECT * FROM gameArchive WHERE id = ?", [id]);
-		console.log(row);
+		//console.log(row);
 		if (!row) {
 			return next({
 				status: 404,

@@ -6,21 +6,26 @@
 
 
 /*
-PROPS ACCEPTED: ([+] = done, [?] = untested, [ ] = not implemented yet)
-- [+] current (or gameState): GameState to start with.
-- [+] players: The array of players that are playing the game. I think only strings work.
+PROPS ACCEPTED:
+- current (or gameState): GameState to start with.
+- players: The array of players that are playing the game. I think only strings work.
 
 EVENTS:
-- [+] canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
-- [+] onBeforeButtonClick(actionType, oldState): Called when the player clicks an action button. Can be used to stop trades before they get the actionInProgress message.
-- [+] onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
-- [+] onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
-- [+] onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
-- [+] onAfterEndTurn(player, newState): 
-- [+] onMount(): Called inside componentDidMount.
-- [+] onUnmount(): Called inside componentWillUnmount.
-- [+] getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
-- [+] onComponentUpdate(): Called inside componentDidUpdate.
+- canInteract(state): Checks if the player is allowed to interact with the board at all. If false, you are blocked even from showing the action list button, for example.
+- onBeforeButtonClick(actionType, oldState): Called when the player clicks an action button. Can be used to stop trades before they get the actionInProgress message.
+- onBeforeAction(action, player, oldState, newState): Called before the player does an action. Return true or false; true allows the action, false does not. Note that returning *undefined* is undefined behavior... I don't actually remember what it does and probably is not consistent.
+- onAfterAction(action, newState): Called after an action is done successfully. Cannot block actions.
+- onBeforeEndTurn(player, oldState, newState): Called before the player ends their turn. Again, can return false to block the end-turn.
+- onAfterEndTurn(player, newState): 
+- onMount(): Called inside componentDidMount.
+- onUnmount(): Called inside componentWillUnmount.
+- getProps(): Not really an event, but gets an object with props to send down. Right now I also send the entire React state object, but hopefully I will transition away from that.
+- onComponentUpdate(): Called inside componentDidUpdate.
+
+STATE OBJECT:
+history: [ [ GameState ] ]
+	List of game states. Each element is an array of actions within the turn. For example, the turn "sacrifice y2A, move b1C to 2, move b1A to 2, catastrophe blue at 2" will result in 5 state objects (before, three in between, and after).
+
 */
 
 import React from 'react';
@@ -815,6 +820,8 @@ function withGame(WrappedComponent, events, additionalState) {
 				<TurnControls
 					canInteract={canInteract}
 					
+					actionCount={current.actions.number}
+					
 					warnings={warnings}
 					showDisableWarnings={!this.props.disableWarnings}
 					disableWarnings={this.props.disableWarnings || this.state.disableWarnings}
@@ -828,6 +835,35 @@ function withGame(WrappedComponent, events, additionalState) {
 			
 			const radioHandler = (event) => this.setDisplayMode(event.target.value);
 			const allowAnimationHandler = (event) => this.setState({allowAnimations: event.target.checked});
+			
+			let actionBullets = [];
+			for (let i = 0; i < current.actions.number; i++) {
+				actionBullets.push(<React.Fragment key={i+1}>&bull;</React.Fragment>)
+			}
+			let actionColor = {
+				r: "#ff0000",
+				g: "#009900",
+				b: "#3333ff",
+				y: "#cccc00",
+				null: "#ffffff"
+			}[current.actions.sacrifice];
+			let actionType = {
+				r: "(capture)",
+				g: "(build)",
+				b: "(trade)",
+				y: "(move)",
+				null: ""
+			}[current.actions.sacrifice];
+			const actionsLeft = <span>
+				Actions left:&nbsp;
+				<span style={{color: actionColor}}>
+					{current.actions.number}&nbsp;
+					{actionBullets}&nbsp;
+					{actionType}
+				</span>
+				{canInteract && current.actions.number === 0 && <button onClick={this.handleEndTurnClick}>End Turn</button>}
+			</span>;
+			
 			
 			return <WrappedComponent
 					reactState={this.state}
@@ -887,10 +923,10 @@ function withGame(WrappedComponent, events, additionalState) {
 							/>
 						</div>
 						{current.phase === "end" ? winBanner : null}
-						<p className="info black-background">
-							Turn: {current.turn} &bull;
-							Actions left: {current.actions.number}
-						</p>
+						<h5 className="info black-background">
+							Turn: {current.turn} &bull;&nbsp;
+							{actionsLeft}
+						</h5>
 						
 						{/* Give the warning prompt if you try to end your turn dangerously */
 							this.state.showWarningPrompt && 
