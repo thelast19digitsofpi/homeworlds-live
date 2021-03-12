@@ -1379,6 +1379,29 @@ class GameState {
 			];
 		}
 		
+		// warning about catastrophes
+		let colorsAtSystems = Object.create(null);
+		for (let serial in this.map) {
+			const data = this.map[serial];
+			if (data) {
+				// this is a little easier than a nested object
+				// color is [0], system is the rest
+				const key = serial[0] + String(data.at);
+				if (!(key in colorsAtSystems)) {
+					colorsAtSystems[key] = 0;
+				}
+				colorsAtSystems[key]++;
+				// only do it at exactly 4
+				if (colorsAtSystems[key] === 4) {
+					const color = {b: "blue", g: "green", r: "red", y: "yellow"}[serial[0]];
+					warnings.push({
+						level: "warning",
+						message: "There is an overpopulation of " + color + " at system " + data.at + ", but you did not trigger the catastrophe!",
+					});
+				}
+			}
+		}
+		
 		const yourShips = yourData.ships;
 		const yourStars = yourData.stars;
 		const allPieces = yourShips.concat(yourStars);
@@ -1521,14 +1544,13 @@ class GameState {
 			}
 			
 			if (!hasLarge) {
+				// this isn't a blocker because sometimes you can do nothing about it
 				warnings.push({
 					level: "caution",
-					message: "You don't have a large ship at your homeworld. If your opponent gets a large in before you do, you won't be able to fight back!",
+					message: "You don't have a large ship at your homeworld. You won't be able to fight enemy larges that decide to invade your home!",
 				});
 			}
 		}
-		
-		// todo: warning at catastrophes
 		
 		return warnings;
 	}

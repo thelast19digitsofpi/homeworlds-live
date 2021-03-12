@@ -24,25 +24,6 @@ function TurnControls(props) {
 			return <p key={warning.message} className="mb-0">{warning.message}</p>;
 		});
 		
-		// find the maximum level
-		const levels = {
-			note: 0,
-			caution: 1,
-			warning: 2,
-			danger: 3,
-		};
-		let maxLevel = 0;
-		for (let i = 0; i < warnings.length; i++) {
-			// use the lookup table
-			const newLevel = levels[warnings[i].level];
-			if (newLevel > maxLevel) {
-				maxLevel = newLevel;
-			}
-		}
-		
-		// there's no "caution" or "note" button class
-		const endTurnClass = ["success text-light", "info", "warning text-light", "danger"][maxLevel];
-		
 		const warningClass = (warnings.length > 0 ? "warning" : "success");
 		
 		// The display!
@@ -57,8 +38,8 @@ function TurnControls(props) {
 						{warningParagraphs}
 					</div>
 				}
-				<button className={"end-turn mt-2 btn btn-lg btn-" + endTurnClass}
-				        onClick={props.handleEndTurnClick}>{props.actionCount > 0 ? "Pass" : "End"} Turn</button>
+				<button className={"end-turn mt-2 btn btn-lg btn-" + props.endTurnClass}
+				        onClick={props.handleEndTurnClick}>{(props.actionCount > 0 && props.actionType === null) ? "Pass" : "End"} Turn</button>
 			</div>
 			{warningContent}
 			{!props.disableWarnings && <button className={"text-light mt-3 btn btn-" + warningClass} onClick={props.toggleWarningPopup}>{warnings.length} warning(s)</button>}

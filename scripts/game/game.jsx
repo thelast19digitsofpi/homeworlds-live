@@ -782,11 +782,27 @@ function withGame(WrappedComponent, events, additionalState) {
 			};
 			// Modify the look based on if you can currently interact...
 			const canInteract = (events.canInteract ? events.canInteract.call(this, current) : true);
-			let endTurnClass = "success";
 			if (canInteract) {
 				starMapStyle.borderColor = "#ccc";
 			}
 			
+			// find the maximum warning level
+			const levels = {
+				note: 0,
+				caution: 1,
+				warning: 2,
+				danger: 3,
+			};
+			let maxLevel = 0;
+			for (let i = 0; i < warnings.length; i++) {
+				// use the lookup table
+				const newLevel = levels[warnings[i].level];
+				if (newLevel > maxLevel) {
+					maxLevel = newLevel;
+				}
+			}
+			
+			const endTurnClass = ["success text-light", "success text-light", "warning text-light", "danger"][maxLevel];
 			
 			// very very simple heuristic that scales the board down based on the number of pieces that are on the board
 			let numPiecesOnBoard = 0;
@@ -821,8 +837,11 @@ function withGame(WrappedComponent, events, additionalState) {
 					canInteract={canInteract}
 					
 					actionCount={current.actions.number}
+					actionType={current.actions.sacrifice}
 					
 					warnings={warnings}
+					maxWarningLevel={maxLevel}
+					endTurnClass={endTurnClass}
 					showDisableWarnings={!this.props.disableWarnings}
 					disableWarnings={this.props.disableWarnings || this.state.disableWarnings}
 					changeDisableWarnings={(bool) => this.changeDisableWarnings(bool)}
@@ -836,6 +855,9 @@ function withGame(WrappedComponent, events, additionalState) {
 			const radioHandler = (event) => this.setDisplayMode(event.target.value);
 			const allowAnimationHandler = (event) => this.setState({allowAnimations: event.target.checked});
 			
+			
+			// Actions Left indicator
+			// Also has a second End Turn button when you are done.
 			let actionBullets = [];
 			for (let i = 0; i < current.actions.number; i++) {
 				actionBullets.push(<React.Fragment key={i+1}>&bull;</React.Fragment>)
@@ -861,7 +883,7 @@ function withGame(WrappedComponent, events, additionalState) {
 					{actionBullets}&nbsp;
 					{actionType}
 				</span>
-				{canInteract && current.actions.number === 0 && <button onClick={this.handleEndTurnClick}>End Turn</button>}
+				{canInteract && current.actions.number === 0 && <button className={"end-turn btn btn-" + endTurnClass} onClick={this.handleEndTurnClick}>End Turn</button>}
 			</span>;
 			
 			
